@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <title>AHS — Pin-to-pin розводка</title>
+  <style>
+    html, body { margin: 0; background: #6a6a6a; }
+    .wrap { padding: 12px; display: flex; justify-content: center; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+<!--
+  Pin-to-pin: кожен провід іде з підписаного піна модуля на GPIO ESP32.
+  Не колаж фото — схема з розпіновкою.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="1700" viewBox="0 0 2400 1700">
+  <defs>
+    <style>
+      .paper { fill:#f7f7f7; stroke:#222; stroke-width:2; }
+      .zone { fill:#fff; stroke:#444; stroke-width:1; }
+      .mod { fill:#eceff1; stroke:#111; stroke-width:1.8; }
+      .esp { fill:#1565C0; stroke:#0d47a1; stroke-width:2; }
+      .t { font-family:"Segoe UI","DejaVu Sans",sans-serif; fill:#111; }
+      .tw { font-family:"Segoe UI","DejaVu Sans",sans-serif; fill:#fff; }
+      .h { font-size:16px; font-weight:700; }
+      .m { font-size:12.5px; font-weight:700; }
+      .s { font-size:11px; }
+      .xs { font-size:10px; }
+      .pinlbl { font-size:10px; font-weight:700; font-family:"Consolas","Segoe UI",monospace; }
+      .note { fill:#fffde7; stroke:#111; stroke-width:1.5; }
+      .bg { fill:#fff; opacity:0.94; }
+      .pad { stroke:#111; stroke-width:0.8; }
+    </style>
+  </defs>
+
+  <rect x="16" y="16" width="2368" height="1668" class="paper"/>
+
+  <!-- HEADER -->
+  <rect x="32" y="32" width="2336" height="100" class="zone"/>
+  <text x="48" y="58" class="t h">Pin-to-pin розводка · Astro Health Station · AHS.WIRING.001</text>
+  <text x="48" y="80" class="t s">Кожен провід: пін модуля → GPIO / живлення ESP32-DevKitC (DD1) · Ред. A · 31.10.2026</text>
+  <text x="48" y="100" class="t xs">Українською; назви моделей англійською. ГОСТ: SCHEME_GOST · таблиця: PINOUT.md</text>
+
+  <!-- legend -->
+  <g transform="translate(48,118)">
+    <line x1="0" y1="8" x2="24" y2="8" stroke="#1565C0" stroke-width="4"/><text x="28" y="12" class="t xs">SDA</text>
+    <line x1="70" y1="8" x2="94" y2="8" stroke="#F9A825" stroke-width="4"/><text x="98" y="12" class="t xs">SCL</text>
+    <line x1="140" y1="8" x2="164" y2="8" stroke="#6A1B9A" stroke-width="4"/><text x="168" y="12" class="t xs">SCK</text>
+    <line x1="210" y1="8" x2="234" y2="8" stroke="#C2185B" stroke-width="4"/><text x="238" y="12" class="t xs">MOSI</text>
+    <line x1="300" y1="8" x2="324" y2="8" stroke="#00695C" stroke-width="4"/><text x="328" y="12" class="t xs">MISO</text>
+    <line x1="390" y1="8" x2="414" y2="8" stroke="#2E7D32" stroke-width="4"/><text x="418" y="12" class="t xs">CS/DC/RST</text>
+    <line x1="510" y1="8" x2="534" y2="8" stroke="#E65100" stroke-width="4"/><text x="538" y="12" class="t xs">ADC</text>
+    <line x1="590" y1="8" x2="614" y2="8" stroke="#283593" stroke-width="4"/><text x="618" y="12" class="t xs">цифр. GPIO</text>
+    <line x1="710" y1="8" x2="734" y2="8" stroke="#C62828" stroke-width="4"/><text x="738" y="12" class="t xs">3V3</text>
+    <line x1="790" y1="8" x2="814" y2="8" stroke="#880E4F" stroke-width="4"/><text x="818" y="12" class="t xs">5V</text>
+    <line x1="870" y1="8" x2="894" y2="8" stroke="#111" stroke-width="4"/><text x="898" y="12" class="t xs">GND</text>
+    <rect x="960" y="0" width="12" height="12" fill="#ffd54f" stroke="#111"/><text x="978" y="12" class="t xs">панель піна (pad)</text>
+  </g>
+
+  <!-- WORK ZONE -->
+  <rect x="32" y="150" width="2336" height="1180" class="zone"/>
+
+  <!-- ========== DD1 ESP32 CENTER ========== -->
+  <!-- Board body -->
+  <rect x="980" y="280" width="280" height="780" class="esp"/>
+  <rect x="1010" y="300" width="220" height="90" fill="#263238"/>
+  <text x="1055" y="340" class="tw h">ESP32-DevKitC</text>
+  <text x="1075" y="365" class="tw s">DD1 · WROOM-32</text>
+  <rect x="1070" y="1020" width="100" height="24" fill="#455A64"/>
+  <text x="1095" y="1037" class="tw xs">USB</text>
+
+  <!-- Left pin column of ESP (pads + labels inside board) -->
+  <!-- Format: pad at x=968, label inside at x=990 -->
+  <!-- y positions for left GPIOs -->
+  <!-- 21 SDA 360, 22 SCL 390, 18 440, 23 470, 19 500, 5 550, 15 580, 4 610, 13 640, 16 700, 17 730, 3V3 800, 5V 830, GND 860 -->
+
+  <!-- helper: yellow pad -->
+  <g id="esp-left-pads">
+    <rect x="962" y="352" width="18" height="14" fill="#ffd54f" class="pad"/><text x="990" y="364" class="tw pinlbl">21 SDA</text>
+    <rect x="962" y="382" width="18" height="14" fill="#ffd54f" class="pad"/><text x="990" y="394" class="tw pinlbl">22 SCL</text>
+    <rect x="962" y="432" width="18" height="14" fill="#ffd54f" class="pad"/><text x="990" y="444" class="tw pinlbl">18 SCK</text>
+    <rect x="962" y="462" width="18" height="14" fill="#ffd54f" class="pad"/><text x="990" y="474" class="tw pinlbl">23 MOSI</text>
+    <rect x="962" y="492" width="18" height="14" fill="#ffd54f" class="pad"/><text x="990" y="504" class="tw pinlbl">19 MISO</text>
+    <rect x="962" y="542" width="18" height="14" fill="#ffd54f" class="pad"/><text x="990" y="554" class="tw pinlbl">5 CS</text>
+    <rect x="962" y="572" width="18" height="14" fill="#ffd54f" class="pad"/><text x="990" y="584" class="tw pinlbl">15 DC</text>
+    <rect x="962" y="602" width="18" height="14" fill="#ffd54f" class="pad"/><text x="990" y="614" class="tw pinlbl">4 RST</text>
+    <rect x="962" y="632" width="18" height="14" fill="#ffd54f" class="pad"/><text x="990" y="644" class="tw pinlbl">13 SD_CS</text>
+    <rect x="962" y="692" width="18" height="14" fill="#ffd54f" class="pad"/><text x="990" y="704" class="tw pinlbl">16 HX_DT</text>
+    <rect x="962" y="722" width="18" height="14" fill="#ffd54f" class="pad"/><text x="990" y="734" class="tw pinlbl">17 HX_SCK</text>
+    <rect x="962" y="792" width="18" height="14" fill="#ff8a80" class="pad"/><text x="990" y="804" class="tw pinlbl">3V3</text>
+    <rect x="962" y="822" width="18" height="14" fill="#f48fb1" class="pad"/><text x="990" y="834" class="tw pinlbl">5V</text>
+    <rect x="962" y="852" width="18" height="14" fill="#bdbdbd" class="pad"/><text x="990" y="864" class="tw pinlbl">GND</text>
+  </g>
+
+  <g id="esp-right-pads">
+    <rect x="1260" y="352" width="18" height="14" fill="#ffd54f" class="pad"/><text x="1165" y="364" class="tw pinlbl">34 MQ</text>
+    <rect x="1260" y="392" width="18" height="14" fill="#ffd54f" class="pad"/><text x="1160" y="404" class="tw pinlbl">35 ECG</text>
+    <rect x="1260" y="452" width="18" height="14" fill="#ffd54f" class="pad"/><text x="1165" y="464" class="tw pinlbl">25 SB1</text>
+    <rect x="1260" y="482" width="18" height="14" fill="#ffd54f" class="pad"/><text x="1165" y="494" class="tw pinlbl">26 SB2</text>
+    <rect x="1260" y="512" width="18" height="14" fill="#ffd54f" class="pad"/><text x="1165" y="524" class="tw pinlbl">27 SB3</text>
+    <rect x="1260" y="542" width="18" height="14" fill="#ffd54f" class="pad"/><text x="1165" y="554" class="tw pinlbl">14 SB4</text>
+    <rect x="1260" y="572" width="18" height="14" fill="#ffd54f" class="pad"/><text x="1165" y="584" class="tw pinlbl">32 SB5</text>
+    <rect x="1260" y="602" width="18" height="14" fill="#ffd54f" class="pad"/><text x="1165" y="614" class="tw pinlbl">33 SB6</text>
+    <rect x="1260" y="662" width="18" height="14" fill="#ffd54f" class="pad"/><text x="1160" y="674" class="tw pinlbl">2 BUZZ</text>
+    <rect x="1260" y="702" width="18" height="14" fill="#ffd54f" class="pad"/><text x="1160" y="714" class="tw pinlbl">12 LED</text>
+    <rect x="1260" y="792" width="18" height="14" fill="#ff8a80" class="pad"/><text x="1175" y="804" class="tw pinlbl">3V3</text>
+    <rect x="1260" y="852" width="18" height="14" fill="#bdbdbd" class="pad"/><text x="1175" y="864" class="tw pinlbl">GND</text>
+  </g>
+
+  <!-- ========== I2C MODULES LEFT ========== -->
+  <text x="48" y="175" class="t h">I²C-модулі</text>
+
+  <!-- Generic I2C module template: VIN GND SCL SDA pads on right edge -->
+  <!-- B1 BME280 -->
+  <rect x="48" y="190" width="220" height="100" class="mod"/>
+  <text x="60" y="212" class="t m">B1  BME280</text>
+  <text x="60" y="230" class="t xs">I²C · 0x76/77</text>
+  <rect x="250" y="200" width="18" height="14" fill="#ff8a80" class="pad"/><text x="200" y="212" class="t pinlbl" fill="#C62828">VIN</text>
+  <rect x="250" y="220" width="18" height="14" fill="#bdbdbd" class="pad"/><text x="200" y="232" class="t pinlbl">GND</text>
+  <rect x="250" y="240" width="18" height="14" fill="#ffd54f" class="pad"/><text x="200" y="252" class="t pinlbl" fill="#F57F17">SCL</text>
+  <rect x="250" y="260" width="18" height="14" fill="#ffd54f" class="pad"/><text x="200" y="272" class="t pinlbl" fill="#1565C0">SDA</text>
+
+  <!-- B3 MAX30102 -->
+  <rect x="48" y="310" width="220" height="100" class="mod"/>
+  <text x="60" y="332" class="t m">B3  MAX30102</text>
+  <text x="60" y="350" class="t xs">I²C · 0x57 · HR/SpO2</text>
+  <rect x="250" y="320" width="18" height="14" fill="#ff8a80" class="pad"/><text x="200" y="332" class="t pinlbl" fill="#C62828">VIN</text>
+  <rect x="250" y="340" width="18" height="14" fill="#bdbdbd" class="pad"/><text x="200" y="352" class="t pinlbl">GND</text>
+  <rect x="250" y="360" width="18" height="14" fill="#ffd54f" class="pad"/><text x="200" y="372" class="t pinlbl" fill="#F57F17">SCL</text>
+  <rect x="250" y="380" width="18" height="14" fill="#ffd54f" class="pad"/><text x="200" y="392" class="t pinlbl" fill="#1565C0">SDA</text>
+
+  <!-- B5 MLX90614 -->
+  <rect x="48" y="430" width="220" height="100" class="mod"/>
+  <text x="60" y="452" class="t m">B5  MLX90614</text>
+  <text x="60" y="470" class="t xs">I²C · 0x5A · IR temp</text>
+  <rect x="250" y="440" width="18" height="14" fill="#ff8a80" class="pad"/><text x="200" y="452" class="t pinlbl" fill="#C62828">VIN</text>
+  <rect x="250" y="460" width="18" height="14" fill="#bdbdbd" class="pad"/><text x="200" y="472" class="t pinlbl">GND</text>
+  <rect x="250" y="480" width="18" height="14" fill="#ffd54f" class="pad"/><text x="200" y="492" class="t pinlbl" fill="#F57F17">SCL</text>
+  <rect x="250" y="500" width="18" height="14" fill="#ffd54f" class="pad"/><text x="200" y="512" class="t pinlbl" fill="#1565C0">SDA</text>
+
+  <!-- B6 MPU6050 -->
+  <rect x="48" y="550" width="220" height="100" class="mod"/>
+  <text x="60" y="572" class="t m">B6  MPU-6050</text>
+  <text x="60" y="590" class="t xs">I²C · 0x68 · GY-521</text>
+  <rect x="250" y="560" width="18" height="14" fill="#ff8a80" class="pad"/><text x="200" y="572" class="t pinlbl" fill="#C62828">VCC</text>
+  <rect x="250" y="580" width="18" height="14" fill="#bdbdbd" class="pad"/><text x="200" y="592" class="t pinlbl">GND</text>
+  <rect x="250" y="600" width="18" height="14" fill="#ffd54f" class="pad"/><text x="200" y="612" class="t pinlbl" fill="#F57F17">SCL</text>
+  <rect x="250" y="620" width="18" height="14" fill="#ffd54f" class="pad"/><text x="200" y="632" class="t pinlbl" fill="#1565C0">SDA</text>
+
+  <!-- I2C bus wiring: SDA trunk x=320, SCL trunk x=360, power x=400/440 -->
+  <!-- SDA from each module pad (x=268) -->
+  <path d="M268 267 H320" fill="none" stroke="#1565C0" stroke-width="2.8"/>
+  <path d="M268 387 H320" fill="none" stroke="#1565C0" stroke-width="2.8"/>
+  <path d="M268 507 H320" fill="none" stroke="#1565C0" stroke-width="2.8"/>
+  <path d="M268 627 H320" fill="none" stroke="#1565C0" stroke-width="2.8"/>
+  <path d="M320 267 V627" fill="none" stroke="#1565C0" stroke-width="2.8"/>
+  <path d="M320 359 H962" fill="none" stroke="#1565C0" stroke-width="2.8"/>
+  <circle cx="320" cy="267" r="3.5" fill="#1565C0"/>
+  <circle cx="320" cy="387" r="3.5" fill="#1565C0"/>
+  <circle cx="320" cy="507" r="3.5" fill="#1565C0"/>
+  <circle cx="320" cy="627" r="3.5" fill="#1565C0"/>
+  <circle cx="320" cy="359" r="3.5" fill="#1565C0"/>
+  <rect x="500" y="342" width="130" height="15" class="bg"/><text x="505" y="354" class="t xs" fill="#1565C0">SDA → GPIO21</text>
+
+  <!-- SCL -->
+  <path d="M268 247 H360" fill="none" stroke="#F9A825" stroke-width="2.8"/>
+  <path d="M268 367 H360" fill="none" stroke="#F9A825" stroke-width="2.8"/>
+  <path d="M268 487 H360" fill="none" stroke="#F9A825" stroke-width="2.8"/>
+  <path d="M268 607 H360" fill="none" stroke="#F9A825" stroke-width="2.8"/>
+  <path d="M360 247 V607" fill="none" stroke="#F9A825" stroke-width="2.8"/>
+  <path d="M360 389 H962" fill="none" stroke="#F9A825" stroke-width="2.8"/>
+  <circle cx="360" cy="247" r="3.5" fill="#F9A825"/>
+  <circle cx="360" cy="367" r="3.5" fill="#F9A825"/>
+  <circle cx="360" cy="487" r="3.5" fill="#F9A825"/>
+  <circle cx="360" cy="607" r="3.5" fill="#F9A825"/>
+  <circle cx="360" cy="389" r="3.5" fill="#F9A825"/>
+  <rect x="500" y="372" width="130" height="15" class="bg"/><text x="505" y="384" class="t xs" fill="#F57F17">SCL → GPIO22</text>
+
+  <!-- 3V3 / GND I2C -->
+  <path d="M268 207 H400 V799 H962" fill="none" stroke="#C62828" stroke-width="2.2" stroke-dasharray="5 3"/>
+  <path d="M268 327 H400" fill="none" stroke="#C62828" stroke-width="2.2" stroke-dasharray="5 3"/>
+  <path d="M268 447 H400" fill="none" stroke="#C62828" stroke-width="2.2" stroke-dasharray="5 3"/>
+  <path d="M268 567 H400" fill="none" stroke="#C62828" stroke-width="2.2" stroke-dasharray="5 3"/>
+  <rect x="410" y="780" width="100" height="14" class="bg"/><text x="415" y="791" class="t xs" fill="#C62828">VIN/VCC → 3V3</text>
+
+  <path d="M268 227 H440 V859 H962" fill="none" stroke="#111" stroke-width="2.2" stroke-dasharray="5 3"/>
+  <path d="M268 347 H440" fill="none" stroke="#111" stroke-width="2.2" stroke-dasharray="5 3"/>
+  <path d="M268 467 H440" fill="none" stroke="#111" stroke-width="2.2" stroke-dasharray="5 3"/>
+  <path d="M268 587 H440" fill="none" stroke="#111" stroke-width="2.2" stroke-dasharray="5 3"/>
+  <rect x="450" y="840" width="90" height="14" class="bg"/><text x="455" y="851" class="t xs">GND → GND</text>
+
+  <!-- ========== SPI TOP ========== -->
+  <text x="500" y="175" class="t h">SPI</text>
+
+  <!-- HG1 TFT — pins along bottom -->
+  <rect x="500" y="190" width="320" height="130" class="mod"/>
+  <text x="510" y="212" class="t m">HG1  TFT ILI9341 2.8″</text>
+  <text x="510" y="230" class="t xs">SPI дисплей · LED←3V3</text>
+  <!-- pads bottom: VCC GND CS RESET DC MOSI SCK MISO LED -->
+  <g font-size="9">
+    <rect x="510" y="250" width="14" height="14" fill="#ff8a80" class="pad"/><text x="508" y="280" class="t xs" fill="#C62828">VCC</text>
+    <rect x="540" y="250" width="14" height="14" fill="#bdbdbd" class="pad"/><text x="538" y="280" class="t xs">GND</text>
+    <rect x="570" y="250" width="14" height="14" fill="#ffd54f" class="pad"/><text x="572" y="280" class="t xs" fill="#2E7D32">CS</text>
+    <rect x="600" y="250" width="14" height="14" fill="#ffd54f" class="pad"/><text x="595" y="280" class="t xs" fill="#2E7D32">RST</text>
+    <rect x="630" y="250" width="14" height="14" fill="#ffd54f" class="pad"/><text x="630" y="280" class="t xs" fill="#2E7D32">DC</text>
+    <rect x="660" y="250" width="14" height="14" fill="#ffd54f" class="pad"/><text x="652" y="280" class="t xs" fill="#C2185B">MOSI</text>
+    <rect x="700" y="250" width="14" height="14" fill="#ffd54f" class="pad"/><text x="696" y="280" class="t xs" fill="#6A1B9A">SCK</text>
+    <rect x="740" y="250" width="14" height="14" fill="#ffd54f" class="pad"/><text x="732" y="280" class="t xs" fill="#00695C">MISO</text>
+    <rect x="780" y="250" width="14" height="14" fill="#ff8a80" class="pad"/><text x="778" y="280" class="t xs" fill="#C62828">LED</text>
+  </g>
+  <text x="510" y="305" class="t xs">CS→5 · RST→4 · DC→15 · MOSI→23 · SCK→18 · MISO→19 · VCC/LED→3V3 · GND→GND</text>
+
+  <!-- D1 SD -->
+  <rect x="500" y="330" width="320" height="90" class="mod"/>
+  <text x="510" y="352" class="t m">D1  microSD SPI</text>
+  <text x="510" y="370" class="t xs">спільні SCK/MOSI/MISO з HG1</text>
+  <rect x="510" y="385" width="14" height="14" fill="#ffd54f" class="pad"/><text x="528" y="397" class="t xs" fill="#1B5E20">CS</text>
+  <rect x="560" y="385" width="14" height="14" fill="#ffd54f" class="pad"/><text x="578" y="397" class="t xs" fill="#6A1B9A">SCK</text>
+  <rect x="620" y="385" width="14" height="14" fill="#ffd54f" class="pad"/><text x="638" y="397" class="t xs" fill="#C2185B">MOSI</text>
+  <rect x="690" y="385" width="14" height="14" fill="#ffd54f" class="pad"/><text x="708" y="397" class="t xs" fill="#00695C">MISO</text>
+  <rect x="760" y="385" width="14" height="14" fill="#ff8a80" class="pad"/><text x="778" y="397" class="t xs" fill="#C62828">VCC</text>
+  <rect x="800" y="385" width="14" height="14" fill="#bdbdbd" class="pad"/><text x="818" y="397" class="t xs">GND</text>
+
+  <!-- SPI wires pin-to-pin (channels) -->
+  <!-- SCK: TFT 707 + SD 567 → trunk → GPIO18 y=439 -->
+  <path d="M707 264 V420 H880 V439 H962" fill="none" stroke="#6A1B9A" stroke-width="2.8"/>
+  <path d="M567 399 V420 H880" fill="none" stroke="#6A1B9A" stroke-width="2.4"/>
+  <rect x="800" y="422" width="70" height="14" class="bg"/><text x="804" y="433" class="t xs" fill="#6A1B9A">→ GPIO18</text>
+
+  <!-- MOSI -->
+  <path d="M667 264 V435 H900 V469 H962" fill="none" stroke="#C2185B" stroke-width="2.8"/>
+  <path d="M627 399 V435 H900" fill="none" stroke="#C2185B" stroke-width="2.4"/>
+  <rect x="820" y="452" width="70" height="14" class="bg"/><text x="824" y="463" class="t xs" fill="#C2185B">→ GPIO23</text>
+
+  <!-- MISO -->
+  <path d="M747 264 V450 H920 V499 H962" fill="none" stroke="#00695C" stroke-width="2.8"/>
+  <path d="M697 399 V450 H920" fill="none" stroke="#00695C" stroke-width="2.4"/>
+  <rect x="840" y="482" width="70" height="14" class="bg"/><text x="844" y="493" class="t xs" fill="#00695C">→ GPIO19</text>
+
+  <!-- TFT CS → 5 -->
+  <path d="M577 264 V465 H940 V549 H962" fill="none" stroke="#2E7D32" stroke-width="2.5"/>
+  <rect x="860" y="532" width="55" height="14" class="bg"/><text x="864" y="543" class="t xs" fill="#2E7D32">→ GPIO5</text>
+
+  <!-- TFT DC → 15 -->
+  <path d="M637 264 V480 H950 V579 H962" fill="none" stroke="#43A047" stroke-width="2.5"/>
+  <rect x="870" y="562" width="60" height="14" class="bg"/><text x="874" y="573" class="t xs" fill="#2E7D32">→ GPIO15</text>
+
+  <!-- TFT RST → 4 -->
+  <path d="M607 264 V495 H955 V609 H962" fill="none" stroke="#66BB6A" stroke-width="2.5"/>
+  <rect x="880" y="592" width="55" height="14" class="bg"/><text x="884" y="603" class="t xs" fill="#2E7D32">→ GPIO4</text>
+
+  <!-- SD CS → 13 -->
+  <path d="M517 399 V510 H960 V639 H962" fill="none" stroke="#1B5E20" stroke-width="2.8"/>
+  <rect x="885" y="622" width="70" height="14" class="bg"/><text x="889" y="633" class="t xs" fill="#1B5E20">→ GPIO13</text>
+
+  <!-- ========== HX711 / MQ BOTTOM LEFT ========== -->
+  <rect x="48" y="680" width="280" height="130" class="mod"/>
+  <text x="60" y="702" class="t m">B7  HX711 + тензо 5 кг</text>
+  <text x="60" y="720" class="t xs">VCC=5V · DT/SCK → ESP32</text>
+  <rect x="60" y="740" width="14" height="14" fill="#f48fb1" class="pad"/><text x="80" y="752" class="t xs" fill="#880E4F">VCC</text>
+  <rect x="120" y="740" width="14" height="14" fill="#bdbdbd" class="pad"/><text x="140" y="752" class="t xs">GND</text>
+  <rect x="190" y="740" width="14" height="14" fill="#ffd54f" class="pad"/><text x="210" y="752" class="t xs" fill="#283593">DT</text>
+  <rect x="250" y="740" width="14" height="14" fill="#ffd54f" class="pad"/><text x="270" y="752" class="t xs" fill="#283593">SCK</text>
+  <text x="60" y="785" class="t xs">Тензо: E+ E− A+ A− за кольорами модуля (не на ESP)</text>
+  <text x="60" y="800" class="t xs">DT → GPIO16 · SCK → GPIO17 · VCC → 5V · GND → GND</text>
+
+  <path d="M197 747 H300 V699 H962" fill="none" stroke="#283593" stroke-width="2.8"/>
+  <rect x="700" y="682" width="100" height="14" class="bg"/><text x="705" y="693" class="t xs" fill="#283593">DT → GPIO16</text>
+  <path d="M257 747 H340 V729 H962" fill="none" stroke="#5C6BC0" stroke-width="2.8"/>
+  <rect x="720" y="712" width="100" height="14" class="bg"/><text x="725" y="723" class="t xs" fill="#283593">SCK → GPIO17</text>
+  <path d="M67 747 H100 V829 H962" fill="none" stroke="#880E4F" stroke-width="2.2" stroke-dasharray="5 3"/>
+  <path d="M127 747 H160 V859 H962" fill="none" stroke="#111" stroke-width="2.2" stroke-dasharray="5 3"/>
+
+  <!-- MQ-135 + divider -->
+  <rect x="48" y="830" width="280" height="140" class="mod"/>
+  <text x="60" y="852" class="t m">B2  MQ-135</text>
+  <text x="60" y="870" class="t xs">VCC=5V · A0 через подільник</text>
+  <rect x="60" y="890" width="14" height="14" fill="#f48fb1" class="pad"/><text x="80" y="902" class="t xs" fill="#880E4F">VCC</text>
+  <rect x="120" y="890" width="14" height="14" fill="#bdbdbd" class="pad"/><text x="140" y="902" class="t xs">GND</text>
+  <rect x="190" y="890" width="14" height="14" fill="#ffd54f" class="pad"/><text x="210" y="902" class="t xs" fill="#E65100">A0</text>
+  <rect x="250" y="890" width="14" height="14" fill="#eee" class="pad"/><text x="270" y="902" class="t xs">D0</text>
+  <text x="60" y="930" class="t xs">D0 не використовуємо</text>
+  <text x="60" y="948" class="t xs">A0 → R10к → (вузол) → GPIO34</text>
+  <text x="60" y="964" class="t xs">(вузол) → R20к → GND · прогрів 1…3 хв</text>
+
+  <rect x="360" y="860" width="160" height="70" fill="#FFF8E1" stroke="#E65100" stroke-width="1.5"/>
+  <text x="375" y="882" class="t xs" font-weight="700">подільник</text>
+  <text x="375" y="900" class="t xs">зверху 10 кΩ</text>
+  <text x="375" y="918" class="t xs">знизу 20 кΩ → GND</text>
+
+  <path d="M197 897 H360" fill="none" stroke="#E65100" stroke-width="2.8"/>
+  <path d="M520 895 H560 V1100 H1400 V359 H1278" fill="none" stroke="#E65100" stroke-width="3"/>
+  <rect x="800" y="1078" width="140" height="15" class="bg"/><text x="805" y="1090" class="t xs" fill="#E65100">→ GPIO34 (ADC)</text>
+  <path d="M67 897 H90 V829 H200" fill="none" stroke="#880E4F" stroke-width="2" stroke-dasharray="5 3"/>
+
+  <!-- ========== RIGHT: AD8232, buttons, buzz, LED, power ========== -->
+  <text x="1400" y="175" class="t h">Права сторона</text>
+
+  <rect x="1400" y="190" width="300" height="150" class="mod"/>
+  <text x="1415" y="212" class="t m">B4  AD8232 (ЕКГ)</text>
+  <text x="1415" y="230" class="t xs">електроди RA / LA / RL окремо</text>
+  <rect x="1415" y="250" width="14" height="14" fill="#ff8a80" class="pad"/><text x="1435" y="262" class="t xs" fill="#C62828">3.3V</text>
+  <rect x="1490" y="250" width="14" height="14" fill="#bdbdbd" class="pad"/><text x="1510" y="262" class="t xs">GND</text>
+  <rect x="1560" y="250" width="14" height="14" fill="#ffd54f" class="pad"/><text x="1580" y="262" class="t xs" fill="#E65100">OUTPUT</text>
+  <text x="1415" y="295" class="t xs">LO+ / LO− не підключаємо</text>
+  <text x="1415" y="315" class="t xs">3.3V→3V3 · GND→GND · OUTPUT→GPIO35</text>
+
+  <path d="M1567 257 H1350 V399 H1278" fill="none" stroke="#E65100" stroke-width="2.8"/>
+  <rect x="1300" y="380" width="90" height="14" class="bg"/><text x="1305" y="391" class="t xs" fill="#E65100">→ GPIO35</text>
+  <path d="M1422 257 H1380 V799 H1278" fill="none" stroke="#C62828" stroke-width="2" stroke-dasharray="5 3"/>
+  <path d="M1497 257 H1360 V859 H1278" fill="none" stroke="#111" stroke-width="2" stroke-dasharray="5 3"/>
+
+  <!-- Buttons -->
+  <rect x="1740" y="190" width="280" height="280" class="mod"/>
+  <text x="1755" y="212" class="t m">SB1…SB6  тактові кнопки</text>
+  <text x="1755" y="230" class="t xs">контакт A → GPIO · контакт B → GND</text>
+  <text x="1755" y="258" class="t s">SB1 Mood Bad  · A→GPIO25 · B→GND</text>
+  <text x="1755" y="280" class="t s">SB2 Mood OK   · A→GPIO26 · B→GND</text>
+  <text x="1755" y="302" class="t s">SB3 Mood Good · A→GPIO27 · B→GND</text>
+  <text x="1755" y="324" class="t s">SB4 MODE      · A→GPIO14 · B→GND</text>
+  <text x="1755" y="346" class="t s">SB5 CAL       · A→GPIO32 · B→GND</text>
+  <text x="1755" y="368" class="t s">SB6 SYNC      · A→GPIO33 · B→GND</text>
+  <text x="1755" y="400" class="t xs">код: INPUT_PULLUP · натиск = LOW</text>
+  <text x="1755" y="420" class="t xs">усі B разом на шину GND</text>
+  <!-- pads for button A lines -->
+  <rect x="1722" y="248" width="18" height="12" fill="#ffd54f" class="pad"/>
+  <rect x="1722" y="270" width="18" height="12" fill="#ffd54f" class="pad"/>
+  <rect x="1722" y="292" width="18" height="12" fill="#ffd54f" class="pad"/>
+  <rect x="1722" y="314" width="18" height="12" fill="#ffd54f" class="pad"/>
+  <rect x="1722" y="336" width="18" height="12" fill="#ffd54f" class="pad"/>
+  <rect x="1722" y="358" width="18" height="12" fill="#ffd54f" class="pad"/>
+
+  <path d="M1722 254 H1400 V459 H1278" fill="none" stroke="#37474F" stroke-width="2.2"/>
+  <path d="M1722 276 H1390 V489 H1278" fill="none" stroke="#546E7A" stroke-width="2.2"/>
+  <path d="M1722 298 H1380 V519 H1278" fill="none" stroke="#607D8B" stroke-width="2.2"/>
+  <path d="M1722 320 H1370 V549 H1278" fill="none" stroke="#78909C" stroke-width="2.2"/>
+  <path d="M1722 342 H1360 V579 H1278" fill="none" stroke="#90A4AE" stroke-width="2.2"/>
+  <path d="M1722 364 H1350 V609 H1278" fill="none" stroke="#455A64" stroke-width="2.2"/>
+  <rect x="1288" y="440" width="40" height="12" class="bg"/><text x="1290" y="450" class="t xs">→25</text>
+  <rect x="1288" y="470" width="40" height="12" class="bg"/><text x="1290" y="480" class="t xs">→26</text>
+  <rect x="1288" y="500" width="40" height="12" class="bg"/><text x="1290" y="510" class="t xs">→27</text>
+  <rect x="1288" y="530" width="40" height="12" class="bg"/><text x="1290" y="540" class="t xs">→14</text>
+  <rect x="1288" y="560" width="40" height="12" class="bg"/><text x="1290" y="570" class="t xs">→32</text>
+  <rect x="1288" y="590" width="40" height="12" class="bg"/><text x="1290" y="600" class="t xs">→33</text>
+
+  <!-- Buzzer -->
+  <rect x="1400" y="500" width="280" height="90" class="mod"/>
+  <text x="1415" y="522" class="t m">HA1  активний зумер</text>
+  <rect x="1415" y="540" width="14" height="14" fill="#ffd54f" class="pad"/><text x="1435" y="552" class="t xs" fill="#283593">+</text>
+  <rect x="1480" y="540" width="14" height="14" fill="#bdbdbd" class="pad"/><text x="1500" y="552" class="t xs">−</text>
+  <text x="1415" y="575" class="t xs">+ → GPIO2 · − → GND</text>
+  <path d="M1422 547 H1380 V669 H1278" fill="none" stroke="#283593" stroke-width="2.8"/>
+  <rect x="1300" y="650" width="70" height="14" class="bg"/><text x="1305" y="661" class="t xs" fill="#283593">→ GPIO2</text>
+  <path d="M1487 547 H1365 V859 H1278" fill="none" stroke="#111" stroke-width="2" stroke-dasharray="4 3"/>
+
+  <!-- LED -->
+  <rect x="1400" y="610" width="280" height="100" class="mod"/>
+  <text x="1415" y="632" class="t m">HL1  LED + резистор 220 Ω</text>
+  <text x="1415" y="652" class="t xs">анод ← 3V3 через 220Ω</text>
+  <text x="1415" y="670" class="t xs">катод ← GPIO12 (active LOW)</text>
+  <rect x="1415" y="685" width="14" height="14" fill="#ffd54f" class="pad"/><text x="1435" y="697" class="t xs" fill="#283593">CATHODE</text>
+  <path d="M1422 692 H1380 V709 H1278" fill="none" stroke="#3949AB" stroke-width="2.8"/>
+  <rect x="1300" y="690" width="70" height="14" class="bg"/><text x="1305" y="701" class="t xs" fill="#283593">→ GPIO12</text>
+
+  <!-- Powerbank -->
+  <rect x="1740" y="500" width="280" height="120" class="mod"/>
+  <text x="1755" y="525" class="t m">G1  Powerbank 5 В</text>
+  <text x="1755" y="548" class="t s">USB-A/C → роз’єм USB DD1</text>
+  <text x="1755" y="570" class="t xs">не окремий пін GPIO · живлення плати</text>
+  <text x="1755" y="595" class="t xs">спільний GND з усіма модулями</text>
+  <path d="M1740 560 H1600 V1040 H1120 V1044" fill="none" stroke="#880E4F" stroke-width="3.5"/>
+  <rect x="1300" y="1020" width="100" height="14" class="bg"/><text x="1305" y="1031" class="t xs" fill="#880E4F">→ USB DD1</text>
+
+  <!-- PIN TABLE mid-bottom inside work zone -->
+  <rect x="560" y="1000" width="800" height="200" fill="#f5f5f5" stroke="#111"/>
+  <text x="575" y="1025" class="t h">Таблиця «пін → пін» (швидкий пошук)</text>
+  <text x="575" y="1050" class="t xs">BME280/MAX30102/MLX90614/MPU: SDA→21 · SCL→22 · VIN→3V3 · GND→GND</text>
+  <text x="575" y="1070" class="t xs">TFT: SCK→18 · MOSI→23 · MISO→19 · CS→5 · DC→15 · RST→4 · VCC/LED→3V3 · GND→GND</text>
+  <text x="575" y="1090" class="t xs">microSD: CS→13 · SCK→18 · MOSI→23 · MISO→19 · VCC→3V3 · GND→GND</text>
+  <text x="575" y="1110" class="t xs">HX711: DT→16 · SCK→17 · VCC→5V · GND→GND</text>
+  <text x="575" y="1130" class="t xs">MQ-135: A0→[10к]→GPIO34 і [20к]→GND · VCC→5V · GND→GND</text>
+  <text x="575" y="1150" class="t xs">AD8232: OUTPUT→35 · 3.3V→3V3 · GND→GND</text>
+  <text x="575" y="1170" class="t xs">SB1…6: A→25/26/27/14/32/33 · B→GND · Buzz+→2 · LED cathode→12 · Powerbank→USB</text>
+  <text x="575" y="1190" class="t xs">Повна таблиця GPIO: PINOUT.md</text>
+
+  <line x1="32" y1="1340" x2="2368" y2="1340" stroke="#F9A825" stroke-width="4"/>
+  <text x="48" y="1330" class="t xs" fill="#E65100" font-weight="700">↑ зона схеми · нижче лише текст</text>
+
+  <!-- NOTES -->
+  <rect x="32" y="1355" width="2336" height="200" class="note"/>
+  <text x="48" y="1382" class="t h">Примітки</text>
+  <text x="48" y="1408" class="t s">1. Це pin-to-pin розводка: жовтий квадрат = контакт (pad). Провід іде від піна модуля до піна ESP32.</text>
+  <text x="48" y="1430" class="t s">2. Штрихові лінії = живлення (3V3 / 5V / GND). Суцільні кольорові = сигнали.</text>
+  <text x="48" y="1452" class="t s">3. MQ-135: обов’язковий подільник, якщо A0 до 5 В · GPIO34 лише вхід ≤3.3 В.</text>
+  <text x="48" y="1474" class="t s">4. GPIO12 — strapping; LED init після boot. GPIO34/35 — тільки ADC (без внутрішньої підтяжки для виходу).</text>
+  <text x="48" y="1496" class="t s">5. ГОСТ-схема: SCHEME_GOST.html · фото-колаж (довідково): SCHEME_FRITZING.html</text>
+  <text x="48" y="1518" class="t s">6. Радіація / FSR відсутні. Wi‑Fi на ноутбук на аркуші не розводиться.</text>
+  <text x="48" y="1540" class="t xs">Ред. A · ovrmiha-kpi · 31.10.2026 · Dupont: SDA синій · SCL жовтий · SPI фіолет/рож./бірюза · CS зелені · ADC помаранч. · 3V3 черв. · 5V малин. · GND чорний</text>
+</svg>
+</div>
+</body>
+</html>

@@ -1,10 +1,12 @@
-﻿# Astro Health Monitor
+# Astro Health Monitor
 
-NASA Space Apps Hackathon 2026 — мониторинг здоровья космонавта + компактный Suit Alert (радиация / воздух).
+NASA Space Apps Hackathon 2026.
 
-Актуальный дизайн и BOM: **[Physik/PLAN.md](Physik/PLAN.md)**
+- План: **[Physik/PLAN.md](Physik/PLAN.md)**
+- Ціни: **[Physik/BOM_PRICES.md](Physik/BOM_PRICES.md)**
+- Pin-to-pin розводка: **[Physik/SCHEME_WIRING.html](Physik/SCHEME_WIRING.html)** · **[Physik/SCHEME_WIRING.png](Physik/SCHEME_WIRING.png)**
+- Схема Е3 (ГОСТ): **[Physik/SCHEME_GOST.html](Physik/SCHEME_GOST.html)** · **[Physik/SCHEME_GOST.png](Physik/SCHEME_GOST.png)**
+- Розпіновка: **[Physik/PINOUT.md](Physik/PINOUT.md)**
 
-Бюджет железа: до **4500 грн**. Два блока:
-
-1. **Suit Alert** — компактный под (ESP32-C3 + радиация + BME680)
-2. **Health Station** — TFT-станция, ЭКГ/пульс, мышцы/кости, SD, отправка на сервер
+**Пристрій:** один **звичайний ESP32** (уже є) + датчики + TFT + SD (бюджет докупівлі ≤ 4500 грн).  
+**Сервер:** окремий ноутбук — прийом даних і прогноз.
