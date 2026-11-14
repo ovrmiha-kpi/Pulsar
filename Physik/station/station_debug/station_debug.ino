@@ -72,8 +72,11 @@ static uint32_t redBuf[SPO2_N], irBuf[SPO2_N];
 static int spo2Idx = 0;
 static bool spo2Filled = false;
 
-static bool btn1Prev = false, btn2Prev = false, btn3Prev = false;
+static bool btn1Prev = true, btn2Prev = true, btn3Prev = true;  // assume pressed until HIGH seen
+static bool btn1Arm = false, btn2Arm = false, btn3Arm = false;   // arm only after release (HIGH)
 static uint32_t btnLockUntil = 0;
+static int rawBtn1 = 1, rawBtn2 = 1, rawBtn3 = 1;  // digitalRead: 1=HIGH idle
+static bool btnWiringBad = false;
 
 // ---- colors ----
 static uint16_t C(uint8_t r, uint8_t g, uint8_t b) {
@@ -269,7 +272,12 @@ static void drawHome(uint16_t bg) {
   chip(27, 110, "HX", hxOk);
   chip(69, 110, "MQ", mqRaw > 20);
 
-  printCentered(64, 132, "BTN2 next  BTN3 back", 1, mute, bg);
+  if (btnWiringBad) {
+    printCentered(64, 128, "BTN SHORT!", 1, C(255, 80, 80), bg);
+    printCentered(64, 140, "use OPPOSITE pins", 1, C(255, 160, 80), bg);
+  } else {
+    printCentered(64, 132, "BTN2 next  BTN3 back", 1, mute, bg);
+  }
   drawDots(SCR_HOME, accent, C(40, 50, 55));
 }
 
@@ -458,29 +466,66 @@ static void drawCurrent(float phase) {
 
 static void handleButtons() {
   uint32_t now = millis();
-  bool b1 = digitalRead(PIN_BTN1) == LOW;
-  bool b2 = digitalRead(PIN_BTN2) == LOW;
-  bool b3 = digitalRead(PIN_BTN3) == LOW;
+  rawBtn1 = digitalRead(PIN_BTN1);
+  rawBtn2 = digitalRead(PIN_BTN2);
+  rawBtn3 = digitalRead(PIN_BTN3);
+  bool b1 = (rawBtn1 == LOW);
+  bool b2 = (rawBtn2 == LOW);
+  bool b3 = (rawBtn3 == LOW);
 
-  if (now < btnLockUntil) {
+  // INPUT_PULLUP: idle MUST be HIGH. If all stuck LOW → wrong 4-pin pair (same side).
+  bool wasBad = btnWiringBad;
+  btnWiringBad = (rawBtn1 == LOW && rawBtn2 == LOW && rawBtn3 == LOW);
+  if (btnWiringBad && !wasBad) {
+    Serial.println(F("[BTN] WIRING BAD: D25/26/27 all LOW"));
+    Serial.println(F("  -> wires on SAME side of 4-pin switch (always shorted)"));
+    Serial.println(F("  -> move one wire to the OPPOSITE side of the button"));
+    dirty = true;
+  }
+  if (!btnWiringBad && wasBad) {
+    Serial.println(F("[BTN] wiring OK — pins released to HIGH"));
+    dirty = true;
+  }
+
+  // arm each button only after we see a real release (HIGH)
+  if (!b1) btn1Arm = true;
+  if (!b2) btn2Arm = true;
+  if (!b3) btn3Arm = true;
+
+  if (b1 != btn1Prev) {
+    Serial.printf("[BTN1] D25 raw=%d %s arm=%d\n", rawBtn1, b1 ? "PRESS" : "release", btn1Arm);
+  }
+  if (b2 != btn2Prev) {
+    Serial.printf("[BTN2] D26 raw=%d %s arm=%d\n", rawBtn2, b2 ? "PRESS" : "release", btn2Arm);
+  }
+  if (b3 != btn3Prev) {
+    Serial.printf("[BTN3] D27 raw=%d %s arm=%d\n", rawBtn3, b3 ? "PRESS" : "release", btn3Arm);
+  }
+
+  if (now < btnLockUntil || btnWiringBad) {
     btn1Prev = b1;
     btn2Prev = b2;
     btn3Prev = b3;
     return;
   }
 
-  if (b2 && !btn2Prev) {
+  // accept only HIGH->LOW after armed (real click)
+  if (b2 && !btn2Prev && btn2Arm) {
     setScreen((Screen)((screen + 1) % SCR_COUNT));
+    Serial.printf("[BTN] next -> SCR=%u\n", (unsigned)screen);
     btnLockUntil = now + 220;
-  } else if (b3 && !btn3Prev) {
+  } else if (b3 && !btn3Prev && btn3Arm) {
     setScreen((Screen)((screen + SCR_COUNT - 1) % SCR_COUNT));
+    Serial.printf("[BTN] prev -> SCR=%u\n", (unsigned)screen);
     btnLockUntil = now + 220;
-  } else if (b1 && !btn1Prev) {
+  } else if (b1 && !btn1Prev && btn1Arm) {
     if (screen == SCR_FORCE && hxOk) {
       scale.tare();
       dirty = true;
+      Serial.println(F("[BTN] tare"));
     } else {
       setScreen(SCR_HOME);
+      Serial.println(F("[BTN] home"));
     }
     btnLockUntil = now + 220;
   }
@@ -498,6 +543,9 @@ void setup() {
   pinMode(PIN_BTN1, INPUT_PULLUP);
   pinMode(PIN_BTN2, INPUT_PULLUP);
   pinMode(PIN_BTN3, INPUT_PULLUP);
+  Serial.println(F("BTN wiring: D25/D26/D27 --[btn]--> GND  (INPUT_PULLUP)"));
+  Serial.printf("BTN idle raw: D25=%d D26=%d D27=%d  (expect 1=HIGH)\n",
+                digitalRead(PIN_BTN1), digitalRead(PIN_BTN2), digitalRead(PIN_BTN3));
 
   tft.initR(INITR_BLACKTAB);
   tft.setRotation(0);
@@ -593,9 +641,14 @@ void loop() {
   }
 
   static uint32_t lastLog = 0;
-  if (now - lastLog >= 1000) {
+  if (now - lastLog >= 500) {
     lastLog = now;
-    Serial.printf("SCR=%u SpO2=%.0f HR=%d AIR=%.0f T=%.1f P=%.0f g=%.2f HX=%.0f\n",
-                  (unsigned)screen, spo2, bpm, airQ, tC, pHpa, magG, hxUnits);
+    // pressed = raw LOW (0). Idle should stay 1 1 1
+    Serial.printf(
+      "BTN raw D25=%d D26=%d D27=%d | press %d%d%d | SCR=%u | SpO2=%.0f HR=%d AIR=%.0f T=%.1f HX=%.0f\n",
+      rawBtn1, rawBtn2, rawBtn3,
+      rawBtn1 == LOW ? 1 : 0, rawBtn2 == LOW ? 1 : 0, rawBtn3 == LOW ? 1 : 0,
+      (unsigned)screen, spo2, bpm, airQ, tC, hxUnits
+    );
   }
 }
