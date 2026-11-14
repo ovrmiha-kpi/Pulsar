@@ -1,13 +1,20 @@
 /*
- * Pulsar — multi-screen UI (128×160 ST7735)
+ * Pulsar WATCH (ESP32) — wrist unit (NOT the PC station).
  *
- * BTN2 (D26) = next screen · BTN3 (D27) = prev · BTN1 (D25) = home / tare on Force
+ * Link to PC station: Bluetooth Classic SPP (name Pulsar-DEV001).
+ * PC bridge: site/prototype → npm run bt   (reads BT COM → compute /ingest)
  *
+ * BTN2=next · BTN3=prev · BTN1=home/tare
  * Screens: Home · Heart · Air · Climate · Motion · Force
+ *
+ * Person (body): MAX30105 only → HR + SpO2.
+ * Environment: BMP280 room temp/pressure, MQ air, MPU motion, HX711 force.
+ * Serial USB = English only.
  */
 
 #include <Wire.h>
 #include <SPI.h>
+#include "BluetoothSerial.h"
 #include <Adafruit_GFX.h>
 #include <Adafruit_ST7735.h>
 #include <Adafruit_BMP280.h>
@@ -15,6 +22,15 @@
 #include "heartRate.h"
 #include <HX711.h>
 #include <math.h>
+
+#if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
+#error Bluetooth is not enabled! Enable it in board options.
+#endif
+
+static const char *DEVICE_ID = "dev001";
+static const char *BT_NAME = "Pulsar-DEV001";
+
+BluetoothSerial SerialBT;
 
 static const int PIN_TFT_CS  = 5;
 static const int PIN_TFT_DC  = 15;
@@ -65,18 +81,49 @@ static float hxUnits = 0;
 static const byte RATE_SIZE = 4;
 static byte rates[RATE_SIZE];
 static byte rateSpot = 0;
+static byte ratesFilled = 0;
 static long lastBeat = 0;
 
-static const int SPO2_N = 50;
+static const int SPO2_N = 100;
 static uint32_t redBuf[SPO2_N], irBuf[SPO2_N];
 static int spo2Idx = 0;
 static bool spo2Filled = false;
+
+// М’який підйом SpO2 (не множник 1.14 — він затискав у 100):
+// cal = raw + (98 - raw) * SPO2_LIFT   → LIFT 0.3: 85→~89, 90→~92.4
+static const float SPO2_LIFT = 0.25f;
+// SparkFun: для HR зазвичай IR ≫ 50k; 15k дає «палець» для SpO2 без ударів
+static const long FINGER_IR_MIN = 20000;
+static const long FINGER_IR_GOOD = 40000;
+
+// запасний детектор: IR AC zero-cross (не залежить від checkForBeat)
+static float irDcEma = 0;
+static float irAcPrev = 0;
+static uint32_t lastPeakMs = 0;
 
 static bool btn1Prev = true, btn2Prev = true, btn3Prev = true;  // assume pressed until HIGH seen
 static bool btn1Arm = false, btn2Arm = false, btn3Arm = false;   // arm only after release (HIGH)
 static uint32_t btnLockUntil = 0;
 static int rawBtn1 = 1, rawBtn2 = 1, rawBtn3 = 1;  // digitalRead: 1=HIGH idle
 static bool btnWiringBad = false;
+
+static bool btOk = false;   // BT stack up
+static bool btPeer = false; // phone/PC connected
+static uint8_t batteryPct = 80;
+
+enum HealthLevel : uint8_t { HL_OK = 0, HL_WARN = 1, HL_CRIT = 2 };
+enum FaceKind : uint8_t {
+  FACE_OK = 0,
+  FACE_HR,
+  FACE_SPO2,
+  FACE_AIR,
+  FACE_TEMP,    // room temperature
+  FACE_SENSOR,
+  FACE_NET      // no Bluetooth peer
+};
+static HealthLevel healthLv = HL_OK;
+static FaceKind faceKind = FACE_OK;
+static char statusLine[48] = "boot...";
 
 // ---- colors ----
 static uint16_t C(uint8_t r, uint8_t g, uint8_t b) {
@@ -185,7 +232,58 @@ static float estimateSpO2() {
   acI = sqrt(acI / n);
   if (acI < 1) return 0;
   double R = (acR / meanR) / (acI / meanI);
-  return clampf((float)(110.0 - 25.0 * R), 70.0f, 100.0f);
+  float raw = (float)(110.0 - 25.0 * R);
+  raw = clampf(raw, 70.0f, 100.0f);
+  float cal = raw + (98.0f - raw) * SPO2_LIFT;  // 0.25 ≈ легкий підйом, не до 100
+  return clampf(cal, 70.0f, 99.5f);
+}
+
+/** Записати удар у ковзне середнє BPM */
+static void noteBeat(uint32_t nowMs) {
+  long delta = (long)(nowMs - (uint32_t)lastBeat);
+  lastBeat = (long)nowMs;
+  if (delta < 300 || delta > 1500) return;  // 40–200 bpm вікно
+  int b = (int)(60000L / delta);
+  if (b < 40 || b > 180) return;
+  rates[rateSpot++] = (byte)b;
+  rateSpot %= RATE_SIZE;
+  if (ratesFilled < RATE_SIZE) ratesFilled++;
+  int sum = 0;
+  for (byte i = 0; i < ratesFilled; i++) sum += rates[i];
+  bpm = sum / ratesFilled;
+}
+
+/**
+ * AC zero-cross по IR (EMA DC). Працює навіть коли SparkFun checkForBeat мовчить —
+ * у нас раніше SpO2 (RMS) був, а HR=0 саме через це.
+ */
+static void feedIrForHr(uint32_t irSample, uint32_t nowMs) {
+  if (irDcEma < 1.0f) irDcEma = (float)irSample;
+  irDcEma = irDcEma * 0.95f + (float)irSample * 0.05f;
+  float ac = (float)irSample - irDcEma;
+
+  // rising zero-cross + мінімальна амплітуда (слабкий контакт = лише SpO2)
+  if (irAcPrev < 0.0f && ac >= 0.0f && (ac - irAcPrev) > 25.0f) {
+    if (lastPeakMs == 0 || (nowMs - lastPeakMs) > 280) {
+      if (lastPeakMs != 0) noteBeat(nowMs);
+      else lastBeat = (long)nowMs;
+      lastPeakMs = nowMs;
+    }
+  }
+  irAcPrev = ac;
+}
+
+static void resetHrState() {
+  spo2Idx = 0;
+  spo2Filled = false;
+  bpm = 0;
+  rateSpot = 0;
+  ratesFilled = 0;
+  lastBeat = 0;
+  lastPeakMs = 0;
+  irDcEma = 0;
+  irAcPrev = 0;
+  for (byte i = 0; i < RATE_SIZE; i++) rates[i] = 0;
 }
 
 // ---- drawing helpers ----
@@ -247,37 +345,195 @@ static void setScreen(Screen s) {
   dirty = true;
 }
 
+static void evaluateHealth() {
+  healthLv = HL_OK;
+  faceKind = FACE_OK;
+  snprintf(statusLine, sizeof(statusLine), "all stable");
+
+  // Link to PC = USB Serial (always) and/or Bluetooth SPP.
+  // USB plugged → telemetry works via COM bridge; BT is optional.
+  btPeer = SerialBT.hasClient();
+
+  if (!maxOk) {
+    healthLv = HL_WARN;
+    faceKind = FACE_SENSOR;
+    snprintf(statusLine, sizeof(statusLine), "MAX offline");
+  } else if (!finger) {
+    if (healthLv < HL_WARN) healthLv = HL_WARN;
+    faceKind = FACE_SENSOR;
+    snprintf(statusLine, sizeof(statusLine), "put finger");
+  } else {
+    if (spo2 > 1 && spo2 < 90) {
+      healthLv = HL_CRIT;
+      faceKind = FACE_SPO2;
+      snprintf(statusLine, sizeof(statusLine), "SpO2 critical");
+    } else if (spo2 > 1 && spo2 < 94) {
+      if (healthLv < HL_WARN) healthLv = HL_WARN;
+      faceKind = FACE_SPO2;
+      snprintf(statusLine, sizeof(statusLine), "SpO2 low");
+    }
+    if (bpm >= 120) {
+      healthLv = HL_CRIT;
+      faceKind = FACE_HR;
+      snprintf(statusLine, sizeof(statusLine), "HR critical");
+    } else if (bpm >= 100) {
+      if (healthLv < HL_WARN) healthLv = HL_WARN;
+      if (faceKind == FACE_OK || faceKind == FACE_SENSOR) faceKind = FACE_HR;
+      if (healthLv != HL_CRIT) snprintf(statusLine, sizeof(statusLine), "HR elevated");
+    }
+  }
+
+  if (airQ < 40) {
+    healthLv = HL_CRIT;
+    faceKind = FACE_AIR;
+    snprintf(statusLine, sizeof(statusLine), "air dangerous");
+  } else if (airQ < 60) {
+    if (healthLv < HL_WARN) healthLv = HL_WARN;
+    if (faceKind == FACE_OK) faceKind = FACE_AIR;
+    if (healthLv != HL_CRIT) snprintf(statusLine, sizeof(statusLine), "air poor");
+  }
+
+  // BMP280 = room air temperature
+  if (bmpOk) {
+    if (tC < 10.0f || tC > 35.0f) {
+      healthLv = HL_CRIT;
+      faceKind = FACE_TEMP;
+      snprintf(statusLine, sizeof(statusLine), "room temp extreme");
+    } else if (tC < 16.0f || tC > 28.0f) {
+      if (healthLv < HL_WARN) healthLv = HL_WARN;
+      if (faceKind == FACE_OK) faceKind = FACE_TEMP;
+      if (healthLv != HL_CRIT) snprintf(statusLine, sizeof(statusLine), "room temp warn");
+    }
+  }
+
+  if (btnWiringBad) {
+    healthLv = HL_WARN;
+    faceKind = FACE_SENSOR;
+    snprintf(statusLine, sizeof(statusLine), "BTN short?");
+  }
+}
+
+static uint16_t faceColor() {
+  if (healthLv == HL_CRIT) return C(255, 70, 70);
+  if (healthLv == HL_WARN) return C(255, 190, 60);
+  return C(50, 220, 120);
+}
+
+/** Малюємо «емодзі» круглим обличчям (GFX без шрифту emoji). */
+static void drawFace(int16_t cx, int16_t cy, int16_t r) {
+  uint16_t col = faceColor();
+  uint16_t bgFace = C(12, 14, 18);
+  tft.fillCircle(cx, cy, r, col);
+  tft.fillCircle(cx, cy, r - 3, bgFace);
+
+  // очі / рот залежно від проблеми
+  int16_t eyeY = cy - r / 4;
+  int16_t eyeDX = r / 3;
+
+  if (faceKind == FACE_SPO2) {
+    // X-очі (запаморочення / гіпоксія)
+    tft.drawLine(cx - eyeDX - 4, eyeY - 4, cx - eyeDX + 4, eyeY + 4, col);
+    tft.drawLine(cx - eyeDX - 4, eyeY + 4, cx - eyeDX + 4, eyeY - 4, col);
+    tft.drawLine(cx + eyeDX - 4, eyeY - 4, cx + eyeDX + 4, eyeY + 4, col);
+    tft.drawLine(cx + eyeDX - 4, eyeY + 4, cx + eyeDX + 4, eyeY - 4, col);
+    tft.drawCircle(cx, cy + r / 3, 5, col);  // відкритий рот
+  } else if (faceKind == FACE_HR) {
+    // широко відкриті очі + хвилястий рот
+    tft.fillCircle(cx - eyeDX, eyeY, 4, col);
+    tft.fillCircle(cx + eyeDX, eyeY, 4, col);
+    tft.drawCircle(cx - eyeDX, eyeY, 6, col);
+    tft.drawCircle(cx + eyeDX, eyeY, 6, col);
+    tft.drawLine(cx - 8, cy + 8, cx - 3, cy + 12, col);
+    tft.drawLine(cx - 3, cy + 12, cx + 3, cy + 8, col);
+    tft.drawLine(cx + 3, cy + 8, cx + 8, cy + 12, col);
+  } else if (faceKind == FACE_AIR) {
+    // хворе: напівзакриті очі + язик
+    tft.drawLine(cx - eyeDX - 5, eyeY, cx - eyeDX + 5, eyeY, col);
+    tft.drawLine(cx + eyeDX - 5, eyeY, cx + eyeDX + 5, eyeY, col);
+    tft.fillCircle(cx, cy + r / 3, 6, col);
+    tft.fillRect(cx - 3, cy + r / 3, 6, 7, col);
+  } else if (faceKind == FACE_TEMP) {
+    // холод/жар: крапля/лінія поту
+    tft.fillCircle(cx - eyeDX, eyeY, 3, col);
+    tft.fillCircle(cx + eyeDX, eyeY, 3, col);
+    tft.drawLine(cx + r / 2, cy - r / 2, cx + r / 2 + 2, cy - r / 6, col);
+    tft.drawCircle(cx, cy + r / 4, 7, col);
+  } else if (faceKind == FACE_SENSOR || faceKind == FACE_NET) {
+    // нейтрально-сумне
+    tft.fillCircle(cx - eyeDX, eyeY, 3, col);
+    tft.fillCircle(cx + eyeDX, eyeY, 3, col);
+    tft.drawCircle(cx, cy + r / 3, 6, col);
+    tft.fillRect(cx - 6, cy + r / 3 - 6, 12, 6, bgFace);
+  } else {
+    // усмішка OK
+    tft.fillCircle(cx - eyeDX, eyeY, 3, col);
+    tft.fillCircle(cx + eyeDX, eyeY, 3, col);
+    for (int a = 40; a <= 140; a += 8) {
+      float rad = a * 0.0174533f;
+      tft.fillCircle(cx + (int16_t)(cosf(rad) * (r / 2.4f)),
+                     cy + 4 + (int16_t)(sinf(rad) * (r / 2.8f)), 1, col);
+    }
+  }
+}
+
+// Do not name this btStart() — conflicts with ESP32 core esp32-hal-bt.h
+static bool initBluetoothSpp() {
+  btOk = SerialBT.begin(BT_NAME);
+  Serial.printf("BT SPP name=%s → %s\n", BT_NAME, btOk ? "OK" : "FAIL");
+  return btOk;
+}
+
+/** JSON line → USB Serial (COM) and optional BT SPP. PC: npm run bt -- COM11 */
+static bool sendTelemetry() {
+  btPeer = SerialBT.hasClient();
+
+  // Person vitals = MAX only. temp = room air (BMP280), not skin.
+  float sendHr = (finger && bpm > 0) ? (float)bpm : 0.0f;
+  float sendSp = (finger && spo2 > 1) ? spo2 : 0.0f;
+  float sendT = bmpOk ? tC : 0.0f;
+
+  char body[192];
+  snprintf(body, sizeof(body),
+           "{\"device_id\":\"%s\",\"hr\":%.1f,\"spo2\":%.1f,\"temp\":%.2f,\"battery\":%u}\n",
+           DEVICE_ID, sendHr, sendSp, sendT, (unsigned)batteryPct);
+
+  // USB path (always when cable plugged + bridge listening)
+  Serial.print(body);
+
+  size_t nBt = 0;
+  if (btOk && btPeer) nBt = SerialBT.print(body);
+
+  static uint32_t lastHint = 0;
+  if (millis() - lastHint > 5000) {
+    lastHint = millis();
+    Serial.printf("# link usb=1 bt_peer=%d\n", btPeer ? 1 : 0);
+  }
+  return true;
+}
+
 // ---- screens ----
 static void drawHome(uint16_t bg) {
+  evaluateHealth();
   tft.fillScreen(bg);
   uint16_t accent = C(0, 200, 210);
   uint16_t mute = C(70, 90, 100);
 
-  printCentered(64, 22, "PULSAR", 2, accent, bg);
-  printCentered(64, 48, "wrist station", 1, C(230, 240, 245), bg);
-  printCentered(64, 66, "v1", 1, mute, bg);
+  // Compact layout: 128x160 — no overlap with page dots at y=152
+  printCentered(64, 2, "PULSAR", 1, accent, bg);
+  drawFace(64, 40, 24);
 
-  // status chips
-  auto chip = [&](int16_t x, int16_t y, const char *lab, bool ok) {
-    uint16_t c = ok ? C(40, 180, 120) : C(180, 70, 70);
-    tft.drawRoundRect(x, y, 38, 16, 3, c);
-    tft.setTextSize(1);
-    tft.setTextColor(c, bg);
-    tft.setCursor(x + 4, y + 4);
-    tft.print(lab);
-  };
-  chip(6, 88, "MAX", maxOk);
-  chip(48, 88, "BMP", bmpOk);
-  chip(90, 88, "MPU", mpuOk);
-  chip(27, 110, "HX", hxOk);
-  chip(69, 110, "MQ", mqRaw > 20);
+  uint16_t stCol = faceColor();
+  printCentered(64, 72, statusLine, 1, stCol, bg);
 
-  if (btnWiringBad) {
-    printCentered(64, 128, "BTN SHORT!", 1, C(255, 80, 80), bg);
-    printCentered(64, 140, "use OPPOSITE pins", 1, C(255, 160, 80), bg);
-  } else {
-    printCentered(64, 132, "BTN2 next  BTN3 back", 1, mute, bg);
-  }
+  char bit[40];
+  if (finger && bpm > 0) snprintf(bit, sizeof(bit), "HR%d SpO2%.0f", bpm, spo2);
+  else snprintf(bit, sizeof(bit), "AIR%.0f Rm%.1f", airQ, tC);
+  printCentered(64, 86, bit, 1, mute, bg);
+
+  const char *net = btPeer ? "USB+BT" : "USB link";
+  printCentered(64, 100, net, 1, C(80, 180, 120), bg);
+
+  printCentered(64, 114, DEVICE_ID, 1, mute, bg);
   drawDots(SCR_HOME, accent, C(40, 50, 55));
 }
 
@@ -366,7 +622,7 @@ static void drawClimate() {
   uint16_t tBg = C(28, 22, 14);
   tft.fillRoundRect(8, 28, 112, 52, 6, tBg);
   tft.drawRoundRect(8, 28, 112, 52, 6, tCol);
-  printCentered(64, 34, "TEMPERATURE", 1, C(180, 150, 100), tBg);
+  printCentered(64, 34, "ROOM TEMP", 1, C(180, 150, 100), tBg);
   char tStr[12];
   snprintf(tStr, sizeof(tStr), "%.1f", tC);
   printCentered(64, 48, tStr, 3, tCol, tBg);
@@ -375,12 +631,12 @@ static void drawClimate() {
   tft.setCursor(98, 58);
   tft.print('C');
 
-  // pressure block
+  // pressure = environment (BMP280)
   uint16_t pCol = C(120, 200, 180);
   uint16_t pBg = C(18, 28, 26);
   tft.fillRoundRect(8, 88, 112, 44, 6, pBg);
   tft.drawRoundRect(8, 88, 112, 44, 6, pCol);
-  printCentered(64, 94, "PRESSURE", 1, C(120, 160, 150), pBg);
+  printCentered(64, 94, "AIR PRESS", 1, C(120, 160, 150), pBg);
   char pStr[16];
   snprintf(pStr, sizeof(pStr), "%.0f hPa", pHpa);
   printCentered(64, 110, pStr, 2, pCol, pBg);
@@ -562,18 +818,28 @@ void setup() {
 
   bmpOk = bmp.begin(0x76) || bmp.begin(0x77);
   mpuOk = mpuBegin();
-  maxOk = particle.begin(Wire, I2C_SPEED_STANDARD);
+  maxOk = particle.begin(Wire, I2C_SPEED_FAST);
   if (maxOk) {
-    particle.setup(0x2F, 4, 2, 100, 411, 4096);
-    particle.setPulseAmplitudeRed(0x2F);
-    particle.setPulseAmplitudeIR(0x2F);
+    // як SparkFun Example5/6: FIFO + стабільний rate — інакше checkForBeat майже завжди 0
+    // power, avg, ledMode(2=red+IR), rate, pulseWidth, adcRange
+    particle.setup(0x1F, 4, 2, 100, 411, 4096);
+    particle.setPulseAmplitudeRed(0x3F);
+    particle.setPulseAmplitudeIR(0x3F);
     particle.setPulseAmplitudeGreen(0);
+    Serial.println(F("MAX OK — палець щільно (IR>~40k). HR з FIFO, не з рідкого getIR."));
+  } else {
+    Serial.println(F("MAX FAIL — перевір 3V3/GND/SDA=D21/SCL=D22 (припаяні штирі)"));
   }
 
   hxOk = hxTry(PIN_HX_DT, PIN_HX_SCK);
   if (!hxOk) hxOk = hxTry(PIN_HX_SCK, PIN_HX_DT);
 
   Serial.printf("BMP=%d MPU=%d MAX=%d HX=%d\n", bmpOk, mpuOk, maxOk, hxOk);
+
+  printCentered(64, 118, "BT...", 1, C(180, 180, 100), C(6, 10, 14));
+  initBluetoothSpp();
+  if (btOk && SerialBT.hasClient()) sendTelemetry();
+
   dirty = true;
 }
 
@@ -593,15 +859,23 @@ void loop() {
   if (mpuOk) mpuReadAccel();
 
   if (maxOk) {
-    ir = particle.getIR();
-    red = particle.getRed();
-    finger = (ir > 20000);
-    if (!finger) {
-      spo2Idx = 0;
-      spo2Filled = false;
-      spo2 *= 0.9f;
-      bpm = 0;
-    } else {
+    // FIFO: рівномірні семпли → checkForBeat працює. getIR() раз/loop = HR завжди 0.
+    particle.check();
+    uint32_t nowMs = millis();
+    int took = 0;
+    while (particle.available()) {
+      red = (long)particle.getFIFORed();
+      ir = (long)particle.getFIFOIR();
+      particle.nextSample();
+      took++;
+
+      finger = (ir > FINGER_IR_MIN);
+      if (!finger) {
+        resetHrState();
+        spo2 *= 0.9f;
+        continue;
+      }
+
       redBuf[spo2Idx] = (uint32_t)red;
       irBuf[spo2Idx] = (uint32_t)ir;
       spo2Idx++;
@@ -609,20 +883,29 @@ void loop() {
         spo2Idx = 0;
         spo2Filled = true;
       }
-      if (checkForBeat(ir)) {
-        long delta = millis() - lastBeat;
-        lastBeat = millis();
-        int b = (int)(60000.0 / delta);
-        if (b > 40 && b < 180) {
-          rates[rateSpot++] = (byte)b;
-          rateSpot %= RATE_SIZE;
-          int sum = 0;
-          for (byte i = 0; i < RATE_SIZE; i++) sum += rates[i];
-          bpm = sum / RATE_SIZE;
-        }
+
+      // 1) офіційний SparkFun PBA
+      if (checkForBeat(ir)) noteBeat(nowMs);
+      // 2) завжди годуємо AC zero-cross (підхоплює, якщо PBA мовчить)
+      feedIrForHr((uint32_t)ir, nowMs);
+    }
+
+    if (took == 0) {
+      // порожній FIFO — оновити finger по останньому ir
+      finger = (ir > FINGER_IR_MIN);
+      if (!finger) {
+        resetHrState();
+        spo2 *= 0.9f;
       }
+    }
+
+    if (finger) {
       float s = estimateSpO2();
       if (s > 1) spo2 = (spo2 < 1) ? s : spo2 * 0.85f + s * 0.15f;
+      // якщо контакт слабкий — SpO2 може бути, HR лишається 0 (чесно)
+      if (ir < FINGER_IR_GOOD && bpm < 1) {
+        // нічого: чекаємо щільніший палець
+      }
     }
   }
 
@@ -632,23 +915,30 @@ void loop() {
   }
 
   static uint32_t lastUi = 0;
+  static uint32_t lastNet = 0;
   uint32_t now = millis();
-  bool animScreen = (screen == SCR_HEART || screen == SCR_AIR || screen == SCR_MOTION);
-  uint32_t period = animScreen ? 80 : 400;
+
+  // JSON → USB/BT кожну 1 с (сайт/бек читають одразу; UI на екрані окремо)
+  if (now - lastNet >= 1000) {
+    lastNet = now;
+    sendTelemetry();
+    if (screen == SCR_HOME) dirty = true;
+  }
+
+  bool animScreen = (screen == SCR_HEART || screen == SCR_AIR || screen == SCR_MOTION || screen == SCR_HOME);
+  uint32_t period = animScreen ? 200 : 400;
   if (dirty || (now - lastUi >= period)) {
     lastUi = now;
     drawCurrent(now / 180.0f);
   }
 
+  // рідкий debug — щоб не дублювати JSON кожну секунду в міст
   static uint32_t lastLog = 0;
-  if (now - lastLog >= 500) {
+  if (now - lastLog >= 5000) {
     lastLog = now;
-    // pressed = raw LOW (0). Idle should stay 1 1 1
     Serial.printf(
-      "BTN raw D25=%d D26=%d D27=%d | press %d%d%d | SCR=%u | SpO2=%.0f HR=%d AIR=%.0f T=%.1f HX=%.0f\n",
-      rawBtn1, rawBtn2, rawBtn3,
-      rawBtn1 == LOW ? 1 : 0, rawBtn2 == LOW ? 1 : 0, rawBtn3 == LOW ? 1 : 0,
-      (unsigned)screen, spo2, bpm, airQ, tC, hxUnits
+      "# SCR=%u SpO2=%.0f HR=%d IR=%ld finger=%d AIR=%.0f T=%.1f\n",
+      (unsigned)screen, spo2, bpm, ir, finger ? 1 : 0, airQ, tC
     );
   }
 }

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ASTROVITAL — Панель пристроїв</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="page">
+    <header class="top">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">✦</div>
+        <div>
+          <h1>ASTROVITAL <span>Система моніторингу здоров’я в космосі</span></h1>
+          <p class="meta">
+            <strong>Панель екіпажу</strong>
+            <span class="dot">·</span>
+            <span id="mission">Місія місячного дослідження</span>
+          </p>
+        </div>
+      </div>
+      <div class="top-right">
+        <span id="dbMode" class="pill">БД…</span>
+        <span id="clock" class="clock"></span>
+        <span id="live" class="live">● онлайн</span>
+      </div>
+    </header>
+
+    <section class="summary" id="summary"></section>
+
+    <section class="toolbar">
+      <label class="search">
+        <span class="sr">Пошук</span>
+        <input id="search" type="search" placeholder="Пошук пристрою…" autocomplete="off" />
+      </label>
+      <div class="filters" id="filters" role="tablist"></div>
+      <div class="toolbar-actions">
+        <button type="button" id="btnRefresh" class="tool-btn">Оновити</button>
+        <button type="button" id="btnUsb" class="tool-btn accent">USB знову</button>
+      </div>
+      <p class="hint" id="hint">Натисніть плитку — вона розсуне сусідні. Дані лише з реального Pulsar.</p>
+    </section>
+
+    <section class="board" id="crew" aria-label="Плитки пристроїв"></section>
+  </div>
+
+  <div class="alarm-banner" id="alarmBanner" hidden></div>
+  <div class="toast" id="toast" hidden></div>
+  <script src="/app.js"></script>
+</body>
+</html>

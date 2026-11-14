@@ -13,12 +13,16 @@
 
 ## Архітектура
 
+**Станція = ПК** (сайт + бек + compute). **ESP32 = годинник/КПК** (датчики + TFT).  
+Деталі: [`../ARCHITECTURE.md`](../ARCHITECTURE.md)
+
 ```mermaid
 flowchart LR
-  Sensors[Усі датчики] --> MCU[ESP32]
-  MCU --> TFT[TFT-дашборд]
-  MCU --> SD[microSD]
-  MCU -->|WiFi JSON| Laptop[Ноутбук-сервер]
+  Sensors[Усі датчики] --> Watch[ESP32 годинник]
+  Watch --> TFT[TFT первинний стан]
+  Watch -->|WiFi JSON /ingest| PC[ПК станція]
+  PC --> Web[Сайт екіпажу]
+  PC --> DB[БД + аналіз]
 ```
 
 ## Куплено (факт, 2026-11)
@@ -77,6 +81,7 @@ FSR і радіація **поза збіркою**. М’язи/кістки: �
 
 Датчики + екран + SD + корпус ≈ **1900–2200**, стеля **4500**.
 
-## Прошивка
+## Прошивка годинника
 
-- `Physik/station/sketch.ino` — одна прошивка під **звичайний ESP32**
+- **`Physik/watch/pulsar_watch/pulsar_watch.ino`** — ESP32 (годинник)
+- Станція на ПК: `site/prototype/` (`npm run compute|api|web`)

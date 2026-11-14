@@ -1,3 +1,1 @@
-Connection test — can delete this file.
-Created: 2026-11-14
-Repo: ovrmiha-kpi/Project
+site folder OK — connection test from origin/master
