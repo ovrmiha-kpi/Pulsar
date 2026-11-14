@@ -1,5 +1,5 @@
 /*
- * Astro Health — multi-screen UI (128×160 ST7735)
+ * Pulsar — multi-screen UI (128×160 ST7735)
  *
  * BTN2 (D26) = next screen · BTN3 (D27) = prev · BTN1 (D25) = home / tare on Force
  *
@@ -253,9 +253,9 @@ static void drawHome(uint16_t bg) {
   uint16_t accent = C(0, 200, 210);
   uint16_t mute = C(70, 90, 100);
 
-  printCentered(64, 18, "ASTRO", 2, accent, bg);
-  printCentered(64, 40, "HEALTH", 2, C(230, 240, 245), bg);
-  printCentered(64, 66, "station", 1, mute, bg);
+  printCentered(64, 22, "PULSAR", 2, accent, bg);
+  printCentered(64, 48, "wrist station", 1, C(230, 240, 245), bg);
+  printCentered(64, 66, "v1", 1, mute, bg);
 
   // status chips
   auto chip = [&](int16_t x, int16_t y, const char *lab, bool ok) {
@@ -538,7 +538,7 @@ static void handleButtons() {
 void setup() {
   Serial.begin(115200);
   delay(300);
-  Serial.println(F("=== Astro Health UI ==="));
+  Serial.println(F("=== Pulsar UI ==="));
 
   pinMode(PIN_BTN1, INPUT_PULLUP);
   pinMode(PIN_BTN2, INPUT_PULLUP);
@@ -551,7 +551,7 @@ void setup() {
   tft.setRotation(0);
   tft.setTextWrap(false);
   tft.fillScreen(C(6, 10, 14));
-  printCentered(64, 70, "ASTRO", 2, C(0, 200, 210), C(6, 10, 14));
+  printCentered(64, 70, "PULSAR", 2, C(0, 200, 210), C(6, 10, 14));
   printCentered(64, 96, "booting...", 1, C(100, 120, 130), C(6, 10, 14));
 
   analogReadResolution(12);
