@@ -29,6 +29,24 @@
 
 ## Запуск
 
+Найпростіше для колег — скрипт у [`prototype/`](prototype/) (див. [`prototype/README.md`](prototype/README.md)):
+
+```powershell
+cd prototype
+.\start.ps1              # Windows: install + server + site
+.\start.ps1 -Com COM11   # + USB-міст
+.\start.ps1 -Demo        # + UDP без годинника
+```
+
+```bash
+cd prototype
+./start.sh
+./start.sh --com /dev/ttyUSB0
+./start.sh --demo
+```
+
+Вручну:
+
 ```bash
 # 1) MySQL (опційно; без нього server працює в RAM)
 cd prototype/server
