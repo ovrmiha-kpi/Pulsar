@@ -14,6 +14,9 @@ const COMPUTE =
   process.env.COMPUTE_URL ||
   process.env.PULSAR_INGEST ||
   "http://127.0.0.1:4100/ingest";
+const OUTBOUND =
+  process.env.PULSAR_OUTBOUND ||
+  COMPUTE.replace(/\/ingest\/?$/, "") + "/api/bridge/outbound";
 const BAUD = Number(process.env.BT_BAUD || 115200);
 const DEFAULT_ID = process.env.DEVICE_ID || "dev001";
 const RETRY_MS = Number(process.env.BT_RETRY_MS || 2000);
@@ -28,6 +31,28 @@ async function postIngest(obj) {
   const text = await res.text();
   if (!res.ok) throw new Error(`${res.status} ${text}`);
   return text;
+}
+
+/** Забрати з сервера команди для годинника і записати в Serial. */
+async function pullOutbound(port, deviceId) {
+  const id = deviceId || DEFAULT_ID;
+  try {
+    const res = await fetch(
+      `${OUTBOUND}?device_id=${encodeURIComponent(id)}`,
+      { cache: "no-store" }
+    );
+    if (!res.ok) return;
+    const data = await res.json();
+    const cmds = data.commands || [];
+    for (const c of cmds) {
+      const line = String(c.line || "").trim();
+      if (!line) continue;
+      port.write(line.endsWith("\n") ? line : line + "\n");
+      console.log(`[bt] → device ${id}: ${line.slice(0, 80)}`);
+    }
+  } catch (e) {
+    // тихо — сервер може бути ще не піднятий
+  }
 }
 
 function parsePayload(raw) {
@@ -86,6 +111,7 @@ async function openSession(portPath) {
     let pumping = false;
     let lastLog = 0;
     let closed = false;
+    let lastDeviceId = DEFAULT_ID;
 
     async function pump() {
       if (pumping || closed) return;
@@ -119,17 +145,21 @@ async function openSession(portPath) {
       const obj = parsePayload(line);
       if (!obj) return;
       tip = obj;
+      if (obj.device_id) lastDeviceId = obj.device_id;
       tipSeq++;
       pump();
     });
 
     port.on("open", () => {
-      console.log(`[bt] linked ${portPath} — FILO + LINK keepalive → ESP`);
+      console.log(
+        `[bt] linked ${portPath} — FILO + LINK + outbound REC → ESP`
+      );
       try {
         port.write("LINK\n");
       } catch (_) {}
       resolve({
         port,
+        getDeviceId: () => lastDeviceId,
         close: () =>
           new Promise((res) => {
             if (closed) return res();
@@ -196,6 +226,11 @@ async function main() {
           try {
             session.port.write("LINK\n");
           } catch (_) {}
+          // команди з сервера (глибокий аналіз тощо)
+          await pullOutbound(
+            session.port,
+            session.getDeviceId ? session.getDeviceId() : DEFAULT_ID
+          );
         }
         const k = kickMtime();
         if (k > lastKick) {

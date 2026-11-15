@@ -138,6 +138,8 @@ enum FaceKind : uint8_t {
 static HealthLevel healthLv = HL_OK;
 static FaceKind faceKind = FACE_OK;
 static char statusLine[48] = "boot...";
+static char stationRec[64] = "";           // остання рекомендація з сервера
+static uint32_t stationRecUntil = 0;       // показувати до цього millis
 
 // ---- colors ----
 static uint16_t C(uint8_t r, uint8_t g, uint8_t b) {
@@ -425,6 +427,13 @@ static void evaluateHealth() {
     faceKind = FACE_SENSOR;
     snprintf(statusLine, sizeof(statusLine), "BTN short?");
   }
+
+  // Рекомендація з сервера (глибокий аналіз тощо) перебиває статус на 2 хв
+  if ((int32_t)(stationRecUntil - millis()) > 0 && stationRec[0]) {
+    if (healthLv < HL_WARN) healthLv = HL_WARN;
+    faceKind = FACE_SENSOR;
+    snprintf(statusLine, sizeof(statusLine), "%.40s", stationRec);
+  }
 }
 
 static uint16_t faceColor() {
@@ -512,10 +521,10 @@ static bool initSdCard() {
   return true;
 }
 
-/** PC bridge: "LINK\\n" every few s → USB вважається online */
+/** PC bridge: "LINK\\n" keepalive; "REC|CODE|text" — рекомендація з сервера */
 static void pollStationLinkBytes() {
   while (Serial.available() > 0) {
-    static char buf[24];
+    static char buf[96];
     static uint8_t n = 0;
     char c = (char)Serial.read();
     if (c == '\r') continue;
@@ -523,6 +532,21 @@ static void pollStationLinkBytes() {
       buf[n < sizeof(buf) ? n : sizeof(buf) - 1] = 0;
       if (n >= 4 && buf[0] == 'L' && buf[1] == 'I' && buf[2] == 'N' && buf[3] == 'K') {
         usbLinkUntil = millis() + 10000UL;
+      } else if (n >= 5 && buf[0] == 'R' && buf[1] == 'E' && buf[2] == 'C' && buf[3] == '|') {
+        // REC|DEEP_CHECK|message…
+        const char *code = buf + 4;
+        const char *msg = strchr(code, '|');
+        if (msg) {
+          msg++;
+          snprintf(stationRec, sizeof(stationRec), "%s", msg);
+        } else {
+          snprintf(stationRec, sizeof(stationRec), "%s", code);
+        }
+        stationRecUntil = millis() + 120000UL;  // 2 хв на екрані
+        healthLv = HL_WARN;
+        faceKind = FACE_SENSOR;
+        snprintf(statusLine, sizeof(statusLine), "SERVER REC");
+        Serial.printf("# REC from station: %s\n", stationRec);
       }
       n = 0;
     } else if (n < sizeof(buf) - 1) {
