@@ -1,18 +1,21 @@
 /**
  * Pulsar SERVER (low-latency)
  *
- * Hot path:  UDP JSON → RAM ring → trends → WS push  (MySQL async, не в критичному шляху)
+ * Hot path:  UDP JSON → RAM ring → trends → WS push  (MySQL async)
  * Cold path: MySQL архів
- * Debug:     ТІЛЬКИ термінал (ніякого сайту тут)
+ * Admin:     /panel — керування пристроями / симуляція
  *
  * Порти:
- *   UDP  4101  — ingest з пристрою/шлюзу (основний)
- *   HTTP 4100  — /ingest (запас), /api/* для майбутнього site/
- *   WS   4100  — /ws     — push стану сайту (мс)
+ *   UDP  4101  — ingest з пристрою/шлюзу
+ *   HTTP 4100  — /ingest, /api/*, /panel
+ *   WS   4100  — /ws
  */
 
 import http from "http";
 import dgram from "dgram";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 import { WebSocketServer } from "ws";
 import { analyzeSeries } from "./trends.js";
 import {
@@ -22,8 +25,23 @@ import {
   pushSample,
   seriesOf,
   isConnected,
+  renameDevice,
+  setDeviceRole,
+  clearRing,
 } from "./memory.js";
-import { initMysql, enqueuePersist, getSeed, mysqlReady } from "./mysql.js";
+import { initMysql, enqueuePersist, getSeed, mysqlReady, enqueueMeta } from "./mysql.js";
+import {
+  startSim,
+  stopSim,
+  stopAll,
+  isSimulating,
+  getSimState,
+  listSims,
+  listProfiles,
+} from "./sim.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const PUBLIC = path.join(__dirname, "..", "public");
 
 const HTTP_PORT = Number(process.env.PORT || 4100);
 const UDP_PORT = Number(process.env.UDP_PORT || 4101);
@@ -60,6 +78,11 @@ function ingestFast(raw, source) {
   const device = getDevice(key);
   if (!device) throw new Error("unknown device: " + key);
 
+  // Поки симуляція увімкнена — реальні USB/UDP пакети цього id ігноруємо
+  if (isSimulating(device.id) && !String(source).startsWith("sim:")) {
+    return { ok: true, skipped: "simulating", device_id: device.id, us: 0 };
+  }
+
   const prev = seriesOf(device.id, 39);
   const series = [...prev, { t: recorded_at, hr, spo2, temp }];
   const analysis = analyzeSeries(series);
@@ -80,11 +103,13 @@ function ingestFast(raw, source) {
     type: "sample",
     device_id: device.id,
     device_no: device.device_no,
+    label: device.label,
     role: device.role,
     battery: device.battery,
     recorded_at,
     analysis,
     connected: true,
+    simulating: isSimulating(device.id),
     sos: sosState.get(device.id)?.active === true,
   });
 
@@ -94,7 +119,7 @@ function ingestFast(raw, source) {
   if (now - lastLogMs >= 500) {
     lastLogMs = now;
     console.log(
-      `[${source}] ${device.device_no} hr=${analysis.hr} spo2=${analysis.spo2} temp=${analysis.temp} ${analysis.statusLabel}  ${dtUs.toFixed(0)}µs  n=${ingestCount}`
+      `[${source}] ${device.label || device.device_no} hr=${analysis.hr} spo2=${analysis.spo2} temp=${analysis.temp} ${analysis.statusLabel}  ${dtUs.toFixed(0)}µs  n=${ingestCount}`
     );
   }
   return { ok: true, device_id: device.id, us: dtUs, analysis };
@@ -104,14 +129,18 @@ function devicePayload(d) {
   const connected = isConnected(d, OFFLINE_MS);
   const a = d.analysis || analyzeSeries(d.ring);
   const sos = sosState.get(d.id)?.active === true;
+  const sim = getSimState(d.id);
   return {
     id: d.id,
     device_no: d.device_no,
+    label: d.label || d.device_no,
     role: d.role,
     battery: d.battery,
     connected,
     last_seen_at: d.last_seen_at,
     sos,
+    simulating: !!sim,
+    sim,
     ...(connected
       ? a
       : {
@@ -131,9 +160,11 @@ function dashboard() {
     updatedAt: nowIso(),
     mysql: mysqlReady(),
     ingestCount,
+    sims: listSims(),
     summary: {
       total: devices.length,
       online: devices.filter((x) => x.connected).length,
+      simulating: devices.filter((x) => x.simulating).length,
       critical: devices.filter((x) => x.connected && x.status === "critical").length,
       warning: devices.filter((x) => x.connected && x.status === "warning").length,
       normal: devices.filter((x) => x.connected && x.status === "normal").length,
@@ -149,6 +180,18 @@ function broadcastWs(msg) {
   for (const ws of wsClients) {
     if (ws.readyState === 1) ws.send(data);
   }
+}
+
+function broadcastMeta(device) {
+  broadcastWs({
+    type: "device_meta",
+    device_id: device.id,
+    device_no: device.device_no,
+    label: device.label,
+    role: device.role,
+    simulating: isSimulating(device.id),
+    sim: getSimState(device.id),
+  });
 }
 
 function readBody(req) {
@@ -176,6 +219,155 @@ function sendJson(res, code, obj) {
   res.end(body);
 }
 
+const MIME = {
+  ".html": "text/html; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".svg": "image/svg+xml",
+  ".png": "image/png",
+  ".ico": "image/x-icon",
+};
+
+function servePublic(urlPath, res) {
+  const rel = urlPath === "/panel" || urlPath === "/panel/"
+    ? "panel.html"
+    : urlPath.replace(/^\/panel\//, "");
+  const safe = path.normalize(rel).replace(/^(\.\.[/\\])+/, "");
+  const file = path.join(PUBLIC, safe);
+  if (!file.startsWith(PUBLIC) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) {
+    return false;
+  }
+  const ext = path.extname(file);
+  res.writeHead(200, {
+    "Content-Type": MIME[ext] || "application/octet-stream",
+    "Cache-Control": "no-store",
+  });
+  fs.createReadStream(file).pipe(res);
+  return true;
+}
+
+async function handleAdmin(url, req, res) {
+  const parts = url.pathname.split("/").filter(Boolean);
+  // /api/admin/...
+  if (parts[0] !== "api" || parts[1] !== "admin") return false;
+
+  if (url.pathname === "/api/admin/status" && req.method === "GET") {
+    sendJson(res, 200, {
+      ok: true,
+      mysql: mysqlReady(),
+      udp: UDP_PORT,
+      http: HTTP_PORT,
+      ingestCount,
+      profiles: listProfiles(),
+      sims: listSims(),
+      dashboard: dashboard(),
+    });
+    return true;
+  }
+
+  if (url.pathname === "/api/admin/sim/stop-all" && req.method === "POST") {
+    stopAll();
+    console.log("[admin] stop all sims");
+    broadcastWs({ type: "admin", action: "sim_stop_all", dashboard: dashboard() });
+    sendJson(res, 200, { ok: true, sims: [] });
+    return true;
+  }
+
+  // /api/admin/devices/:id/...
+  if (parts[2] === "devices" && parts[3]) {
+    const id = decodeURIComponent(parts[3]);
+    const d = getDevice(id);
+    if (!d) {
+      sendJson(res, 404, { error: "device not found" });
+      return true;
+    }
+    const action = parts[4];
+    const body =
+      req.method === "POST" || req.method === "PATCH"
+        ? JSON.parse((await readBody(req)) || "{}")
+        : {};
+
+    if (action === "rename" && req.method === "POST") {
+      renameDevice(d.id, body.label ?? body.name);
+      enqueueMeta({ deviceId: d.id, label: d.label, role: d.role });
+      console.log(`[admin] rename ${d.device_no} → ${d.label}`);
+      broadcastMeta(d);
+      sendJson(res, 200, { ok: true, device: devicePayload(d) });
+      return true;
+    }
+
+    if (action === "role" && req.method === "POST") {
+      setDeviceRole(d.id, body.role);
+      enqueueMeta({ deviceId: d.id, label: d.label, role: d.role });
+      console.log(`[admin] role ${d.device_no} → ${d.role}`);
+      broadcastMeta(d);
+      sendJson(res, 200, { ok: true, device: devicePayload(d) });
+      return true;
+    }
+
+    if (action === "sim" && req.method === "POST") {
+      const on = body.on !== false && body.on !== 0 && body.on !== "0";
+      if (!on) {
+        stopSim(d.id);
+        console.log(`[admin] sim OFF ${d.device_no}`);
+      } else {
+        startSim(d.id, {
+          hz: body.hz,
+          profile: body.profile || "normal",
+          emit: (sample) => {
+            try {
+              ingestFast(sample, `sim:${d.id}`);
+            } catch (e) {
+              console.warn("[sim]", e.message);
+            }
+          },
+        });
+        console.log(
+          `[admin] sim ON ${d.device_no} profile=${body.profile || "normal"} hz=${body.hz || 1}`
+        );
+      }
+      broadcastMeta(d);
+      sendJson(res, 200, { ok: true, device: devicePayload(d) });
+      return true;
+    }
+
+    if (action === "clear" && req.method === "POST") {
+      clearRing(d.id);
+      console.log(`[admin] clear ring ${d.device_no}`);
+      broadcastWs({ type: "admin", action: "clear", device_id: d.id, dashboard: dashboard() });
+      sendJson(res, 200, { ok: true, device: devicePayload(d) });
+      return true;
+    }
+
+    if (action === "sos" && req.method === "POST") {
+      const active = body.active !== false && body.active !== 0;
+      if (active) {
+        const rec = { active: true, timestamp: nowIso() };
+        sosState.set(d.id, rec);
+        broadcastWs({ type: "sos", device_id: d.id, device_no: d.device_no, ...rec });
+      } else {
+        sosState.delete(d.id);
+        broadcastWs({
+          type: "sos",
+          device_id: d.id,
+          device_no: d.device_no,
+          active: false,
+          timestamp: nowIso(),
+        });
+      }
+      console.log(`[admin] sos ${active ? "ON" : "OFF"} ${d.device_no}`);
+      sendJson(res, 200, { ok: true, device: devicePayload(d) });
+      return true;
+    }
+
+    sendJson(res, 404, { error: "unknown admin action" });
+    return true;
+  }
+
+  sendJson(res, 404, { error: "not found" });
+  return true;
+}
+
 async function main() {
   seedDevices(getSeed());
 
@@ -186,14 +378,12 @@ async function main() {
     console.warn("[mysql] підніми: npm run db:up   (docker compose)");
   }
 
-  // --- UDP ingest (основний швидкий канал) ---
   const udp = dgram.createSocket("udp4");
   udp.on("message", (msg, rinfo) => {
     try {
       const raw = JSON.parse(msg.toString("utf8"));
       ingestFast(raw, `udp:${rinfo.address}`);
     } catch (e) {
-      // мовчки дропаємо сміття — без спаму в hot path
       if (Date.now() - lastLogMs > 2000) {
         console.warn(`[udp] bad packet from ${rinfo.address}: ${e.message}`);
       }
@@ -203,12 +393,11 @@ async function main() {
     console.log(`[udp] ingest 0.0.0.0:${UDP_PORT}`);
   });
 
-  // --- HTTP + WS (API для site/, запасний ingest) ---
   const server = http.createServer(async (req, res) => {
     if (req.method === "OPTIONS") {
       res.writeHead(204, {
         "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+        "Access-Control-Allow-Methods": "GET,POST,PATCH,OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type",
       });
       return res.end();
@@ -224,10 +413,10 @@ async function main() {
           udp: UDP_PORT,
           http: HTTP_PORT,
           ingestCount,
+          sims: listSims().length,
         });
       }
 
-      // запасний HTTP ingest (міст/тест) — відповідь мінімальна
       if (url.pathname === "/ingest" && req.method === "POST") {
         const body = JSON.parse((await readBody(req)) || "{}");
         const result = ingestFast(body, "http");
@@ -235,11 +424,11 @@ async function main() {
           ok: true,
           us: result.us,
           device_id: result.device_id,
-          status: result.analysis.status,
+          skipped: result.skipped,
+          status: result.analysis?.status,
         });
       }
 
-      // для майбутнього prototype/site — дані з RAM
       if (url.pathname === "/api/dashboard" && req.method === "GET") {
         return sendJson(res, 200, dashboard());
       }
@@ -266,6 +455,8 @@ async function main() {
         });
       }
 
+      if (await handleAdmin(url, req, res)) return;
+
       if (url.pathname.startsWith("/api/devices/") && req.method === "GET") {
         const parts = url.pathname.split("/").filter(Boolean);
         const id = decodeURIComponent(parts[2]);
@@ -283,11 +474,16 @@ async function main() {
         return sendJson(res, 200, devicePayload(d));
       }
 
-      // НЕ сайт — лише підказка в plain text
+      // Панель керування (не crew-сайт)
+      if (url.pathname === "/panel" || url.pathname.startsWith("/panel/")) {
+        if (servePublic(url.pathname, res)) return;
+        return sendJson(res, 404, { error: "not found" });
+      }
+
       if (url.pathname === "/" || url.pathname === "/debug") {
         res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
         return res.end(
-          `pulsar-server\nUDP :${UDP_PORT}  HTTP :${HTTP_PORT}\nWS /ws  API /api/dashboard\nwatch the TERMINAL\n`
+          `pulsar-server\nUDP :${UDP_PORT}  HTTP :${HTTP_PORT}\nWS /ws  API /api/dashboard\nADMIN /panel\nwatch the TERMINAL\n`
         );
       }
 
@@ -307,11 +503,11 @@ async function main() {
   server.listen(HTTP_PORT, () => {
     console.log("════════════════════════════════════════");
     console.log("  PULSAR SERVER  (RAM + MySQL async)");
-    console.log(`  UDP ingest     :${UDP_PORT}   ← пристрій сюди`);
+    console.log(`  UDP ingest     :${UDP_PORT}`);
     console.log(`  HTTP ingest    :${HTTP_PORT}/ingest`);
     console.log(`  WS push        :${HTTP_PORT}/ws`);
     console.log(`  API (site)     :${HTTP_PORT}/api/dashboard`);
-    console.log("  debug          TERMINAL ONLY");
+    console.log(`  ADMIN PANEL    :${HTTP_PORT}/panel`);
     console.log("════════════════════════════════════════");
   });
 }

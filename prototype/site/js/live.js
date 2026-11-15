@@ -49,8 +49,9 @@
     return {
       id: d.id,
       device_no: d.device_no,
-      name: d.device_no || d.id,
+      name: d.label || d.device_no || d.id,
       role: d.role || "Wrist station",
+      simulating: !!d.simulating,
       status: d.connected ? statusLabel(d.status) : "Pending",
       pulse,
       oxygen,
@@ -173,17 +174,19 @@
             const person = mapDevice({
               id: msg.device_id,
               device_no: msg.device_no,
+              label: msg.label,
               role: msg.role,
               battery: msg.battery,
               connected: msg.connected !== false,
               last_seen_at: msg.recorded_at,
+              simulating: msg.simulating,
               ...(msg.analysis || {}),
               sos: msg.sos,
             });
             if (onSample) onSample(person);
             else pull();
           }
-          if (msg.type === "sos") {
+          if (msg.type === "device_meta" || msg.type === "admin" || msg.type === "sos") {
             pull();
           }
         } catch (_) {}

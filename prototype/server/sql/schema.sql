@@ -6,6 +6,7 @@ USE pulsar;
 CREATE TABLE IF NOT EXISTS devices (
   id            VARCHAR(32) PRIMARY KEY,
   device_no     VARCHAR(16) NOT NULL UNIQUE,
+  display_name  VARCHAR(64) NULL,
   role_label    VARCHAR(64) NOT NULL DEFAULT 'Пристрій',
   battery_pct   TINYINT UNSIGNED NOT NULL DEFAULT 0,
   last_seen_at  DATETIME(3) NULL,

@@ -1498,6 +1498,20 @@ function createAnalyticsStat(name, value, unit = "") {
 // УНІВЕРСАЛЬНИЙ ГРАФІК SVG
 // ==============================
 
+// Ширина графіка в панелі, що стоїть у двох колонках (>1200px) або в одній
+function halfPanelChartWidth() {
+
+    const full = sectionContent ? sectionContent.clientWidth : 640;
+
+    const column = window.innerWidth > 1200
+        ? (full - 24) / 2
+        : full;
+
+    // мінус поля панелі, поля графіка та рамки
+    return column - 48 - 38;
+
+}
+
 function createAnalyticsChart(
 
     history,
@@ -1506,7 +1520,9 @@ function createAnalyticsChart(
 
     color = "#288bff",
 
-    type = "line"
+    type = "line",
+
+    chartWidth = 640
 
 ) {
 
@@ -1521,9 +1537,10 @@ function createAnalyticsChart(
     }
 
 
-    // Розміри графіка
+    // Розміри графіка: ширина = реальна ширина контейнера в px,
+    // тож 1 одиниця viewBox = 1 px і підписи не масштабуються.
 
-    const width = 640;
+    const width = Math.max(320, Math.round(chartWidth));
     const height = 250;
 
     const left = 65;
@@ -2035,7 +2052,9 @@ function renderMeasurementHistory() {
 
             ? "bar"
 
-            : "line"
+            : "line",
+
+        (chart.clientWidth || 678) - 38
 
     );
 
@@ -2315,7 +2334,9 @@ function createWellbeingHistory() {
 
             "#288bff",
 
-            "bar"
+            "bar",
+
+            halfPanelChartWidth()
 
         )}
 
@@ -2336,7 +2357,9 @@ function createWellbeingHistory() {
 
             "#ffbe2e",
 
-            "line"
+            "line",
+
+            halfPanelChartWidth()
 
         )}
 
@@ -3154,6 +3177,20 @@ async function bootAstronautPage() {
 
     openSection(requestedSection || "health");
 }
+
+// Графіки Analytics малюються під реальну ширину — перемальовуємо після
+// зміни розміру вікна, щоб підписи лишались 1:1.
+let analyticsResizeTimer = null;
+
+window.addEventListener("resize", () => {
+    clearTimeout(analyticsResizeTimer);
+    analyticsResizeTimer = setTimeout(() => {
+        const active = document.querySelector(".nav-button.active");
+        if (astronaut && active?.dataset.section === "analytics") {
+            renderAnalytics();
+        }
+    }, 200);
+});
 
 bootAstronautPage().catch((e) => {
     console.error(e);

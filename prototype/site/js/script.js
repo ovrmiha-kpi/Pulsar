@@ -49,35 +49,31 @@ function createPulseChart(person) {
       </div>`;
   }
 
-  const width = 400;
-  const height = 95;
-  const left = 35;
-  const right = 8;
-  const top = 8;
-  const bottom = 10;
+  // SVG розтягується під розмір плитки, тому в ньому лише лінії
+  // (товщина не масштабується). Підписи осі та точка — звичайний HTML,
+  // розставлений у відсотках: текст і коло не деформуються.
   const min = Math.min(...values) - 5;
   const max = Math.max(...values) + 5;
   const range = max - min || 1;
 
   const points = values.map((value, index) => ({
-    x: left + (index / (values.length - 1)) * (width - left - right),
-    y: height - bottom - ((value - min) / range) * (height - top - bottom),
+    x: (index / (values.length - 1)) * 100,
+    y: 100 - ((value - min) / range) * 100,
   }));
-  const linePoints = points.map((p) => `${p.x},${p.y}`).join(" ");
+  const linePoints = points
+    .map((p) => `${p.x.toFixed(2)},${p.y.toFixed(2)}`)
+    .join(" ");
   const last = points[points.length - 1];
 
   let grid = "";
+  let axis = "";
   for (let i = 0; i <= 3; i++) {
-    const y = top + (i / 3) * (height - top - bottom);
+    const y = (i / 3) * 100;
     const label = Math.round(max - (i / 3) * range);
-    grid += `
-      <line class="pulse-chart-grid" x1="${left}" y1="${y}" x2="${width - right}" y2="${y}"
-        stroke-width="1" stroke-dasharray="4 4"/>
-      <text class="pulse-chart-label" x="${left - 8}" y="${y + 4}" text-anchor="end">${label}</text>`;
+    grid += `<line class="pulse-chart-grid" x1="0" y1="${y}" x2="100" y2="${y}"
+      stroke-width="1" stroke-dasharray="4 4" vector-effect="non-scaling-stroke"/>`;
+    axis += `<span style="top:${y}%">${label}</span>`;
   }
-
-  const baseY = height - bottom;
-  const areaPoints = `${points[0].x},${baseY} ${linePoints} ${last.x},${baseY}`;
 
   return `
     <div class="pulse-chart-container ${statusClass}">
@@ -85,14 +81,19 @@ function createPulseChart(person) {
         <span class="pulse-chart-title">Heart Rate Trend</span>
         <span class="pulse-chart-period">bpm</span>
       </div>
-      <svg class="pulse-chart" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none"
-        role="img" aria-label="Heart rate history">
-        ${grid}
-        <polygon class="pulse-area" points="${areaPoints}"/>
-        <polyline class="pulse-line" points="${linePoints}" fill="none" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
-        <circle class="pulse-point" cx="${last.x}" cy="${last.y}" r="3.5"/>
-      </svg>
+      <div class="pulse-chart-body">
+        <div class="pulse-chart-axis" aria-hidden="true">${axis}</div>
+        <div class="pulse-chart-plot">
+          <svg class="pulse-chart" viewBox="0 0 100 100" preserveAspectRatio="none"
+            role="img" aria-label="Heart rate history">
+            ${grid}
+            <polygon class="pulse-area" points="0,100 ${linePoints} 100,100"/>
+            <polyline class="pulse-line" points="${linePoints}" fill="none" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+          </svg>
+          <span class="pulse-point" style="top:${last.y.toFixed(2)}%"></span>
+        </div>
+      </div>
     </div>`;
 }
 

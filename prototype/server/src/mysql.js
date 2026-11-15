@@ -58,8 +58,14 @@ export async function initMysql() {
 
 /** Покласти в чергу — повертає одразу (0 блокування hot path). */
 export function enqueuePersist(job) {
-  queue.push(job);
+  queue.push({ kind: "sample", ...job });
   if (queue.length > 5000) queue.splice(0, queue.length - 4000); // drop oldest under flood
+  if (!flushing) setImmediate(flush);
+}
+
+/** Оновити label/role у MySQL (якщо БД жива). */
+export function enqueueMeta(job) {
+  queue.push({ kind: "meta", ...job });
   if (!flushing) setImmediate(flush);
 }
 
@@ -84,6 +90,25 @@ async function flush() {
 }
 
 async function writeJob(job) {
+  if (job.kind === "meta") {
+    try {
+      await pool.query(
+        `UPDATE devices
+         SET display_name=COALESCE(?, display_name),
+             role_label=COALESCE(?, role_label)
+         WHERE id=?`,
+        [job.label ?? null, job.role ?? null, job.deviceId]
+      );
+    } catch (e) {
+      // стара схема без display_name — лише role
+      await pool.query(
+        `UPDATE devices SET role_label=COALESCE(?, role_label) WHERE id=?`,
+        [job.role ?? null, job.deviceId]
+      );
+    }
+    return;
+  }
+
   const { deviceId, hr, spo2, temp, battery, recorded_at, source, analysis } =
     job;
 

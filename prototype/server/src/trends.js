@@ -19,8 +19,8 @@ function slope(series, key) {
 
 function trendLabel(s, upIsBad) {
   if (Math.abs(s) < 0.2) return "стабільно";
-  if (s > 0) return upIsBad ? "зростає ⚠" : "зростає";
-  return upIsBad ? "падає" : "падає ⚠";
+  if (s > 0) return "зростає";
+  return "падає";
 }
 
 function classify(hr, spo2, temp, trends) {
