@@ -12,6 +12,7 @@
 |-------|--------|------|
 | [`server/`](server/) | Прийом даних з годинника, тренди здоров’я в RAM, опційно MySQL, WebSocket | HTTP **4100**, UDP **4101** |
 | [`site/`](site/) | Фронт екіпажу (плитки, SOS, детальна сторінка) | **4200** |
+| [`scan/`](scan/) | Окрема карта станції + демо RF-скелетів (**не** підключено до server) | **4300** |
 
 ```
 Годинник ESP32  ──USB/BT──►  bt-bridge  ──POST /ingest──►  server :4100
@@ -150,6 +151,13 @@ prototype/
   start.sh           ← macOS/Linux: install + run
   server/            ← бек (Node, UDP/HTTP/WS, /panel)
   site/              ← фронт екіпажу (static + serve.js)
+  scan/              ← карта станції / RF skeleton demo (:4300)
+```
+
+Карта станції окремо:
+
+```bash
+cd prototype/scan && npm start   # http://127.0.0.1:4300
 ```
 
 Детальніше по всьому репо: [`ARCHITECTURE.md`](../ARCHITECTURE.md) у корені.
