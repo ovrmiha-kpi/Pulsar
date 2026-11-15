@@ -21,7 +21,7 @@ $ErrorActionPreference = "Stop"
 $Root = $PSScriptRoot
 $Server = Join-Path $Root "server"
 $Site = Join-Path $Root "site"
-$Bridge = Join-Path $Root "..\site\prototype" | Resolve-Path
+$Bridge = Join-Path $Root "bridge"
 
 function Need-Node {
   if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
@@ -60,7 +60,7 @@ Npm-Install $Server "prototype/server"
 if (Test-Path (Join-Path $Site "package.json")) {
   Npm-Install $Site "prototype/site"
 }
-Npm-Install $Bridge.Path "site/prototype (USB bridge)"
+Npm-Install $Bridge "prototype/bridge (USB)"
 
 if ($InstallOnly) {
   Write-Host "`nГотово: лише встановлення пакетів." -ForegroundColor Green
@@ -92,7 +92,7 @@ if ($Demo) {
 if ($Com) {
   Start-Sleep -Seconds 1
   Write-Host "USB bridge → $Com (Serial Monitor має бути закритий)" -ForegroundColor Yellow
-  Start-InNewWindow "pulsar-bridge $Com" $Bridge.Path "npm run bt -- $Com"
+  Start-InNewWindow "pulsar-bridge $Com" $Bridge "npm run bt -- $Com"
 }
 
 Write-Host @"

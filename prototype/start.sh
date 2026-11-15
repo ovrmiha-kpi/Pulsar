@@ -12,7 +12,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 SERVER="$ROOT/server"
 SITE="$ROOT/site"
-BRIDGE="$(cd "$ROOT/../site/prototype" && pwd)"
+BRIDGE="$ROOT/bridge"
 
 DB=0
 DEMO=0
@@ -63,7 +63,7 @@ start_bg() {
 need_node
 npm_install "$SERVER" "prototype/server"
 [[ -f "$SITE/package.json" ]] && npm_install "$SITE" "prototype/site"
-npm_install "$BRIDGE" "site/prototype (USB bridge)"
+npm_install "$BRIDGE" "prototype/bridge (USB)"
 
 if [[ "$INSTALL_ONLY" -eq 1 ]]; then
   echo

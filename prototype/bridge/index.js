@@ -2,7 +2,8 @@
  * USB → compute /ingest
  * FILO + авто-перепідключення COM (цикл), kick-файл з сайту.
  *
- * Usage:  npm run bt -- COM11
+ * Usage:  npm start -- COM11
+ *         npm run bt -- COM11
  */
 
 const fs = require("fs");
@@ -20,7 +21,7 @@ const OUTBOUND =
 const BAUD = Number(process.env.BT_BAUD || 115200);
 const DEFAULT_ID = process.env.DEVICE_ID || "dev001";
 const RETRY_MS = Number(process.env.BT_RETRY_MS || 2000);
-const KICK_FILE = path.join(__dirname, "..", ".data", "kick-bt");
+const KICK_FILE = path.join(__dirname, ".data", "kick-bt");
 
 async function postIngest(obj) {
   const res = await fetch(COMPUTE, {

@@ -8,7 +8,7 @@
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
     "demo": "node src/demo-feed.js",
-    "bridge": "node ../../site/prototype/bt-bridge/index.js",
+    "bridge": "node ../bridge/index.js",
     "db:up": "docker compose up -d"
   },
   "engines": {

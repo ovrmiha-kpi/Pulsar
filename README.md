@@ -1,12 +1,23 @@
-# Astro Health Monitor
+# PULSAR — Astro Health Monitor
 
 NASA Space Apps Hackathon 2026.
 
-- План: **[Physik/PLAN.md](Physik/PLAN.md)**
-- Ціни: **[Physik/BOM_PRICES.md](Physik/BOM_PRICES.md)**
-- Pin-to-pin розводка: **[Physik/SCHEME_WIRING.html](Physik/SCHEME_WIRING.html)** · **[Physik/SCHEME_WIRING.png](Physik/SCHEME_WIRING.png)**
-- Схема Е3 (ГОСТ): **[Physik/SCHEME_GOST.html](Physik/SCHEME_GOST.html)** · **[Physik/SCHEME_GOST.png](Physik/SCHEME_GOST.png)**
-- Розпіновка: **[Physik/PINOUT.md](Physik/PINOUT.md)**
+**Канон проєкту:** папка [`prototype/`](prototype/).
 
-**Пристрій:** один **звичайний ESP32** (уже є) + датчики + TFT + SD (бюджет докупівлі ≤ 4500 грн).  
-**Сервер:** окремий ноутбук — прийом даних і прогноз.
+| Що | Де |
+|----|-----|
+| Швидкий старт | [`prototype/README.md`](prototype/README.md) · `.\start.ps1` |
+| Архітектура | [`ARCHITECTURE.md`](ARCHITECTURE.md) |
+| Годинник (ESP32) | [`prototype/hardware/watch/`](prototype/hardware/watch/) |
+| BOM / піни / розводка | [`prototype/hardware/docs/`](prototype/hardware/docs/) |
+| Схеми | [`prototype/hardware/schemes/`](prototype/hardware/schemes/) |
+| USB/BT міст | [`prototype/bridge/`](prototype/bridge/) |
+| Сервер + UI | [`prototype/server/`](prototype/server/) · [`prototype/site/`](prototype/site/) |
+| Pitch | [`prototype/pitch/`](prototype/pitch/) |
+
+```powershell
+cd prototype
+.\start.ps1 -Com COM11
+```
+
+Сайт: http://127.0.0.1:4200 · Panel: http://127.0.0.1:4100/panel

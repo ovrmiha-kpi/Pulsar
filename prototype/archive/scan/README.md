@@ -23,7 +23,7 @@
 ## 2. Запуск на ПК
 
 ```powershell
-cd prototype/scan
+cd prototype/archive/scan
 .\run.ps1                  # покаже COM-порти
 .\run.ps1 --port COM11
 ```

@@ -215,7 +215,7 @@ ESP32 D27 ── (ліва сторона BTN3) ── (права сторон�
 
 ## Прошивка годинника + SD
 
-`Physik/watch/pulsar_watch/pulsar_watch.ino`  
+`prototype/hardware/watch/pulsar_watch/pulsar_watch.ino`  
 - **немає LINK** (ні BT-клієнта, ні `LINK` від `npm run bt`) → JSON пишеться в `/pulsar.jsonl` на SD  
 - **з’явився LINK** → дамп файлу в USB/BT і **очищення** SD  
 Піни SD: CS33 SCK14 MOSI13 MISO32 (сторона 2).
