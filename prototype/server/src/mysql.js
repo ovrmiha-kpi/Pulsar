@@ -1,9 +1,12 @@
 /**
- * MySQL = cold store. Ніколи не блокує ingest.
- * Пишемо з черги в setImmediate / batch.
+ * MySQL = джерело правди для дня + постійний архів (telemetry_daily).
+ * Ingest лишається неблокуючим: черга + setImmediate.
+ *
+ * RAM тримає лише короткий live-буфер для сайту (див. memory.js).
  */
 
 import mysql from "mysql2/promise";
+import { siteRingSize } from "./memory.js";
 
 const SEED = [
   { id: "dev001", device_no: "DEV-001", role_label: "Зап'ястна станція" },
@@ -21,8 +24,41 @@ export function mysqlReady() {
   return ready;
 }
 
+export function getPool() {
+  return pool;
+}
+
 export function getSeed() {
   return SEED;
+}
+
+async function ensureSchema() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS telemetry_daily (
+      id           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      device_id    VARCHAR(32) NOT NULL,
+      day_date     DATE NOT NULL,
+      period_slot  TINYINT UNSIGNED NOT NULL COMMENT '0=00-06 1=06-12 2=12-18 3=18-24 UTC',
+      avg_hr       FLOAT NOT NULL,
+      avg_spo2     FLOAT NOT NULL,
+      avg_temp_c   FLOAT NOT NULL,
+      samples      INT UNSIGNED NOT NULL DEFAULT 0,
+      created_at   DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+      UNIQUE KEY uq_daily (device_id, day_date, period_slot),
+      INDEX idx_daily_day (day_date),
+      CONSTRAINT fk_daily_dev FOREIGN KEY (device_id) REFERENCES devices(id)
+        ON DELETE CASCADE
+    ) ENGINE=InnoDB
+  `);
+
+  // На випадок старої схеми без source
+  try {
+    await pool.query(
+      `ALTER TABLE telemetry ADD COLUMN source VARCHAR(32) NOT NULL DEFAULT 'udp'`
+    );
+  } catch (_) {
+    /* already exists */
+  }
 }
 
 export async function initMysql() {
@@ -39,6 +75,7 @@ export async function initMysql() {
 
   pool = mysql.createPool(cfg);
   await pool.query("SELECT 1");
+  await ensureSchema();
 
   for (const d of SEED) {
     await pool.query(
@@ -51,19 +88,53 @@ export async function initMysql() {
 
   ready = true;
   console.log(
-    `[mysql] OK ${cfg.host}:${cfg.port}/${cfg.database} (async persist)`
+    `[mysql] OK ${cfg.host}:${cfg.port}/${cfg.database} (day raw → daily×4 archive)`
   );
   return pool;
+}
+
+/** Останні N точок за сьогодні — для hydrate RAM під сайт. */
+export async function loadTodayRecent(deviceId, limit = siteRingSize()) {
+  if (!pool || !ready) return [];
+  const today = new Date().toISOString().slice(0, 10);
+  const [rows] = await pool.query(
+    `SELECT hr, spo2, temp_c, recorded_at
+     FROM telemetry
+     WHERE device_id=? AND recorded_at >= ?
+     ORDER BY recorded_at DESC
+     LIMIT ?`,
+    [deviceId, `${today} 00:00:00.000`, limit]
+  );
+  return rows
+    .reverse()
+    .map((r) => ({
+      t: new Date(r.recorded_at).toISOString(),
+      hr: r.hr,
+      spo2: r.spo2,
+      temp: r.temp_c,
+    }));
+}
+
+export async function listDailyAverages(deviceId, days = 14) {
+  if (!pool || !ready) return [];
+  const [rows] = await pool.query(
+    `SELECT day_date, period_slot, avg_hr, avg_spo2, avg_temp_c, samples
+     FROM telemetry_daily
+     WHERE device_id=?
+     ORDER BY day_date DESC, period_slot ASC
+     LIMIT ?`,
+    [deviceId, Math.max(4, days * 4)]
+  );
+  return rows;
 }
 
 /** Покласти в чергу — повертає одразу (0 блокування hot path). */
 export function enqueuePersist(job) {
   queue.push({ kind: "sample", ...job });
-  if (queue.length > 5000) queue.splice(0, queue.length - 4000); // drop oldest under flood
+  if (queue.length > 5000) queue.splice(0, queue.length - 4000);
   if (!flushing) setImmediate(flush);
 }
 
-/** Оновити label/role у MySQL (якщо БД жива). */
 export function enqueueMeta(job) {
   queue.push({ kind: "meta", ...job });
   if (!flushing) setImmediate(flush);
@@ -100,7 +171,6 @@ async function writeJob(job) {
         [job.label ?? null, job.role ?? null, job.deviceId]
       );
     } catch (e) {
-      // стара схема без display_name — лише role
       await pool.query(
         `UPDATE devices SET role_label=COALESCE(?, role_label) WHERE id=?`,
         [job.role ?? null, job.deviceId]
@@ -117,6 +187,7 @@ async function writeJob(job) {
     [recorded_at, battery ?? null, deviceId]
   );
 
+  // Сирі точки дня — у БД (постійне сховище до нічного rollup)
   await pool.query(
     `INSERT INTO telemetry (device_id, hr, spo2, temp_c, recorded_at, source)
      VALUES (?,?,?,?,?,?)`,

@@ -42,6 +42,23 @@ CREATE TABLE IF NOT EXISTS analyses (
     ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+-- Постійний архів: 4 середні за добу (по 6 год UTC) на пристрій
+CREATE TABLE IF NOT EXISTS telemetry_daily (
+  id           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  device_id    VARCHAR(32) NOT NULL,
+  day_date     DATE NOT NULL,
+  period_slot  TINYINT UNSIGNED NOT NULL COMMENT '0=00-06 1=06-12 2=12-18 3=18-24 UTC',
+  avg_hr       FLOAT NOT NULL,
+  avg_spo2     FLOAT NOT NULL,
+  avg_temp_c   FLOAT NOT NULL,
+  samples      INT UNSIGNED NOT NULL DEFAULT 0,
+  created_at   DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  UNIQUE KEY uq_daily (device_id, day_date, period_slot),
+  INDEX idx_daily_day (day_date),
+  CONSTRAINT fk_daily_dev FOREIGN KEY (device_id) REFERENCES devices(id)
+    ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 INSERT INTO devices (id, device_no, role_label, battery_pct) VALUES
   ('dev001', 'DEV-001', 'Зап''ястна станція', 0),
   ('dev002', 'DEV-002', 'Зап''ястна станція', 0),

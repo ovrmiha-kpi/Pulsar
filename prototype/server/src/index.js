@@ -1,8 +1,10 @@
 /**
  * Pulsar SERVER (low-latency)
  *
- * Hot path:  UDP JSON → RAM ring → trends → WS push  (MySQL async)
- * Cold path: MySQL архів
+ * Hot path:  UDP/HTTP JSON → короткий RAM ring (для сайту) → trends → WS
+ * Day store: кожна точка → MySQL `telemetry` (сирі дані поточного дня)
+ * Archive:   опівночі UTC → 4 середні/день у `telemetry_daily`, сирі за день чистяться
+ *
  * Admin:     /panel — керування пристроями / симуляція
  *
  * Порти:
@@ -28,8 +30,21 @@ import {
   renameDevice,
   setDeviceRole,
   clearRing,
+  hydrateRing,
+  rolloverRamDay,
+  utcDayKey,
 } from "./memory.js";
-import { initMysql, enqueuePersist, getSeed, mysqlReady, enqueueMeta } from "./mysql.js";
+import {
+  initMysql,
+  enqueuePersist,
+  getSeed,
+  mysqlReady,
+  enqueueMeta,
+  getPool,
+  loadTodayRecent,
+  listDailyAverages,
+} from "./mysql.js";
+import { rollupDay, pruneRawBeforeToday } from "./rollup.js";
 import {
   startSim,
   stopSim,
@@ -55,6 +70,8 @@ const wsClients = new Set();
 const sosState = new Map();
 let ingestCount = 0;
 let lastLogMs = 0;
+/** Який UTC-день зараз обслуговуємо в RAM / raw telemetry */
+let currentUtcDay = utcDayKey();
 
 function nowIso() {
   return new Date().toISOString();
@@ -74,6 +91,25 @@ function parseSample(raw) {
   return { key, hr, spo2, temp, battery, recorded_at };
 }
 
+/** Якщо настав новий UTC-день — rollup вчорашнього + очистка RAM. */
+async function ensureDayBoundary() {
+  const today = utcDayKey();
+  if (today === currentUtcDay) return;
+  const yesterday = currentUtcDay;
+  currentUtcDay = today;
+  rolloverRamDay(today);
+  console.log(`[day] UTC rollover ${yesterday} → ${today}`);
+  if (!mysqlReady()) return;
+  try {
+    const result = await rollupDay(getPool(), yesterday);
+    console.log(
+      `[day] archived ${yesterday}: devices=${result.devices.length} (4 averages each when data existed)`
+    );
+  } catch (e) {
+    console.warn(`[day] rollup failed for ${yesterday}:`, e.message);
+  }
+}
+
 /** Критичний шлях — без await MySQL. */
 function ingestFast(raw, source) {
   const t0 = process.hrtime.bigint();
@@ -84,6 +120,14 @@ function ingestFast(raw, source) {
   // Поки симуляція увімкнена — реальні USB/UDP пакети цього id ігноруємо
   if (isSimulating(device.id) && !String(source).startsWith("sim:")) {
     return { ok: true, skipped: "simulating", device_id: device.id, us: 0 };
+  }
+
+  // Неблокуюча перевірка межі дня (rollup у фоні)
+  const dayNow = utcDayKey();
+  if (dayNow !== currentUtcDay) {
+    setImmediate(() => {
+      ensureDayBoundary().catch((e) => console.warn("[day]", e.message));
+    });
   }
 
   const prev = seriesOf(device.id, 39);
@@ -150,7 +194,7 @@ function devicePayload(d) {
           ...a,
           status: d.ring.length ? a.status : "pending",
           statusLabel: d.ring.length ? a.statusLabel : "очікування",
-          alert: d.ring.length ? "Офлайн — останні дані з RAM." : "Немає пакетів.",
+          alert: d.ring.length ? "Офлайн — останні live-дані." : "Немає пакетів.",
           alarm: false,
         }),
   };
@@ -285,6 +329,32 @@ async function handleAdmin(url, req, res) {
     return true;
   }
 
+  // Примусовий денний rollup: сирі → 4 середні, потім delete raw
+  if (url.pathname === "/api/admin/rollup" && req.method === "POST") {
+    if (!mysqlReady()) {
+      sendJson(res, 503, { error: "mysql offline" });
+      return true;
+    }
+    const body = JSON.parse((await readBody(req)) || "{}");
+    const day =
+      body.day ||
+      utcDayKey(new Date(Date.now() - (body.yesterday === false ? 0 : 86400000)));
+    const result = await rollupDay(getPool(), day);
+    console.log(`[admin] rollup day=${day}`);
+    sendJson(res, 200, { ok: true, ...result });
+    return true;
+  }
+
+  if (url.pathname === "/api/admin/prune-raw" && req.method === "POST") {
+    if (!mysqlReady()) {
+      sendJson(res, 503, { error: "mysql offline" });
+      return true;
+    }
+    const result = await pruneRawBeforeToday(getPool());
+    sendJson(res, 200, { ok: true, ...result });
+    return true;
+  }
+
   // /api/admin/devices/:id/...
   if (parts[2] === "devices" && parts[3]) {
     const id = decodeURIComponent(parts[3]);
@@ -403,15 +473,46 @@ async function handleAdmin(url, req, res) {
   return true;
 }
 
+async function hydrateFromDb() {
+  if (!mysqlReady()) return;
+  for (const d of listDevices()) {
+    try {
+      const points = await loadTodayRecent(d.id);
+      if (points.length) {
+        const analysis = analyzeSeries(points);
+        hydrateRing(d.id, points, analysis);
+        console.log(`[mysql] hydrate ${d.device_no}: ${points.length} today points → RAM`);
+      }
+    } catch (e) {
+      console.warn(`[mysql] hydrate ${d.id}:`, e.message);
+    }
+  }
+  try {
+    const pruned = await pruneRawBeforeToday(getPool());
+    if (pruned.deleted) {
+      console.log(`[mysql] pruned stale raw rows: ${pruned.deleted}`);
+    }
+  } catch (e) {
+    console.warn("[mysql] prune:", e.message);
+  }
+}
+
 async function main() {
   seedDevices(getSeed());
+  currentUtcDay = utcDayKey();
 
   try {
     await initMysql();
+    await hydrateFromDb();
   } catch (e) {
-    console.warn(`[mysql] OFFLINE — працюємо лише в RAM: ${e.message}`);
+    console.warn(`[mysql] OFFLINE — live лише в RAM, архів дня недоступний: ${e.message}`);
     console.warn("[mysql] підніми: npm run db:up   (docker compose)");
   }
+
+  // Підстраховка межі доби (навіть без трафіку)
+  setInterval(() => {
+    ensureDayBoundary().catch((e) => console.warn("[day]", e.message));
+  }, 60_000);
 
   const udp = dgram.createSocket("udp4");
   udp.on("message", (msg, rinfo) => {
@@ -498,7 +599,23 @@ async function main() {
         const d = getDevice(id);
         if (!d) return sendJson(res, 404, { error: "not found" });
         if (parts[3] === "telemetry") {
-          return sendJson(res, 200, { device_id: d.id, points: d.ring.slice() });
+          // Live: короткий RAM-буфер для сайту (не вся історія дня)
+          return sendJson(res, 200, {
+            device_id: d.id,
+            scope: "live_ram",
+            day: utcDayKey(),
+            points: d.ring.slice(),
+          });
+        }
+        if (parts[3] === "daily" || parts[3] === "averages") {
+          if (!mysqlReady()) return sendJson(res, 503, { error: "mysql offline" });
+          const days = Number(url.searchParams.get("days") || 14);
+          const rows = await listDailyAverages(d.id, days);
+          return sendJson(res, 200, {
+            device_id: d.id,
+            note: "4 averages per UTC day (period_slot 0..3 = 6h each)",
+            rows,
+          });
         }
         if (parts[3] === "trends") {
           return sendJson(res, 200, {
