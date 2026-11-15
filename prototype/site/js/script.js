@@ -1,338 +1,2550 @@
-// ==============================
-// LIVE CREW (from prototype/server)
-// Плитки впритул; клік по плитці розгортає її на весь екран.
-// ==============================
 
-/** @type {any[]} */
+// ==================================================
+// PULSAR — CREW DASHBOARD
+// ==================================================
+
+
+// ==================================================
+// LIVE CREW (prototype/server)
+// ==================================================
+
 let astronauts = [];
 
-const STATUSES = ["Critical", "Warning", "Pending", "Normal"];
-
-const crewGrid = document.getElementById("crew-grid");
-const linkEl = document.getElementById("live-link");
-
-function escapeHTML(value) {
-  return String(value ?? "—")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
-}
-
-function statusClassOf(person) {
-  return STATUSES.includes(person.status)
-    ? person.status.toLowerCase()
-    : "pending";
-}
+const STORAGE_KEY = "pulsar_live_crew_cache";
 
 function upsertPerson(person) {
-  const id = String(person.id);
-  const i = astronauts.findIndex((p) => String(p.id) === id);
-  if (i >= 0) astronauts[i] = { ...astronauts[i], ...person };
-  else astronauts.push(person);
+    if (!person || person.id == null) return;
+    const id = String(person.id);
+    const i = astronauts.findIndex((p) => String(p.id) === id);
+    if (i >= 0) astronauts[i] = { ...astronauts[i], ...person };
+    else astronauts.push(person);
 }
+
+const demoPulseProfiles = new Map();
+
+
+// ==================================================
+// ВІДНОВЛЕННЯ ІСТОРІЇ ПУЛЬСУ
+// ==================================================
+
+function restorePulseHistory(person) {
+
+    if (person.pulseHistory !== undefined) {
+
+        return person;
+
+    }
+
+    const demo = demoPulseProfiles.get(person.id);
+
+    const matchesDemo =
+        demo &&
+        demo.name === person.name &&
+        demo.pulse === person.pulse;
+
+    return {
+
+        ...person,
+
+        pulseHistory: matchesDemo
+            ? [...demo.history]
+            : []
+
+    };
+
+}
+
+
+// ==================================================
+// ВІДНОВЛЕННЯ ДАНИХ ЗІ СХОВИЩА
+// ==================================================
+
+function restoreCrew() {
+
+    try {
+
+        const savedCrew =
+            sessionStorage.getItem(STORAGE_KEY);
+
+        if (savedCrew) {
+
+            const parsedCrew = JSON.parse(savedCrew);
+
+            if (Array.isArray(parsedCrew)) {
+
+                astronauts.splice(
+
+                    0,
+                    astronauts.length,
+                    ...parsedCrew.map(restorePulseHistory)
+
+                );
+
+            }
+
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Cannot load demo crew:",
+            error
+        );
+
+    }
+
+}
+
+
+
+
+// ==================================================
+// ЗБЕРЕЖЕННЯ ДАНИХ
+// ==================================================
+
+function saveCrew() {
+
+    try {
+
+        sessionStorage.setItem(
+
+            STORAGE_KEY,
+
+            JSON.stringify(astronauts)
+
+        );
+
+
+        // ==========================================
+        // NOTIFICATION CENTER
+        // Повідомляємо про оновлення даних екіпажу
+        // ==========================================
+
+        document.dispatchEvent(
+
+            new CustomEvent(
+
+                "pulsar:crew-change",
+
+                {
+
+                    detail: {
+
+                        crew: astronauts
+
+                    }
+
+                }
+
+            )
+
+        );
+
+        return true;
+
+    } catch (error) {
+
+        console.error(
+            "Cannot save demo crew:",
+            error
+        );
+
+        return false;
+
+    }
+
+}
+
+
+// ==================================================
+// ПРІОРИТЕТИ СТАТУСІВ
+// ==================================================
+
+const priority = {
+
+    Critical: 0,
+    Warning: 1,
+    Pending: 2,
+    Normal: 3
+
+};
+
+let currentFilter = "All";
+
+
+// ==================================================
+// HTML-ЕЛЕМЕНТИ
+// ==================================================
+
+const crewGrid =
+    document.getElementById("crew-grid");
+
+const searchInput =
+    document.getElementById("search");
+
+const visibleCount =
+    document.getElementById("visible-count");
+
+
+// ==================================================
+// ЕЛЕМЕНТИ ВЕРХНЬОЇ ПАНЕЛІ
+// ==================================================
+
+const menuToggle =
+    document.getElementById("menu-toggle");
+
+const crewMenu =
+    document.getElementById("crew-menu");
+
+const searchToggle =
+    document.getElementById("search-toggle");
+
+const searchPanel =
+    document.getElementById("search-panel");
+
+const searchClose =
+    document.getElementById("search-close");
+
+
+// ==================================================
+// ЗАХИСТ ТЕКСТОВИХ ДАНИХ
+// ==================================================
+
+function escapeHTML(value) {
+
+    return String(value ?? "—")
+
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+
+}
+
+
+// ==================================================
+// ОНОВЛЕННЯ СТАТИСТИКИ
+// ==================================================
+
+function updateStatistics() {
+
+    // Загальна кількість астронавтів
+
+    document.getElementById("total-count")
+        .textContent = astronauts.length;
+
+
+    // Критичний стан
+
+    document.getElementById("critical-count")
+        .textContent = astronauts.filter(
+
+            person => person.status === "Critical"
+
+        ).length;
+
+
+    // Попередження
+
+    document.getElementById("warning-count")
+        .textContent = astronauts.filter(
+
+            person => person.status === "Warning"
+
+        ).length;
+
+
+    // Очікування даних
+
+    document.getElementById("pending-count")
+        .textContent = astronauts.filter(
+
+            person => person.status === "Pending"
+
+        ).length;
+
+
+    // Нормальний стан
+
+    document.getElementById("normal-count")
+        .textContent = astronauts.filter(
+
+            person => person.status === "Normal"
+
+        ).length;
+
+}
+
+
+// ==================================================
+// АДАПТИВНИЙ ГРАФІК ПУЛЬСУ
+// ==================================================
 
 function createPulseChart(person) {
-  const values = Array.isArray(person.pulseHistory)
-    ? person.pulseHistory.slice(-10)
-    : [];
-  const statusClass = statusClassOf(person);
 
-  if (values.length < 2 || !values.every(Number.isFinite)) {
+    // Отримуємо останні 10 вимірювань
+
+    const values = Array.isArray(person.pulseHistory)
+
+        ? person.pulseHistory.slice(-10)
+
+        : [];
+
+
+    // Колір графіка залежно від статусу
+
+    const statusClass = Object.hasOwn(
+        priority,
+        person.status
+    )
+
+        ? person.status.toLowerCase()
+
+        : "pending";
+
+
+    // ==============================================
+    // ЯКЩО ІСТОРІЯ ВІДСУТНЯ
+    // ==============================================
+
+    if (
+
+        values.length < 2 ||
+
+        !values.every(Number.isFinite)
+
+    ) {
+
+        return `
+
+            <div class="pulse-chart-container
+                ${statusClass}">
+
+                <div class="pulse-chart-header">
+
+                    <span class="pulse-chart-title">
+
+                        Heart Rate Trend
+
+                    </span>
+
+                </div>
+
+                <div class="pulse-chart-empty">
+
+                    No pulse history available
+
+                </div>
+
+            </div>
+
+        `;
+
+    }
+
+
+    // ==============================================
+    // СТВОРЕННЯ КОНТЕЙНЕРА ГРАФІКА
+    // ==============================================
+
+    // Сам графік малюватиметься після того,
+    // як картка буде додана на сторінку.
+    //
+    // Це дозволяє визначити її фактичну ширину
+    // та уникнути деформації SVG.
+
     return `
-      <div class="pulse-chart-container ${statusClass}">
-        <div class="pulse-chart-header">
-          <span class="pulse-chart-title">Heart Rate Trend</span>
+
+        <div class="pulse-chart-container
+            ${statusClass}">
+
+            <div class="pulse-chart-header">
+
+                <span class="pulse-chart-title">
+
+                    ♡ Heart Rate Trend (bpm)
+
+                </span>
+
+                <span class="pulse-chart-period">
+
+                    Last ${values.length} samples
+
+                </span>
+
+            </div>
+
+
+            <!-- АДАПТИВНИЙ SVG-ГРАФІК -->
+
+            <svg
+
+                class="pulse-chart"
+
+                data-values="${values.join(",")}"
+
+                style="
+                    display: block;
+                    width: 100%;
+                    height: var(--pulse-responsive-height, 110px);
+                    min-height: 90px;
+                    flex-shrink: 0;
+                "
+
+                preserveAspectRatio="xMidYMid meet"
+
+                role="img"
+
+                aria-label="Demo heart rate history">
+
+            </svg>
+
+
+            <!-- ПІДПИСИ ОСІ X -->
+
+            <div class="pulse-chart-labels">
+
+                <span>Earlier</span>
+
+                <span>Latest</span>
+
+            </div>
+
         </div>
-        <div class="pulse-chart-empty">No pulse history</div>
-      </div>`;
-  }
 
-  // SVG розтягується під розмір плитки, тому в ньому лише лінії
-  // (товщина не масштабується). Підписи осі та точка — звичайний HTML,
-  // розставлений у відсотках: текст і коло не деформуються.
-  const min = Math.min(...values) - 5;
-  const max = Math.max(...values) + 5;
-  const range = max - min || 1;
+    `;
 
-  const points = values.map((value, index) => ({
-    x: (index / (values.length - 1)) * 100,
-    y: 100 - ((value - min) / range) * 100,
-  }));
-  const linePoints = points
-    .map((p) => `${p.x.toFixed(2)},${p.y.toFixed(2)}`)
-    .join(" ");
-  const last = points[points.length - 1];
-
-  let grid = "";
-  let axis = "";
-  for (let i = 0; i <= 3; i++) {
-    const y = (i / 3) * 100;
-    const label = Math.round(max - (i / 3) * range);
-    grid += `<line class="pulse-chart-grid" x1="0" y1="${y}" x2="100" y2="${y}"
-      stroke-width="1" stroke-dasharray="4 4" vector-effect="non-scaling-stroke"/>`;
-    axis += `<span style="top:${y}%">${label}</span>`;
-  }
-
-  return `
-    <div class="pulse-chart-container ${statusClass}">
-      <div class="pulse-chart-header">
-        <span class="pulse-chart-title">Heart Rate Trend</span>
-        <span class="pulse-chart-period">bpm</span>
-      </div>
-      <div class="pulse-chart-body">
-        <div class="pulse-chart-axis" aria-hidden="true">${axis}</div>
-        <div class="pulse-chart-plot">
-          <svg class="pulse-chart" viewBox="0 0 100 100" preserveAspectRatio="none"
-            role="img" aria-label="Heart rate history">
-            ${grid}
-            <polygon class="pulse-area" points="0,100 ${linePoints} 100,100"/>
-            <polyline class="pulse-line" points="${linePoints}" fill="none" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
-          </svg>
-          <span class="pulse-point" style="top:${last.y.toFixed(2)}%"></span>
-        </div>
-      </div>
-    </div>`;
 }
 
-function avatarInitials(name) {
-  const s = String(name || "?").trim();
-  if (/^DEV-/i.test(s)) {
-    const m = s.match(/(\d+)/);
-    return m ? m[1].slice(-2) : "DV";
-  }
-  return s
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase();
+
+// ==================================================
+// МАЛЮВАННЯ АДАПТИВНОГО ГРАФІКА
+// ==================================================
+
+function drawResponsivePulseChart(svg) {
+
+    // Отримання значень пульсу
+
+    const values = (svg.dataset.values || "")
+
+        .split(",")
+        .map(Number);
+
+
+    // Перевірка отриманих даних
+
+    if (
+
+        values.length < 2 ||
+
+        !values.every(Number.isFinite)
+
+    ) {
+
+        return;
+
+    }
+
+
+    // ==============================================
+    // ФАКТИЧНІ РОЗМІРИ ГРАФІКА
+    // ==============================================
+
+    const width = svg.clientWidth;
+
+    const height = svg.clientHeight;
+
+
+    if (width < 80 || height < 80) {
+
+        return;
+
+    }
+
+
+    // ==============================================
+    // АДАПТИВНА СИСТЕМА КООРДИНАТ
+    // ==============================================
+
+    svg.setAttribute(
+
+        "viewBox",
+
+        `0 0 ${width} ${height}`
+
+    );
+
+
+    // ==============================================
+    // ВІДСТУПИ ГРАФІКА
+    // ==============================================
+
+    const left = 42;
+
+    const right = 12;
+
+    const top = 12;
+
+    const bottom = 12;
+
+
+    const chartWidth = width - left - right;
+
+    const chartHeight = height - top - bottom;
+
+
+    // ==============================================
+    // МЕЖІ ПОКАЗНИКІВ
+    // ==============================================
+
+    const min = Math.min(...values) - 5;
+
+    const max = Math.max(...values) + 5;
+
+    const range = max - min || 1;
+
+
+    // ==============================================
+    // КООРДИНАТИ ТОЧОК
+    // ==============================================
+
+    const points = values.map((value, index) => ({
+
+        value,
+
+        x: left +
+
+            index / (values.length - 1) *
+
+            chartWidth,
+
+        y: top + chartHeight -
+
+            (value - min) / range *
+
+            chartHeight
+
+    }));
+
+
+    // ==============================================
+    // ГОРИЗОНТАЛЬНА СІТКА
+    // ==============================================
+
+    let grid = "";
+
+    const divisions = 3;
+
+    for (let i = 0; i <= divisions; i++) {
+
+        const y = top +
+
+            i / divisions * chartHeight;
+
+
+        const label = Math.round(
+
+            max - i / divisions * range
+
+        );
+
+
+        grid += `
+
+            <line
+
+                class="pulse-chart-grid"
+
+                x1="${left}"
+
+                y1="${y}"
+
+                x2="${width - right}"
+
+                y2="${y}"
+
+                stroke-width="1"
+
+                stroke-dasharray="4 4"
+
+            />
+
+            <text
+
+                x="${left - 9}"
+
+                y="${y}"
+
+                dominant-baseline="middle"
+
+                text-anchor="end"
+
+                style="
+                    font-size: 12px;
+                    font-weight: 400;
+                "
+
+                fill="#91a5bd">
+
+                ${label}
+
+            </text>
+
+        `;
+
+    }
+
+
+    // ==============================================
+    // ФОРМУВАННЯ ЛІНІЇ ГРАФІКА
+    // ==============================================
+
+    const linePoints = points
+
+        .map(point => `${point.x},${point.y}`)
+
+        .join(" ");
+
+
+    // ==============================================
+    // ТОЧКИ ВИМІРЮВАНЬ
+    // ==============================================
+
+    const circles = points.map((point, index) => `
+
+        <circle
+
+            class="pulse-point"
+
+            cx="${point.x}"
+
+            cy="${point.y}"
+
+            r="${index === points.length - 1
+                ? 3.5
+                : 2.5}">
+
+            <title>
+
+                ${point.value} bpm
+
+            </title>
+
+        </circle>
+
+    `).join("");
+
+
+    // ==============================================
+    // ГОТОВИЙ SVG-ГРАФІК
+    // ==============================================
+
+    svg.innerHTML = `
+
+        ${grid}
+
+        <polyline
+
+            class="pulse-line"
+
+            points="${linePoints}"
+
+            fill="none"
+
+            stroke-width="2.5"
+
+            stroke-linecap="round"
+
+            stroke-linejoin="round"
+
+            vector-effect="non-scaling-stroke"
+
+        />
+
+        ${circles}
+
+    `;
+
 }
+
+
+// ==================================================
+// АВТОМАТИЧНЕ МАСШТАБУВАННЯ ГРАФІКІВ
+// ==================================================
+
+const pulseChartObserver =
+
+    typeof ResizeObserver === "function"
+
+        ? new ResizeObserver(entries => {
+
+            entries.forEach(entry => {
+
+                drawResponsivePulseChart(
+
+                    entry.target
+
+                );
+
+            });
+
+        })
+
+        : null;
+
+
+// ==================================================
+// ПІДКЛЮЧЕННЯ АДАПТИВНИХ ГРАФІКІВ
+// ==================================================
+
+function setupResponsivePulseCharts() {
+
+    // Припиняємо спостереження
+    // за попередніми графіками.
+
+    pulseChartObserver?.disconnect();
+
+
+    // Знаходимо всі графіки на головній сторінці
+
+    crewGrid.querySelectorAll(
+
+        ".pulse-chart[data-values]"
+
+    ).forEach(svg => {
+
+        // Початкове малювання
+
+        drawResponsivePulseChart(svg);
+
+
+        // Спостереження за зміною розмірів
+
+        pulseChartObserver?.observe(svg);
+
+    });
+
+}
+
+
+// ==================================================
+// РЕЗЕРВНЕ МАСШТАБУВАННЯ
+// ==================================================
+
+if (!pulseChartObserver) {
+
+    window.addEventListener(
+
+        "resize",
+
+        setupResponsivePulseCharts
+
+    );
+
+}
+
+
+// ==================================================
+// СТВОРЕННЯ КАРТКИ АСТРОНАВТА
+// ==================================================
 
 function createAstronautCard(person) {
-  const statusClass = statusClassOf(person);
-  const card = document.createElement("article");
-  card.className = `astronaut-card ${statusClass}`;
-  card.dataset.id = String(person.id);
-  card.tabIndex = 0;
-  card.setAttribute("role", "button");
-  card.setAttribute("aria-label", `Open ${person.name}`);
 
-  const sosActive =
-    typeof isSosActive === "function" ? isSosActive(person.id) : !!person.sos;
-  card.classList.toggle("sos-active", sosActive);
+    const statusClass = Object.hasOwn(
+        priority,
+        person.status
+    )
 
-  const pulseDisp = person.pulse == null ? "—" : person.pulse;
-  const oxyDisp = person.oxygen == null ? "—" : person.oxygen;
-  const tempDisp = person.temperature == null ? "—" : person.temperature;
+        ? person.status.toLowerCase()
 
-  card.innerHTML = `
-    <div class="astronaut-header">
-      <div class="avatar">${escapeHTML(avatarInitials(person.name))}</div>
-      <div class="astronaut-info">
-        <h3>${escapeHTML(person.name)}</h3>
-        <p>${escapeHTML(person.role)}</p>
-      </div>
-      <span class="status ${sosActive ? "critical" : statusClass}">${
-        sosActive ? "SOS" : escapeHTML(person.status)
-      }</span>
-    </div>
-    <div class="metrics">
-      <div class="metric">
-        <span class="metric-name">Heart Rate</span>
-        <span class="metric-value">${escapeHTML(pulseDisp)}</span>
-        <span class="metric-unit">bpm</span>
-      </div>
-      <div class="metric">
-        <span class="metric-name">SpO₂</span>
-        <span class="metric-value">${escapeHTML(oxyDisp)}</span>
-        <span class="metric-unit">%</span>
-      </div>
-      <div class="metric">
-        <span class="metric-name">Cabin Temp</span>
-        <span class="metric-value">${escapeHTML(tempDisp)}</span>
-        <span class="metric-unit">°C</span>
-      </div>
-    </div>
-    ${createPulseChart(person)}
-    <div class="alert-message ${statusClass}">${escapeHTML(person.warning)}</div>
-    <div class="device-info">
-      <span class="link-state ${person.connected ? "connected" : ""}">
-        ${person.connected ? "Connected" : "No link"}
-      </span>
-      <span>Battery ${
-        person.battery == null ? "—" : escapeHTML(person.battery) + "%"
-      }</span>
-    </div>`;
+        : "pending";
 
-  return card;
+
+    // ==============================================
+    // ІНІЦІАЛИ АСТРОНАВТА
+    // ==============================================
+
+    const initials = person.name
+
+        .trim()
+        .split(/\s+/)
+        .slice(0, 2)
+        .map(word => word[0])
+        .join("");
+
+
+    // Створення картки
+
+    const card = document.createElement("article");
+
+    card.className =
+        `astronaut-card ${statusClass}`;
+
+
+    // ==============================================
+    // ПЕРЕВІРКА АКТИВНОГО SOS
+    // ==============================================
+
+    const sosActive = !!(person.sos || isSosActive(person.id));
+
+    card.classList.toggle(
+
+        "sos-active",
+
+        sosActive
+
+    );
+
+
+    // ==============================================
+    // ВМІСТ КАРТКИ АСТРОНАВТА
+    // ==============================================
+
+    card.innerHTML = `
+
+        <!-- ІНФОРМАЦІЯ ПРО АСТРОНАВТА -->
+
+        <div class="astronaut-header">
+
+            <div class="avatar">
+
+                ${escapeHTML(initials)}
+
+            </div>
+
+            <div class="astronaut-info">
+
+                <h3>
+
+                    ${escapeHTML(person.name)}
+
+                </h3>
+
+                <p>
+
+                    ${escapeHTML(person.role)}
+
+                </p>
+
+            </div>
+
+            <span class="status ${statusClass}">
+
+                ● ${escapeHTML(person.status)}
+
+            </span>
+
+        </div>
+
+
+        <!-- ======================================
+             ОСНОВНІ ПОКАЗНИКИ
+        ======================================= -->
+
+        <div class="metrics">
+
+
+            <!-- ПУЛЬС -->
+
+            <div class="metric">
+
+                <span class="metric-name">
+
+                    Heart Rate
+
+                </span>
+
+                <span class="metric-value">
+
+                    ${escapeHTML(person.pulse ?? "—")}
+
+                </span>
+
+                <span class="metric-unit">
+
+                    bpm
+
+                </span>
+
+            </div>
+
+
+            <!-- НАСИЧЕННЯ КРОВІ КИСНЕМ -->
+
+            <div class="metric">
+
+                <span class="metric-name">
+
+                    SpO₂
+
+                </span>
+
+                <span class="metric-value">
+
+                    ${escapeHTML(person.oxygen ?? "—")}
+
+                </span>
+
+                <span class="metric-unit">
+
+                    %
+
+                </span>
+
+            </div>
+
+
+            <!-- ТЕМПЕРАТУРА ШКІРИ -->
+
+            <div class="metric">
+
+                <span class="metric-name">
+
+                    Skin Temperature
+
+                </span>
+
+                <span class="metric-value">
+
+                    ${escapeHTML(person.temperature ?? "—")}
+
+                </span>
+
+                <span class="metric-unit">
+
+                    °C
+
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <!-- ======================================
+             АДАПТИВНИЙ ГРАФІК ПУЛЬСУ
+        ======================================= -->
+
+        ${createPulseChart(person)}
+
+
+        <!-- ======================================
+             ПОПЕРЕДЖЕННЯ
+        ======================================= -->
+
+        <div class="alert-message ${statusClass}">
+
+            ${escapeHTML(person.warning)}
+
+        </div>
+
+
+        <!-- ======================================
+             АКТИВНИЙ SOS
+        ======================================= -->
+
+        ${sosActive ? `
+
+            <div class="sos-active-banner">
+
+                ⚠ SOS Activated — Simulation
+
+            </div>
+
+        ` : ""}
+
+
+        <!-- ======================================
+             СТАН ПРИСТРОЮ
+        ======================================= -->
+
+        <div class="device-info">
+
+            <span class="${person.connected
+                ? "connected"
+                : ""}">
+
+                ● ${person.connected
+
+                    ? "Live"
+
+                    : "Offline"}
+
+            </span>
+
+            <span>
+
+                Battery:
+
+                ${person.battery == null
+
+                    ? "—"
+
+                    : escapeHTML(person.battery) + "%"}
+
+            </span>
+
+        </div>
+
+
+        <!-- ======================================
+             КНОПКИ КАРТКИ
+        ======================================= -->
+
+        <div class="card-actions">
+
+            <button class="details-button">
+
+                View Details →
+
+            </button>
+
+            <button class="sos-button
+                ${sosActive ? "is-active" : ""}">
+
+                ${sosActive
+
+                    ? "SOS Active"
+
+                    : "SOS / Emergency"}
+
+            </button>
+
+        </div>
+
+    `;
+
+
+    // ==============================================
+    // КНОПКА VIEW DETAILS
+    // ==============================================
+
+    card.querySelector(".details-button")
+
+        .addEventListener("click", function () {
+
+            openAstronaut(person.id);
+
+        });
+
+
+    // ==============================================
+    // КНОПКА SOS
+    // ==============================================
+
+    card.querySelector(".sos-button")
+
+        .addEventListener("click", function () {
+
+            openEmergency(person.id);
+
+        });
+
+
+    // ==============================================
+    // НАТИСКАННЯ НА ВСЮ КАРТКУ
+    // ==============================================
+
+    card.style.cursor = "pointer";
+
+    card.addEventListener("click", function (event) {
+
+        if (event.target.closest("button")) {
+
+            return;
+
+        }
+
+        openAstronaut(person.id);
+
+    });
+
+    return card;
+
 }
 
-// Кількість колонок: плитки займають усе вікно, сітка близька до квадрата
-// (4 пристрої → 2×2), але плитка не вужча за MIN_TILE_PX.
-const MIN_TILE_PX = 400;
 
-function layoutGrid(count) {
-  if (!crewGrid) return;
-  const n = Math.max(1, count);
-  const ideal = n <= 3 ? n : Math.ceil(Math.sqrt(n));
-  const fit = Math.max(1, Math.floor(window.innerWidth / MIN_TILE_PX));
-  crewGrid.style.setProperty("--cols", String(Math.min(ideal, fit)));
-}
-
-window.addEventListener("resize", () => layoutGrid(astronauts.length));
+// ==================================================
+// ВІДОБРАЖЕННЯ АСТРОНАВТІВ
+// ==================================================
 
 function renderAstronauts() {
-  if (!crewGrid) return;
 
-  // Стабільний порядок за id — плитки не стрибають при зміні статусу
-  const list = [...astronauts].sort((a, b) =>
-    String(a.id).localeCompare(String(b.id), undefined, { numeric: true })
-  );
+    // Поточний пошуковий запит
 
-  crewGrid.innerHTML = "";
-  list.forEach((person) => crewGrid.appendChild(createAstronautCard(person)));
-  layoutGrid(list.length);
+    const search = searchInput.value
 
-  if (list.length === 0) {
-    crewGrid.innerHTML = `<p class="empty-message">Waiting for devices</p>`;
-  }
-}
+        .toLowerCase()
+        .trim();
 
-// ==============================
-// РОЗГОРТАННЯ ПЛИТКИ НА ВЕСЬ ЕКРАН
-// Панель стартує з прямокутника плитки й росте до всього вікна
-// (під шапкою), всередині — індивідуальна сторінка пристрою.
-// ==============================
 
-let expandedId = null;
+    // ==============================================
+    // ФІЛЬТРАЦІЯ АСТРОНАВТІВ
+    // ==============================================
 
-function headerHeight() {
-  const header = document.querySelector(".header");
-  return header ? Math.round(header.getBoundingClientRect().bottom) : 0;
-}
+    const filteredAstronauts = astronauts.filter(person => {
 
-function setPanelRect(panel, rect) {
-  panel.style.top = `${rect.top}px`;
-  panel.style.left = `${rect.left}px`;
-  panel.style.width = `${rect.width}px`;
-  panel.style.height = `${rect.height}px`;
-}
+        const matchesStatus =
 
-function expandTile(card) {
-  if (expandedId != null) return;
-  const id = card.dataset.id;
-  expandedId = id;
+            currentFilter === "All" ||
 
-  const panel = document.createElement("section");
-  panel.id = "tile-expanded";
-  panel.className = "tile-expanded";
-  setPanelRect(panel, card.getBoundingClientRect());
+            person.status === currentFilter;
 
-  const frame = document.createElement("iframe");
-  frame.title = "Device details";
-  frame.src = `pages/astronaut.html?id=${encodeURIComponent(id)}&embed=1`;
-  panel.appendChild(frame);
+        const matchesSearch =
 
-  document.body.appendChild(panel);
-  document.body.classList.add("tile-open");
+            String(person.name || "").toLowerCase().includes(search) ||
+            String(person.id || "").toLowerCase().includes(search);
 
-  // Два кадри, щоб браузер зафіксував стартовий прямокутник
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      const top = headerHeight();
-      panel.style.top = `${top}px`;
-      panel.style.left = "0px";
-      panel.style.width = "100vw";
-      panel.style.height = `calc(100vh - ${top}px)`;
-      panel.classList.add("is-open");
+        return matchesStatus && matchesSearch;
+
     });
-  });
+
+
+    // ==============================================
+    // СОРТУВАННЯ ЗА КРИТИЧНІСТЮ
+    // ==============================================
+
+    filteredAstronauts.sort((a, b) => {
+
+        return (priority[a.status] ?? 2) -
+
+               (priority[b.status] ?? 2);
+
+    });
+
+
+    // Очищення попередніх карток
+
+    crewGrid.innerHTML = "";
+
+
+    // ==============================================
+    // АДАПТИВНЕ РОЗТАШУВАННЯ КАРТОК
+    // ==============================================
+
+    const count = filteredAstronauts.length;
+
+    let columns;
+
+
+    // Один або два астронавти
+
+    if (count <= 2) {
+
+        columns = Math.max(1, count);
+
+    }
+
+
+    // Три або чотири астронавти
+
+    else if (count <= 4) {
+
+        columns = 2;
+
+    }
+
+
+    // П'ять або шість астронавтів
+
+    else if (count <= 6) {
+
+        columns = 3;
+
+    }
+
+
+    // Сім і більше астронавтів
+
+    else {
+
+        columns = 4;
+
+    }
+
+
+    // Передаємо кількість стовпчиків у CSS
+
+    crewGrid.style.setProperty(
+
+        "--crew-columns",
+
+        columns
+
+    );
+
+
+    // Компактний режим від п'яти астронавтів
+
+    crewGrid.classList.toggle(
+
+        "compact",
+
+        count > 4
+
+    );
+
+
+    // Максимально компактний режим від семи
+
+    crewGrid.classList.toggle(
+
+        "extra-compact",
+
+        count > 6
+
+    );
+
+
+    // ==============================================
+    // СТВОРЕННЯ КАРТОК
+    // ==============================================
+
+    filteredAstronauts.forEach(person => {
+
+        crewGrid.appendChild(
+
+            createAstronautCard(person)
+
+        );
+
+    });
+
+
+    // Кількість видимих астронавтів
+
+    visibleCount.textContent =
+
+        `${filteredAstronauts.length} astronauts`;
+
+
+    // ==============================================
+    // ЯКЩО НІКОГО НЕ ЗНАЙДЕНО
+    // ==============================================
+
+    if (filteredAstronauts.length === 0) {
+
+        crewGrid.innerHTML = `
+
+            <p class="empty-message">
+
+                No astronauts found
+
+            </p>
+
+        `;
+
+    }
+
+
+    // ==============================================
+    // АДАПТИВНЕ МАСШТАБУВАННЯ ГРАФІКІВ
+    // ==============================================
+
+    setupResponsivePulseCharts();
+
+
+    // ==============================================
+    // ОНОВЛЕННЯ СТАТИСТИКИ
+    // ==============================================
+
+    updateStatistics();
+
+
+    // ==============================================
+    // ЗБЕРЕЖЕННЯ ДАНИХ
+    // ==============================================
+
+    // saveCrew() також повідомляє Notification Center
+    // про актуальний стан усього екіпажу.
+
+    saveCrew();
+
 }
 
-function collapseTile() {
-  const panel = document.getElementById("tile-expanded");
-  if (!panel || expandedId == null) return;
 
-  const card = crewGrid?.querySelector(
-    `.astronaut-card[data-id="${CSS.escape(String(expandedId))}"]`
-  );
-  expandedId = null;
-  document.body.classList.remove("tile-open");
-  panel.classList.remove("is-open");
+// ==================================================
+// ВИПАДАЮЧЕ МЕНЮ СТАТИСТИКИ
+// ==================================================
 
-  const done = () => panel.remove();
-  if (!card) {
-    done();
-    return;
-  }
-  setPanelRect(panel, card.getBoundingClientRect());
-  panel.addEventListener("transitionend", done, { once: true });
-  setTimeout(done, 500);
+
+// Закриття меню
+
+function closeCrewMenu() {
+
+    crewMenu.hidden = true;
+
+    menuToggle.classList.remove("active");
+
+    menuToggle.setAttribute(
+
+        "aria-expanded",
+
+        "false"
+
+    );
+
 }
 
-if (crewGrid) {
-  crewGrid.addEventListener("click", (event) => {
-    const card = event.target.closest(".astronaut-card");
-    if (card) expandTile(card);
-  });
-  crewGrid.addEventListener("keydown", (event) => {
-    if (event.key !== "Enter" && event.key !== " ") return;
-    const card = event.target.closest(".astronaut-card");
-    if (!card) return;
-    event.preventDefault();
-    expandTile(card);
-  });
+
+// Відкриття меню
+
+function openCrewMenu() {
+
+    // Закриваємо центр сповіщень
+
+    window.PulsarNotifications?.closePanel();
+
+
+    // Закриваємо пошук
+
+    closeCrewSearch();
+
+
+    // Відкриваємо статистику
+
+    crewMenu.hidden = false;
+
+    menuToggle.classList.add("active");
+
+    menuToggle.setAttribute(
+
+        "aria-expanded",
+
+        "true"
+
+    );
+
 }
 
-document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape") collapseTile();
+
+// ==================================================
+// НАТИСКАННЯ НА ТРИ РИСОЧКИ
+// ==================================================
+
+menuToggle.addEventListener("click", function () {
+
+    if (crewMenu.hidden) {
+
+        openCrewMenu();
+
+    } else {
+
+        closeCrewMenu();
+
+    }
+
 });
 
-// Розгорнута сторінка (iframe) просить закритись
-window.addEventListener("message", (event) => {
-  if (event.origin !== location.origin) return;
-  if (event.data && event.data.type === "pulsar:close") collapseTile();
-  if (event.data && event.data.type === "pulsar:sos-change") renderAstronauts();
+
+// ==================================================
+// ЗАКРИТТЯ ПРИ НАТИСКАННІ ПОЗА МЕНЮ
+// ==================================================
+
+document.addEventListener("click", function (event) {
+
+    if (
+
+        !crewMenu.contains(event.target) &&
+
+        !menuToggle.contains(event.target)
+
+    ) {
+
+        closeCrewMenu();
+
+    }
+
 });
+
+
+// ==================================================
+// КОМПАКТНИЙ ПОШУК
+// ==================================================
+
+
+// Відкриття поля пошуку
+
+function openCrewSearch() {
+
+    // Закриваємо центр сповіщень
+
+    window.PulsarNotifications?.closePanel();
+
+
+    // Закриваємо меню статистики
+
+    closeCrewMenu();
+
+
+    // Відкриваємо пошук
+
+    searchPanel.hidden = false;
+
+    searchToggle.classList.add("active");
+
+    searchToggle.setAttribute(
+
+        "aria-expanded",
+
+        "true"
+
+    );
+
+    searchInput.focus();
+
+}
+
+
+// Закриття поля пошуку
+
+function closeCrewSearch() {
+
+    searchPanel.hidden = true;
+
+    searchToggle.classList.remove("active");
+
+    searchToggle.setAttribute(
+
+        "aria-expanded",
+
+        "false"
+
+    );
+
+
+    // Очищення пошукового запиту
+
+    if (searchInput.value !== "") {
+
+        searchInput.value = "";
+
+        renderAstronauts();
+
+    }
+
+}
+
+
+// ==================================================
+// НАТИСКАННЯ НА ЛУПУ
+// ==================================================
+
+searchToggle.addEventListener("click", function () {
+
+    if (searchPanel.hidden) {
+
+        openCrewSearch();
+
+    } else {
+
+        closeCrewSearch();
+
+    }
+
+});
+
+
+// ==================================================
+// НАТИСКАННЯ НА ХРЕСТИК ПОШУКУ
+// ==================================================
+
+searchClose.addEventListener("click", function () {
+
+    closeCrewSearch();
+
+    searchToggle.focus();
+
+});
+
+
+// ==================================================
+// ПОШУК ПІД ЧАС ВВЕДЕННЯ ТЕКСТУ
+// ==================================================
+
+searchInput.addEventListener("input", function () {
+    renderAstronauts();
+    clearTimeout(searchInput._uiTimer);
+    searchInput._uiTimer = setTimeout(persistMissionUi, 400);
+});
+
+
+// ==================================================
+// ФІЛЬТРАЦІЯ АСТРОНАВТІВ
+// ==================================================
+
+document.querySelectorAll("[data-filter]")
+
+    .forEach(button => {
+
+        button.addEventListener("click", function () {
+
+            // Зберігаємо вибраний фільтр
+
+            currentFilter = button.dataset.filter;
+            persistMissionUi();
+
+
+            // Виділення активного фільтра
+
+            document.querySelectorAll(".filter-button")
+
+                .forEach(filterButton => {
+
+                    const isActive =
+
+                        filterButton.dataset.filter ===
+
+                        currentFilter;
+
+                    filterButton.classList.toggle(
+
+                        "active",
+
+                        isActive
+
+                    );
+
+                    filterButton.setAttribute(
+
+                        "aria-pressed",
+
+                        String(isActive)
+
+                    );
+
+                });
+
+
+            // Оновлення карток
+
+            renderAstronauts();
+
+
+            // Закриття випадаючого меню
+
+            closeCrewMenu();
+
+            menuToggle.focus();
+
+        });
+
+    });
+
+
+// ==================================================
+// ЗАКРИТТЯ МЕНЮ ТА ПОШУКУ
+// ЗА ДОПОМОГОЮ ESCAPE
+// ==================================================
+
+document.addEventListener("keydown", function (event) {
+
+    if (event.key !== "Escape") {
+
+        return;
+
+    }
+
+
+    // Не втручаємося в роботу модальних вікон
+
+    if (document.querySelector("dialog[open]")) {
+
+        return;
+
+    }
+
+
+    // Закриття випадаючого меню
+
+    if (!crewMenu.hidden) {
+
+        closeCrewMenu();
+
+        menuToggle.focus();
+
+        return;
+
+    }
+
+
+    // Закриття пошуку
+
+    if (!searchPanel.hidden) {
+
+        closeCrewSearch();
+
+        searchToggle.focus();
+
+    }
+
+});
+
+
+// ==================================================
+// ДЕТАЛЬНА ІНФОРМАЦІЯ ПРО АСТРОНАВТА
+// ==================================================
+
+function openAstronaut(id) {
+
+    // Зберігаємо актуальні дані
+
+    if (!saveCrew()) {
+
+        alert("Demo storage is unavailable.");
+
+        return;
+
+    }
+
+
+    // Перехід до індивідуальної панелі
+
+    window.location.href =
+
+        `pages/astronaut.html?id=${encodeURIComponent(id)}`;
+
+}
+
+
+// ==================================================
+// SOS — ЕКСТРЕНА ДОПОМОГА
+// ==================================================
+
+function openEmergency(id) {
+
+    const person = astronauts.find(
+
+        astronaut => astronaut.id === id
+
+    );
+
+    if (person) {
+
+        openSosDialog(person);
+
+    }
+
+}
+
+
+// ==================================================
+// ПОЧАТКОВИЙ ЗАПУСК
+// ==================================================
+
+
+// Початковий стан верхньої панелі
+
+closeCrewMenu();
+
+closeCrewSearch();
+
+
+// Початковий стан фільтрів
+
+document.querySelectorAll(".filter-button")
+
+    .forEach(button => {
+
+        const isActive =
+
+            button.dataset.filter === currentFilter;
+
+        button.classList.toggle(
+
+            "active",
+
+            isActive
+
+        );
+
+        button.setAttribute(
+
+            "aria-pressed",
+
+            String(isActive)
+
+        );
+
+    });
+
+
+renderAstronauts();
 
 document.addEventListener("pulsar:sos-change", renderAstronauts);
 
-// Live connect — повний рендер не частіше ніж раз на 900 мс
-let renderScheduled = false;
-let lastFullRender = 0;
-const RENDER_MIN_MS = 900;
+function persistMissionUi() {
+    if (window.PulsarLive?.putMissionUi) {
+        window.PulsarLive.putMissionUi({
+            filter: currentFilter,
+            search: searchInput?.value || "",
+        }).catch(() => {});
+    }
+}
 
-function scheduleRender(force) {
-  const now = Date.now();
-  if (!force && now - lastFullRender < RENDER_MIN_MS) {
-    if (renderScheduled) return;
-    renderScheduled = true;
-    setTimeout(() => {
-      renderScheduled = false;
-      lastFullRender = Date.now();
-      renderAstronauts();
-    }, RENDER_MIN_MS - (now - lastFullRender));
-    return;
-  }
-  lastFullRender = now;
-  renderAstronauts();
+function applyMissionUi(ui) {
+    if (!ui) return;
+    if (ui.filter) {
+        currentFilter = ui.filter;
+        document.querySelectorAll(".filter-button").forEach((button) => {
+            const isActive = button.dataset.filter === currentFilter;
+            button.classList.toggle("active", isActive);
+            button.setAttribute("aria-pressed", String(isActive));
+        });
+    }
+    if (ui.search != null && searchInput && searchInput.value !== ui.search) {
+        searchInput.value = ui.search;
+    }
+    renderAstronauts();
 }
 
 if (window.PulsarLive) {
-  window.PulsarLive.connect({
-    linkEl,
-    onDashboard(crew) {
-      astronauts = crew || [];
-      scheduleRender(true);
-    },
-    onSample(person) {
-      upsertPerson(person);
-      scheduleRender(false);
-    },
-  });
-} else {
-  renderAstronauts();
+    window.PulsarLive.connect({
+        linkEl: document.getElementById("link-chip"),
+        onDashboard(crew) {
+            astronauts.splice(0, astronauts.length, ...(Array.isArray(crew) ? crew : []));
+            saveCrew();
+            renderAstronauts();
+        },
+        onSample(person) {
+            upsertPerson(person);
+            saveCrew();
+            renderAstronauts();
+        },
+        onUi(ui) {
+            applyMissionUi(ui);
+        },
+    });
 }
+
+
+// ==================================================
+// CREW ENVIRONMENTAL ANALYSIS
+// ПРИЙМАННЯ ДАНИХ ДЛЯ СПІЛЬНОГО АНАЛІЗУ
+// ==================================================
+
+
+// Окреме сховище параметрів космічного модуля
+
+const HABITAT_STORAGE_KEY = "pulsar_habitat_data";
+
+
+// ==================================================
+// ПЕРЕВІРКА ТА НОРМАЛІЗАЦІЯ ВИМІРЮВАНЬ
+// ==================================================
+
+function normalizeObservation(record, keys) {
+
+    // ==============================================
+    // ПЕРЕВІРКА ДЖЕРЕЛА, ЯКОСТІ ТА ІДЕНТИФІКАТОРА
+    // ==============================================
+
+    if (
+
+        !record ||
+
+        record.source !== "actual" ||
+
+        record.quality !== "valid" ||
+
+        typeof record.habitatId !== "string" ||
+
+        !record.habitatId.trim()
+
+    ) {
+
+        return null;
+
+    }
+
+
+    // ==============================================
+    // ПЕРЕВІРКА ЧАСОВОЇ МІТКИ
+    // ==============================================
+
+    // Підтримуються числові часові мітки
+    // у мілісекундах або ISO-дати
+    // з указаним часовим поясом.
+
+    const timestamp = typeof record.timestamp === "number"
+
+        ? record.timestamp
+
+        : typeof record.timestamp === "string" &&
+
+            /(?:Z|[+-]\d{2}:\d{2})$/i.test(record.timestamp)
+
+                ? Date.parse(record.timestamp)
+
+                : NaN;
+
+
+    // Відхиляємо некоректні та майбутні дати.
+
+    if (
+
+        !Number.isFinite(timestamp) ||
+
+        timestamp <= 0 ||
+
+        timestamp > Date.now()
+
+    ) {
+
+        return null;
+
+    }
+
+
+    // ==============================================
+    // ОСНОВНА ІНФОРМАЦІЯ ПРО ВИМІРЮВАННЯ
+    // ==============================================
+
+    const result = {
+
+        source: "actual",
+
+        quality: "valid",
+
+        habitatId: record.habitatId,
+
+        timestamp
+
+    };
+
+
+    // ==============================================
+    // ПЕРЕВІРКА ОКРЕМИХ ПОКАЗНИКІВ
+    // ==============================================
+
+    for (const key of keys) {
+
+        if (!Object.hasOwn(record, key)) {
+
+            continue;
+
+        }
+
+
+        const value = record[key];
+
+
+        // ==========================================
+        // СТРУКТУРОВАНІ СИМПТОМИ
+        // ==========================================
+
+        if (key === "symptoms") {
+
+            if (
+
+                !Array.isArray(value) ||
+
+                !value.every(v =>
+
+                    typeof v === "string" &&
+
+                    v.trim()
+
+                )
+
+            ) {
+
+                return null;
+
+            }
+
+
+            // Нормалізація тексту симптомів
+            // та видалення повторів.
+
+            result[key] = [
+
+                ...new Set(
+
+                    value.map(v =>
+
+                        v.trim().toLowerCase()
+
+                    )
+
+                )
+
+            ];
+
+        }
+
+
+        // ==========================================
+        // ЯКІСТЬ ПОВІТРЯ
+        // ==========================================
+
+        else if (key === "airQuality") {
+
+            if (
+
+                value !== null &&
+
+                (
+
+                    typeof value !== "string" ||
+
+                    !value.trim()
+
+                )
+
+            ) {
+
+                return null;
+
+            }
+
+            result[key] = value;
+
+        }
+
+
+        // ==========================================
+        // ЧИСЛОВІ ПОКАЗНИКИ
+        // ==========================================
+
+        else {
+
+            if (
+
+                value !== null &&
+
+                (
+
+                    typeof value !== "number" ||
+
+                    !Number.isFinite(value) ||
+
+                    (
+
+                        ["oxygen", "airOxygen"].includes(key) &&
+
+                        (value < 0 || value > 100)
+
+                    ) ||
+
+                    (
+
+                        [
+
+                            "pulse",
+
+                            "pressure",
+
+                            "airTemperature"
+
+                        ].includes(key) &&
+
+                        value <= 0
+
+                    ) ||
+
+                    (
+
+                        ["co2", "radiation"].includes(key) &&
+
+                        value < 0
+
+                    )
+
+                )
+
+            ) {
+
+                return null;
+
+            }
+
+            result[key] = value;
+
+        }
+
+    }
+
+
+    // ==============================================
+    // ПОВЕРНЕННЯ ПЕРЕВІРЕНОГО ЗАПИСУ
+    // ==============================================
+
+    // Запис повинен містити хоча б одне
+    // передане поле вимірювання.
+
+    return keys.some(key =>
+
+        Object.hasOwn(result, key)
+
+    )
+
+        ? result
+
+        : null;
+
+}
+
+
+// ==================================================
+// ОБ'ЄДНАННЯ ІСТОРІЇ ВИМІРЮВАНЬ
+// ==================================================
+
+function mergeObservations(previous, incoming) {
+
+    const records = new Map();
+
+
+    // Об'єднуємо попередні та нові вимірювання.
+
+    for (const record of [
+
+        ...(Array.isArray(previous) ? previous : []),
+
+        ...incoming
+
+    ]) {
+
+        // Не змішуємо демонстраційні
+        // та фактичні спостереження.
+
+        if (!record || record.source !== "actual") {
+
+            continue;
+
+        }
+
+
+        // Унікальний ключ спостереження:
+        // космічний модуль + час вимірювання.
+
+        const key = JSON.stringify([
+
+            record.habitatId,
+
+            record.timestamp
+
+        ]);
+
+
+        // Якщо запис із таким часом уже існує,
+        // доповнюємо його новими полями.
+
+        records.set(key, {
+
+            ...records.get(key),
+
+            ...record
+
+        });
+
+    }
+
+
+    // Повертаємо історію в хронологічному порядку.
+
+    return [...records.values()].sort(
+
+        (a, b) => a.timestamp - b.timestamp
+
+    );
+
+}
+
+
+// ==================================================
+// ОНОВЛЕННЯ ДАНИХ КОСМІЧНОГО МОДУЛЯ
+// ==================================================
+
+function updateHabitatData(payload) {
+
+    // ==============================================
+    // ПЕРЕВІРКА ФОРМАТУ ОТРИМАНИХ ДАНИХ
+    // ==============================================
+
+    if (
+
+        !payload ||
+
+        payload.source !== "actual" ||
+
+        typeof payload.habitatId !== "string" ||
+
+        !payload.habitatId.trim() ||
+
+        !Array.isArray(payload.environment)
+
+    ) {
+
+        return false;
+
+    }
+
+
+    // ==============================================
+    // ДОЗВОЛЕНІ ПОКАЗНИКИ СЕРЕДОВИЩА
+    // ==============================================
+
+    const keys = [
+
+        // Вуглекислий газ — ppm
+
+        "co2",
+
+
+        // Концентрація кисню — %
+
+        "airOxygen",
+
+
+        // Атмосферний тиск — kPa
+
+        "pressure",
+
+
+        // Температура повітря — K
+
+        "airTemperature",
+
+
+        // Потужність дози опромінення — µSv/h
+
+        "radiation",
+
+
+        // Якість повітря — стан датчика
+
+        "airQuality"
+
+    ];
+
+
+    // ==============================================
+    // ПЕРЕВІРКА ВСІХ ВИМІРЮВАНЬ
+    // ==============================================
+
+    const records = payload.environment.map(record =>
+
+        normalizeObservation(record, keys)
+
+    );
+
+
+    // Перевіряємо, що всі вимірювання
+    // належать одному космічному модулю.
+
+    if (records.some(record =>
+
+        !record ||
+
+        record.habitatId !== payload.habitatId
+
+    )) {
+
+        return false;
+
+    }
+
+
+    // ==============================================
+    // ЗБЕРЕЖЕННЯ ДАНИХ СЕРЕДОВИЩА
+    // ==============================================
+
+    try {
+
+        const previous = JSON.parse(
+
+            sessionStorage.getItem(
+
+                HABITAT_STORAGE_KEY
+
+            ) || "null"
+
+        );
+
+
+        // Чи належать нові дані тому самому модулю?
+
+        const same =
+
+            previous?.source === "actual" &&
+
+            previous.habitatId === payload.habitatId;
+
+
+        // ==========================================
+        // ФОРМУВАННЯ СПІЛЬНОГО ОБ'ЄКТА СЕРЕДОВИЩА
+        // ==========================================
+
+        const data = {
+
+            source: "actual",
+
+            habitatId: payload.habitatId,
+
+
+            // Назва космічного модуля
+
+            habitatName:
+
+                typeof payload.habitatName === "string"
+
+                    ? payload.habitatName
+
+                    : (
+
+                        same
+
+                            ? previous.habitatName
+
+                            : payload.habitatId
+
+                    ),
+
+
+            // Історія параметрів середовища
+
+            environment: mergeObservations(
+
+                same ? previous.environment : [],
+
+                records
+
+            ),
+
+
+            // Критерії аналізу, отримані від сервера.
+            //
+            // Умовні демонстраційні пороги
+            // автоматично не підставляються.
+
+            criteria:
+
+                Object.hasOwn(payload, "criteria")
+
+                    ? payload.criteria
+
+                    : (
+
+                        same
+
+                            ? previous.criteria
+
+                            : {}
+
+                    )
+
+        };
+
+
+        // ==========================================
+        // ЗБЕРЕЖЕННЯ У SESSION STORAGE
+        // ==========================================
+
+        sessionStorage.setItem(
+
+            HABITAT_STORAGE_KEY,
+
+            JSON.stringify(data)
+
+        );
+        if (window.PulsarLive?.putHabitat) {
+            window.PulsarLive.putHabitat(data).catch(() => {});
+        }
+
+
+        // ==========================================
+        // ПОВІДОМЛЕННЯ ПРО ОНОВЛЕННЯ СЕРЕДОВИЩА
+        // ==========================================
+
+        document.dispatchEvent(
+
+            new CustomEvent(
+
+                "pulsar:habitat-change",
+
+                {
+
+                    detail: {
+
+                        habitatId: data.habitatId
+
+                    }
+
+                }
+
+            )
+
+        );
+
+        return true;
+
+    } catch (error) {
+
+        console.error(
+
+            "Cannot save habitat data:",
+
+            error
+
+        );
+
+        return false;
+
+    }
+
+}
+
+
+// ==================================================
+// ОНОВЛЕННЯ ДАНИХ ЕКІПАЖУ
+// ДЛЯ МАЙБУТНЬОЇ ІНТЕГРАЦІЇ ІЗ СЕРВЕРОМ
+// ==================================================
+
+function updateCrewData(updates) {
+
+    // Перевірка формату отриманих даних
+
+    if (!Array.isArray(updates)) {
+
+        return false;
+
+    }
+
+
+    // Оновлення даних кожного астронавта
+
+    updates.forEach(update => {
+
+        if (!update || typeof update !== "object") {
+
+            return;
+
+        }
+
+
+        // Знаходимо відповідного астронавта
+
+        const person = astronauts.find(
+
+            item => String(item.id) === String(update.id)
+
+        );
+
+        if (!person) {
+
+            return;
+
+        }
+
+
+        // ==========================================
+        // ПОКАЗНИКИ, ЯКІ МОЖНА ОНОВЛЮВАТИ
+        // ==========================================
+
+        const keys = [
+
+            // Статус здоров'я
+
+            "status",
+
+            "warning",
+
+
+            // Основні фізичні показники
+
+            "pulse",
+
+            "oxygen",
+
+            "temperature",
+
+            "mass",
+
+            "gripStrength",
+
+            "gripHand",
+
+            "restingHeartRate",
+
+
+            // Стан пристрою
+
+            "battery",
+
+            "connected",
+
+
+            // Історія вимірювань
+
+            "pulseHistory",
+
+            "history",
+
+            "alertHistory",
+
+
+            // Рухова активність
+
+            "acceleration",
+
+            "movement",
+
+            "activity",
+
+
+            // Самопочуття
+
+            "sleepDuration",
+
+            "sleepQuality",
+
+            "stressLevel",
+
+
+            // Навколишнє середовище
+
+            "pressure",
+
+            "airTemperature",
+
+            "airOxygen",
+
+            "airQuality",
+
+            "co2",
+
+
+            // Радіація
+
+            "radiation",
+
+            "radiationDose"
+
+        ];
+
+
+        // ==========================================
+        // CREW ENVIRONMENTAL ANALYSIS
+        // СИНХРОНІЗОВАНІ СПОСТЕРЕЖЕННЯ ЗДОРОВ'Я
+        // ==========================================
+
+        if (Object.hasOwn(update, "healthObservations")) {
+
+            // Перевіряємо формат історії.
+
+            if (!Array.isArray(update.healthObservations)) {
+
+                return;
+
+            }
+
+
+            // Перевіряємо всі нові спостереження.
+
+            const records = update.healthObservations.map(
+
+                record => normalizeObservation(
+
+                    record,
+
+                    [
+
+                        "pulse",
+
+                        "oxygen",
+
+                        "temperature",
+
+                        "symptoms"
+
+                    ]
+
+                )
+
+            );
+
+
+            // Некоректні записи не зберігаємо.
+
+            if (records.some(record => !record)) {
+
+                return;
+
+            }
+
+
+            // Доповнюємо історію спостережень.
+            //
+            // Не видаляємо попередні вимірювання,
+            // коли надходять нові.
+
+            person.healthObservations = mergeObservations(
+
+                person.healthObservations,
+
+                records
+
+            );
+
+        }
+
+
+        // ==========================================
+        // ОНОВЛЕННЯ ЗВИЧАЙНИХ ПОКАЗНИКІВ
+        // ==========================================
+
+        keys.forEach(key => {
+
+            if (Object.hasOwn(update, key)) {
+
+                person[key] = update[key];
+
+            }
+
+        });
+
+    });
+
+
+    // ==============================================
+    // ОНОВЛЕННЯ ГОЛОВНОЇ СТОРІНКИ
+    // ==============================================
+
+    // renderAstronauts():
+    //
+    // 1. Оновлює картки астронавтів.
+    // 2. Перемальовує графіки.
+    // 3. Оновлює статистику.
+    // 4. Викликає saveCrew().
+    // 5. Повідомляє Notification Center.
+
+    renderAstronauts();
+
+    return true;
+
+}
+
+
+// ==================================================
+// ПІДКЛЮЧЕННЯ ДО ІНШИХ МОДУЛІВ
+// ==================================================
+
+window.PulsarCrew = Object.freeze({
+
+    // Оновлення показників астронавтів
+
+    updateCrewData,
+
+
+    // Оновлення параметрів космічного модуля
+
+    updateHabitatData
+
+});
+
+
+// ==================================================
+// КІНЕЦЬ CREW DASHBOARD
+// ==================================================

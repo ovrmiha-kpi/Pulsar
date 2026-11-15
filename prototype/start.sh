@@ -103,6 +103,9 @@ cat <<EOF
   Панель сервера:   http://127.0.0.1:4100/panel
   Health:           http://127.0.0.1:4100/health
 
+  /panel: sim + Emulate + Medical card
+  Watch (--com): LINK + CREW|… + REC|…
+
   Логи:             prototype/.run-*.log
   Зупинити:         kill \$(cat prototype/.run-*.pid)
 
@@ -110,5 +113,6 @@ cat <<EOF
     ./start.sh --com COM11
   Симуляція без заліза:
     ./start.sh --demo
+  Перед Upload — зупиніть bridge (COM busy).
 ────────────────────────────────────────
 EOF

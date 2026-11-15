@@ -1,14 +1,11 @@
 # PULSAR site
 
-Фронт з `Хакатон.zip` + live дані з [`../server`](../server).
+UI з `Хакатон (2).zip` + live міст до [`../server`](../server) (`js/live.js`).
 
 ```bash
-# термінал 1
-cd ../server && npm start
-
-# термінал 2
-cd ../site && npm start
-# → http://localhost:4200
+npm start   # http://localhost:4200
 ```
 
-Config у `index.html`: `window.PULSAR_API = "http://127.0.0.1:4100"`.
+Config: `window.PULSAR_API = "http://127.0.0.1:4100"`.
+
+Симуляція екіпажу — **тільки** через server `/panel` або `POST /api/admin/devices/:id/sim`. Сайт сам демо-екіпаж більше не генерує.

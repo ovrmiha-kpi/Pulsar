@@ -1,6 +1,9 @@
+
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
     <meta charset="UTF-8">
 
     <meta name="viewport"
@@ -8,22 +11,22 @@
 
     <title>PULSAR | Crew Health Monitoring</title>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;700&display=swap">
-
     <link rel="stylesheet" href="css/style.css">
+
 </head>
 
 <body>
 
-    <!-- Верхня панель сайту -->
+    <!-- ==========================================
+         ВЕРХНЯ ПАНЕЛЬ САЙТУ
+    =========================================== -->
+
     <header class="header">
 
         <div class="brand">
 
             <svg class="logo" viewBox="0 0 48 48">
+
                 <circle cx="24" cy="24" r="19"
                         fill="none"
                         stroke="currentColor"
@@ -35,33 +38,740 @@
                       stroke="currentColor"
                       stroke-width="2.5"
                       stroke-linejoin="round"/>
+
             </svg>
 
             <div>
+
                 <h1>PULSAR</h1>
+
                 <p>Space Crew Health Monitoring</p>
+
             </div>
 
         </div>
 
+
+        <!-- Назва космічної місії -->
+
         <div class="mission">
-            <span class="mission-clock" id="utc-clock">--:--:-- UTC</span>
-            <span class="link-chip" id="live-link" data-state="reconnect">Connecting</span>
+            Lunar Exploration Mission
+        </div>
+
+        <div class="header-live">
+            <span id="link-chip" class="link-chip" data-state="offline">Offline</span>
+            <span id="utc-clock" class="utc-clock"></span>
         </div>
 
     </header>
 
 
-    <!-- Плитки екіпажу: впритул, клік розгортає плитку на весь екран -->
-    <main class="crew-grid" id="crew-grid"></main>
+    <!-- ==========================================
+         ОСНОВНА ЧАСТИНА САЙТУ
+    =========================================== -->
 
+    <main class="dashboard">
+
+
+        <!-- ======================================
+             ЗАГОЛОВОК ТА ПАНЕЛЬ КЕРУВАННЯ
+        ======================================= -->
+
+        <div class="dashboard-top">
+
+
+            <!-- Заголовок сторінки -->
+
+            <section class="dashboard-heading">
+
+                <h2>Crew Dashboard</h2>
+
+                <p>Monitor crew health and mission safety</p>
+
+            </section>
+
+
+            <!-- Панель іконок -->
+
+            <div class="dashboard-actions">
+
+
+                <!-- ==================================
+                     ВИПАДАЮЧЕ МЕНЮ СТАТИСТИКИ
+                =================================== -->
+
+                <div class="crew-menu-wrapper">
+
+
+                    <!-- Кнопка з трьома рисочками -->
+
+                    <button type="button"
+                            class="dashboard-icon"
+                            id="menu-toggle"
+                            title="Crew statistics"
+                            aria-label="Crew statistics"
+                            aria-controls="crew-menu"
+                            aria-expanded="false">
+
+                        <svg viewBox="0 0 24 24"
+                             fill="none"
+                             stroke="currentColor"
+                             stroke-width="1.8"
+                             stroke-linecap="round">
+
+                            <path d="M3 6h18"/>
+
+                            <path d="M3 12h18"/>
+
+                            <path d="M3 18h18"/>
+
+                        </svg>
+
+                    </button>
+
+
+                    <!-- Випадаюче меню -->
+
+                    <div class="crew-menu"
+                         id="crew-menu"
+                         hidden>
+
+
+                        <!-- Заголовок меню -->
+
+                        <div class="crew-menu-title">
+
+                            Crew Overview
+
+                        </div>
+
+
+                        <!-- Загальна кількість -->
+
+                        <button type="button"
+                                class="filter-button crew-menu-item active"
+                                data-filter="All"
+                                aria-pressed="true">
+
+                            <span class="crew-status-dot total">
+                            </span>
+
+                            <span>Total Crew</span>
+
+                            <strong id="total-count"
+                                    class="crew-menu-count total">
+
+                                0
+
+                            </strong>
+
+                        </button>
+
+
+                        <!-- Критичний стан -->
+
+                        <button type="button"
+                                class="filter-button crew-menu-item"
+                                data-filter="Critical"
+                                aria-pressed="false">
+
+                            <span class="crew-status-dot critical">
+                            </span>
+
+                            <span>Critical</span>
+
+                            <strong id="critical-count"
+                                    class="crew-menu-count critical">
+
+                                0
+
+                            </strong>
+
+                        </button>
+
+
+                        <!-- Попередження -->
+
+                        <button type="button"
+                                class="filter-button crew-menu-item"
+                                data-filter="Warning"
+                                aria-pressed="false">
+
+                            <span class="crew-status-dot warning">
+                            </span>
+
+                            <span>Warnings</span>
+
+                            <strong id="warning-count"
+                                    class="crew-menu-count warning">
+
+                                0
+
+                            </strong>
+
+                        </button>
+
+
+                        <!-- Очікування даних -->
+
+                        <button type="button"
+                                class="filter-button crew-menu-item"
+                                data-filter="Pending"
+                                aria-pressed="false">
+
+                            <span class="crew-status-dot pending">
+                            </span>
+
+                            <span>Pending</span>
+
+                            <strong id="pending-count"
+                                    class="crew-menu-count pending">
+
+                                0
+
+                            </strong>
+
+                        </button>
+
+
+                        <!-- Нормальний стан -->
+
+                        <button type="button"
+                                class="filter-button crew-menu-item"
+                                data-filter="Normal"
+                                aria-pressed="false">
+
+                            <span class="crew-status-dot normal">
+                            </span>
+
+                            <span>Normal</span>
+
+                            <strong id="normal-count"
+                                    class="crew-menu-count normal">
+
+                                0
+
+                            </strong>
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <!-- ==================================
+                     ПОШУК АСТРОНАВТА
+                =================================== -->
+
+                <div class="crew-search-wrapper">
+
+
+                    <!-- Іконка лупи -->
+
+                    <button type="button"
+                            class="dashboard-icon"
+                            id="search-toggle"
+                            title="Search astronaut"
+                            aria-label="Search astronaut"
+                            aria-controls="search-panel"
+                            aria-expanded="false">
+
+                        <svg viewBox="0 0 24 24"
+                             fill="none"
+                             stroke="currentColor"
+                             stroke-width="1.8"
+                             stroke-linecap="round">
+
+                            <circle cx="10.5"
+                                    cy="10.5"
+                                    r="6.5"/>
+
+                            <path d="M16 16l5 5"/>
+
+                        </svg>
+
+                    </button>
+
+
+                    <!-- Приховане поле пошуку -->
+
+                    <div class="crew-search-panel"
+                         id="search-panel"
+                         hidden>
+
+                        <input type="search"
+                               id="search"
+                               placeholder="Search astronaut..."
+                               aria-label="Search astronaut"
+                               autocomplete="off">
+
+
+                        <!-- Кнопка закриття пошуку -->
+
+                        <button type="button"
+                                class="crew-search-close"
+                                id="search-close"
+                                title="Close search"
+                                aria-label="Close search">
+
+                            &times;
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <!-- ==================================
+                     NOTIFICATION CENTER
+                     ЦЕНТР СПОВІЩЕНЬ
+                =================================== -->
+
+                <div class="notification-wrapper">
+
+
+                    <!-- Кнопка відкриття сповіщень -->
+
+                    <button type="button"
+                            class="dashboard-icon notification-toggle"
+                            id="notification-toggle"
+                            title="Notifications"
+                            aria-label="Notifications"
+                            aria-controls="notification-panel"
+                            aria-expanded="false">
+
+
+                        <!-- Іконка дзвіночка -->
+
+                        <svg viewBox="0 0 24 24"
+                             fill="none"
+                             stroke="currentColor"
+                             stroke-width="1.8"
+                             stroke-linecap="round"
+                             stroke-linejoin="round"
+                             aria-hidden="true">
+
+                            <path d="M18 8a6 6 0 0 0-12 0
+                                     c0 7-3 7-3 9h18
+                                     c0-2-3-2-3-9"/>
+
+                            <path d="M10 21a2 2 0 0 0 4 0"/>
+
+                        </svg>
+
+
+                        <!-- Кількість непрочитаних повідомлень -->
+
+                        <span class="notification-badge"
+                              id="notification-badge"
+                              aria-hidden="true"
+                              hidden>
+
+                            0
+
+                        </span>
+
+                    </button>
+
+
+                    <!-- ==================================
+                         ПАНЕЛЬ СПОВІЩЕНЬ
+                    =================================== -->
+
+                    <section class="notification-panel"
+                             id="notification-panel"
+                             aria-labelledby="notification-title"
+                             hidden>
+
+
+                        <!-- Заголовок центру сповіщень -->
+
+                        <div class="notification-header">
+
+                            <div class="notification-heading">
+
+                                <h3 id="notification-title">
+
+                                    Notifications
+
+                                </h3>
+
+                                <p id="notification-unread-count"
+                                   aria-live="polite">
+
+                                    0 unread notifications
+
+                                </p>
+
+                            </div>
+
+
+                            <!-- Кнопка закриття -->
+
+                            <button type="button"
+                                    class="notification-close"
+                                    id="notification-close"
+                                    title="Close notifications"
+                                    aria-label="Close notifications">
+
+                                &times;
+
+                            </button>
+
+                        </div>
+
+
+                        <!-- ==================================
+                             КОРОТКА СТАТИСТИКА
+                        =================================== -->
+
+                        <div class="notification-summary">
+
+
+                            <!-- Усі повідомлення -->
+
+                            <div class="notification-summary-item">
+
+                                <span>Total</span>
+
+                                <strong id="notification-total">
+
+                                    0
+
+                                </strong>
+
+                            </div>
+
+
+                            <!-- Непрочитані -->
+
+                            <div class="notification-summary-item">
+
+                                <span>Unread</span>
+
+                                <strong id="notification-unread">
+
+                                    0
+
+                                </strong>
+
+                            </div>
+
+
+                            <!-- Критичні -->
+
+                            <div class="notification-summary-item">
+
+                                <span>Critical</span>
+
+                                <strong id="notification-critical"
+                                        class="notification-critical-count">
+
+                                    0
+
+                                </strong>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- ==================================
+                             ФІЛЬТРИ СПОВІЩЕНЬ
+                        =================================== -->
+
+                        <div class="notification-filters"
+                             role="group"
+                             aria-label="Filter notifications">
+
+
+                            <!-- Усі -->
+
+                            <button type="button"
+                                    class="notification-filter active"
+                                    data-notification-filter="all"
+                                    aria-pressed="true">
+
+                                All
+
+                            </button>
+
+
+                            <!-- Непрочитані -->
+
+                            <button type="button"
+                                    class="notification-filter"
+                                    data-notification-filter="unread"
+                                    aria-pressed="false">
+
+                                Unread
+
+                            </button>
+
+
+                            <!-- Критичні -->
+
+                            <button type="button"
+                                    class="notification-filter"
+                                    data-notification-filter="critical"
+                                    aria-pressed="false">
+
+                                Critical
+
+                            </button>
+
+
+                            <!-- Попередження -->
+
+                            <button type="button"
+                                    class="notification-filter"
+                                    data-notification-filter="warning"
+                                    aria-pressed="false">
+
+                                Warnings
+
+                            </button>
+
+
+                            <!-- Пристрої -->
+
+                            <button type="button"
+                                    class="notification-filter"
+                                    data-notification-filter="device"
+                                    aria-pressed="false">
+
+                                Devices
+
+                            </button>
+
+
+                            <!-- Нагадування -->
+
+                            <button type="button"
+                                    class="notification-filter"
+                                    data-notification-filter="reminder"
+                                    aria-pressed="false">
+
+                                Reminders
+
+                            </button>
+
+                        </div>
+
+
+                        <!-- ==================================
+                             ДОДАТКОВІ ДІЇ
+                        =================================== -->
+
+                        <div class="notification-actions">
+
+                            <button type="button"
+                                    class="notification-mark-all"
+                                    id="notification-mark-all">
+
+                                <span aria-hidden="true">✓</span>
+
+                                Mark all as read
+
+                            </button>
+
+                        </div>
+
+
+                        <!-- ==================================
+                             СПИСОК СПОВІЩЕНЬ
+                        =================================== -->
+
+                        <div class="notification-list"
+                             id="notification-list"
+                             role="region"
+                             aria-label="Notification list">
+
+                            <!--
+                                Повідомлення створюються
+                                автоматично через notifications.js
+                            -->
+
+                            <div class="notification-empty">
+
+                                <span aria-hidden="true">♧</span>
+
+                                <h4>No notifications</h4>
+
+                                <p>
+
+                                    Crew notifications
+                                    will appear here.
+
+                                </p>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- ==================================
+                             НИЖНЯ ЧАСТИНА ПАНЕЛІ
+                        =================================== -->
+
+                        <div class="notification-footer">
+
+                            <span>
+
+                                Crew Notification Center
+
+                            </span>
+
+                            <span class="notification-demo-label">
+
+                                LIVE
+
+                            </span>
+
+                        </div>
+
+                    </section>
+
+                </div>
+
+
+                <!-- ==================================
+                     CREW ENVIRONMENTAL ANALYSIS
+                     СПІЛЬНИЙ АНАЛІЗ ЕКІПАЖУ
+                     ТА КОСМІЧНОГО СЕРЕДОВИЩА
+                =================================== -->
+
+                <a href="pages/crew-analysis.html"
+                   class="dashboard-icon crew-analysis-toggle"
+                   id="crew-analysis-toggle"
+                   title="Crew Environmental Analysis"
+                   aria-label="Open Crew Environmental Analysis">
+
+
+                    <!-- Іконка взаємозв'язків -->
+
+                    <svg viewBox="0 0 24 24"
+                         fill="none"
+                         stroke="currentColor"
+                         stroke-width="1.6"
+                         stroke-linecap="round"
+                         stroke-linejoin="round"
+                         aria-hidden="true">
+
+
+                        <!-- ==================================
+                             ЗВ'ЯЗКИ МІЖ ЕКІПАЖЕМ
+                             ТА СЕРЕДОВИЩЕМ
+                        =================================== -->
+
+                        <path d="M9.5 9.5 L5.8 5.8"/>
+
+                        <path d="M14.5 9.5 L18.2 5.8"/>
+
+                        <path d="M9.5 14.5 L5.8 18.2"/>
+
+                        <path d="M14.5 14.5 L18.2 18.2"/>
+
+
+                        <!-- Центральний елемент:
+                             космічне середовище -->
+
+                        <circle cx="12"
+                                cy="12"
+                                r="3.5"/>
+
+
+                        <!-- Члени екіпажу -->
+
+                        <circle cx="4"
+                                cy="4"
+                                r="2.5"/>
+
+                        <circle cx="20"
+                                cy="4"
+                                r="2.5"/>
+
+                        <circle cx="4"
+                                cy="20"
+                                r="2.5"/>
+
+                        <circle cx="20"
+                                cy="20"
+                                r="2.5"/>
+
+
+                        <!-- Центральна точка -->
+
+                        <circle cx="12"
+                                cy="12"
+                                r="1"
+                                fill="currentColor"
+                                stroke="none"/>
+
+                    </svg>
+
+                </a>
+
+            </div>
+
+        </div>
+
+
+        <!-- ======================================
+             ІНФОРМАЦІЯ ПРО СОРТУВАННЯ
+        ======================================= -->
+
+        <div class="crew-heading">
+
+            <span id="visible-count"></span>
+
+            <span>↓ Priority first</span>
+
+        </div>
+
+
+        <!-- ======================================
+             АДАПТИВНА ПАНЕЛЬ АСТРОНАВТІВ
+        ======================================= -->
+
+        <section class="crew-grid" id="crew-grid">
+
+            <!--
+                Картки астронавтів створюються
+                автоматично через JavaScript.
+
+                Кількість стовпчиків залежить
+                від кількості членів екіпажу
+                та розміру екрана.
+            -->
+
+        </section>
+
+    </main>
+
+
+    <!-- ==========================================
+         НИЖНЯ ЧАСТИНА САЙТУ
+    =========================================== -->
+
+    <footer>
+        PULSAR © 2026 |
+        NASA Space Apps Challenge |
+        Live · server :4100
+    </footer>
 
     <script>
       window.PULSAR_API = window.PULSAR_API || "http://127.0.0.1:4100";
     </script>
     <script src="js/live.js"></script>
+    <script src="js/notifications.js"></script>
     <script src="js/sos.js"></script>
+    <script src="js/insights.js"></script>
     <script src="js/script.js"></script>
+    <script src="js/crew-analysis.js"></script>
 
 </body>
+
 </html>

@@ -5,7 +5,8 @@
  * PC bridge: site/prototype → npm run bt   (reads BT COM → compute /ingest)
  *
  * BTN2=next · BTN3=prev · BTN1=home/tare
- * Screens: Home · Heart · Air · Climate · Motion · Force
+ * Screens: Home · Crew · Heart · Air · Climate · Motion · Force
+ * Server → watch (USB/BT): LINK · REC|… · CREW|n|o:Name|w:Name|c:Name
  *
  * Person (body): MAX30105 only → HR + SpO2.
  * Environment: BMP280 room temp/pressure, MQ air, MPU motion, HX711 force.
@@ -62,6 +63,7 @@ SPIClass sdSpi(HSPI);
 
 enum Screen : uint8_t {
   SCR_HOME = 0,
+  SCR_CREW,     // smileys for main crew (from server CREW|…)
   SCR_HEART,
   SCR_AIR,
   SCR_CLIMATE,
@@ -140,6 +142,19 @@ static FaceKind faceKind = FACE_OK;
 static char statusLine[48] = "boot...";
 static char stationRec[64] = "";           // остання рекомендація з сервера
 static uint32_t stationRecUntil = 0;       // показувати до цього millis
+
+// Crew board from server: CREW|n|o:Label|w:Label|c:Label|p:Label
+static const uint8_t CREW_MAX = 6;
+struct CrewMember {
+  char name[11];
+  uint8_t lv;  // 0=ok 1=warn 2=crit 3=pending
+};
+static CrewMember crewMembers[CREW_MAX];
+static uint8_t crewCount = 0;
+static bool crewHasCrit = false;
+static bool crewHasWarn = false;
+static char crewWorstName[11] = "";
+static uint32_t crewUpdatedAt = 0;
 
 // ---- colors ----
 static uint16_t C(uint8_t r, uint8_t g, uint8_t b) {
@@ -521,40 +536,119 @@ static bool initSdCard() {
   return true;
 }
 
-/** PC bridge: "LINK\\n" keepalive; "REC|CODE|text" — рекомендація з сервера */
-static void pollStationLinkBytes() {
-  while (Serial.available() > 0) {
-    static char buf[96];
-    static uint8_t n = 0;
-    char c = (char)Serial.read();
+static uint8_t crewLetterToLv(char c) {
+  if (c == 'c' || c == 'C') return 2;
+  if (c == 'w' || c == 'W') return 1;
+  if (c == 'o' || c == 'O' || c == 'n' || c == 'N') return 0;
+  return 3;  // pending / unknown
+}
+
+/** Parse CREW|n|o:Name|w:Name|c:Name… from server */
+static void applyCrewLine(const char *buf) {
+  // buf starts at "CREW|…"
+  const char *p = strchr(buf, '|');
+  if (!p) return;
+  p++;  // after first |
+  int n = atoi(p);
+  p = strchr(p, '|');
+  if (!p) return;
+  p++;
+
+  if (n < 0) n = 0;
+  if (n > CREW_MAX) n = CREW_MAX;
+
+  crewCount = 0;
+  crewHasCrit = false;
+  crewHasWarn = false;
+  crewWorstName[0] = 0;
+
+  for (int i = 0; i < n && *p; i++) {
+    char letter = *p++;
+    if (*p == ':') p++;
+    char name[11];
+    uint8_t ni = 0;
+    while (*p && *p != '|' && ni < sizeof(name) - 1) {
+      name[ni++] = *p++;
+    }
+    name[ni] = 0;
+    if (*p == '|') p++;
+
+    crewMembers[crewCount].lv = crewLetterToLv(letter);
+    snprintf(crewMembers[crewCount].name, sizeof(crewMembers[crewCount].name), "%s",
+             name[0] ? name : "?");
+    if (crewMembers[crewCount].lv == 2) {
+      crewHasCrit = true;
+      if (!crewWorstName[0]) {
+        snprintf(crewWorstName, sizeof(crewWorstName), "%s", crewMembers[crewCount].name);
+      }
+    } else if (crewMembers[crewCount].lv == 1) {
+      crewHasWarn = true;
+      if (!crewHasCrit && !crewWorstName[0]) {
+        snprintf(crewWorstName, sizeof(crewWorstName), "%s", crewMembers[crewCount].name);
+      }
+    }
+    crewCount++;
+  }
+
+  crewUpdatedAt = millis();
+  dirty = true;
+  Serial.printf("# CREW n=%u crit=%d warn=%d\n", (unsigned)crewCount, crewHasCrit ? 1 : 0,
+                crewHasWarn ? 1 : 0);
+}
+
+/** One line from USB Serial or BT SPP */
+static void handleStationLine(const char *buf, uint8_t n) {
+  if (n >= 4 && buf[0] == 'L' && buf[1] == 'I' && buf[2] == 'N' && buf[3] == 'K') {
+    usbLinkUntil = millis() + 10000UL;
+    return;
+  }
+  if (n >= 5 && buf[0] == 'C' && buf[1] == 'R' && buf[2] == 'E' && buf[3] == 'W' &&
+      buf[4] == '|') {
+    applyCrewLine(buf);
+    return;
+  }
+  if (n >= 5 && buf[0] == 'R' && buf[1] == 'E' && buf[2] == 'C' && buf[3] == '|') {
+    const char *code = buf + 4;
+    const char *msg = strchr(code, '|');
+    if (msg) {
+      msg++;
+      snprintf(stationRec, sizeof(stationRec), "%s", msg);
+    } else {
+      snprintf(stationRec, sizeof(stationRec), "%s", code);
+    }
+    stationRecUntil = millis() + 120000UL;
+    healthLv = HL_WARN;
+    faceKind = FACE_SENSOR;
+    snprintf(statusLine, sizeof(statusLine), "SERVER REC");
+    dirty = true;
+    Serial.printf("# REC from station: %s\n", stationRec);
+  }
+}
+
+static void pollStreamLines(Stream &s, char *buf, uint8_t &n, uint8_t cap) {
+  while (s.available() > 0) {
+    char c = (char)s.read();
     if (c == '\r') continue;
     if (c == '\n') {
-      buf[n < sizeof(buf) ? n : sizeof(buf) - 1] = 0;
-      if (n >= 4 && buf[0] == 'L' && buf[1] == 'I' && buf[2] == 'N' && buf[3] == 'K') {
-        usbLinkUntil = millis() + 10000UL;
-      } else if (n >= 5 && buf[0] == 'R' && buf[1] == 'E' && buf[2] == 'C' && buf[3] == '|') {
-        // REC|DEEP_CHECK|message…
-        const char *code = buf + 4;
-        const char *msg = strchr(code, '|');
-        if (msg) {
-          msg++;
-          snprintf(stationRec, sizeof(stationRec), "%s", msg);
-        } else {
-          snprintf(stationRec, sizeof(stationRec), "%s", code);
-        }
-        stationRecUntil = millis() + 120000UL;  // 2 хв на екрані
-        healthLv = HL_WARN;
-        faceKind = FACE_SENSOR;
-        snprintf(statusLine, sizeof(statusLine), "SERVER REC");
-        Serial.printf("# REC from station: %s\n", stationRec);
-      }
+      buf[n < cap ? n : cap - 1] = 0;
+      if (n > 0) handleStationLine(buf, n);
       n = 0;
-    } else if (n < sizeof(buf) - 1) {
+    } else if (n < cap - 1) {
       buf[n++] = c;
     } else {
       n = 0;
     }
   }
+}
+
+/** PC bridge: LINK · REC|… · CREW|…  (USB Serial and/or BT) */
+static void pollStationLinkBytes() {
+  static char usbBuf[160];
+  static uint8_t usbN = 0;
+  static char btBuf[160];
+  static uint8_t btN = 0;
+  pollStreamLines(Serial, usbBuf, usbN, sizeof(usbBuf));
+  if (btOk) pollStreamLines(SerialBT, btBuf, btN, sizeof(btBuf));
 }
 
 static bool stationLinked() {
@@ -650,8 +744,102 @@ static bool sendTelemetry() {
 }
 
 // ---- screens ----
+static void drawCrewSmiley(int16_t cx, int16_t cy, int16_t r, uint8_t lv) {
+  uint16_t col =
+      lv == 2 ? C(255, 40, 40) : lv == 1 ? C(255, 190, 40) : lv == 0 ? C(40, 220, 120) : C(90, 100, 110);
+  tft.fillCircle(cx, cy, r, C(18, 22, 28));
+  tft.drawCircle(cx, cy, r, col);
+  int16_t eyeY = cy - r / 4;
+  int16_t eyeDX = r / 3;
+  if (lv == 2) {
+    // X eyes + open mouth
+    tft.drawLine(cx - eyeDX - 3, eyeY - 3, cx - eyeDX + 3, eyeY + 3, col);
+    tft.drawLine(cx - eyeDX - 3, eyeY + 3, cx - eyeDX + 3, eyeY - 3, col);
+    tft.drawLine(cx + eyeDX - 3, eyeY - 3, cx + eyeDX + 3, eyeY + 3, col);
+    tft.drawLine(cx + eyeDX - 3, eyeY + 3, cx + eyeDX + 3, eyeY - 3, col);
+    tft.drawCircle(cx, cy + r / 3, 4, col);
+  } else if (lv == 1) {
+    tft.fillCircle(cx - eyeDX, eyeY, 2, col);
+    tft.fillCircle(cx + eyeDX, eyeY, 2, col);
+    tft.drawLine(cx - 6, cy + 6, cx - 2, cy + 9, col);
+    tft.drawLine(cx - 2, cy + 9, cx + 2, cy + 6, col);
+    tft.drawLine(cx + 2, cy + 6, cx + 6, cy + 9, col);
+  } else if (lv == 0) {
+    tft.fillCircle(cx - eyeDX, eyeY, 2, col);
+    tft.fillCircle(cx + eyeDX, eyeY, 2, col);
+    drawArc(cx, cy + 2, r / 2, 2, 20, 160, col);
+  } else {
+    tft.drawLine(cx - eyeDX - 3, eyeY, cx - eyeDX + 3, eyeY, col);
+    tft.drawLine(cx + eyeDX - 3, eyeY, cx + eyeDX + 3, eyeY, col);
+    tft.drawLine(cx - 5, cy + 6, cx + 5, cy + 6, col);
+  }
+}
+
+static void drawCrew() {
+  uint16_t bg = C(8, 10, 16);
+  tft.fillScreen(bg);
+  uint16_t accent = C(0, 200, 210);
+  drawHeader("CREW", accent, bg);
+
+  if (crewCount == 0) {
+    printCentered(64, 70, "waiting server", 1, C(120, 130, 140), bg);
+    printCentered(64, 88, "CREW|… via bridge", 1, C(80, 90, 100), bg);
+    drawDots(SCR_CREW, accent, C(40, 50, 55));
+    return;
+  }
+
+  // 2×2 or 2×3 grid of smileys
+  uint8_t cols = 2;
+  uint8_t rows = (crewCount + 1) / 2;
+  if (rows < 1) rows = 1;
+  if (rows > 3) rows = 3;
+  int16_t cellW = 60;
+  int16_t cellH = rows >= 3 ? 36 : 44;
+  int16_t r = rows >= 3 ? 11 : 14;
+  int16_t y0 = 22;
+
+  for (uint8_t i = 0; i < crewCount && i < CREW_MAX; i++) {
+    uint8_t col = i % cols;
+    uint8_t row = i / cols;
+    if (row >= rows) break;
+    int16_t cx = 34 + col * cellW;
+    int16_t cy = y0 + row * cellH + 12;
+    drawCrewSmiley(cx, cy, r, crewMembers[i].lv);
+    printCentered(cx, cy + r + 2, crewMembers[i].name, 1,
+                  crewMembers[i].lv == 2   ? C(255, 80, 80)
+                  : crewMembers[i].lv == 1 ? C(255, 200, 80)
+                                           : C(140, 160, 170),
+                  bg);
+  }
+
+  if (crewHasCrit) {
+    printCentered(64, 142, "CRIT ON CREW", 1, C(255, 60, 60), bg);
+  } else if (crewHasWarn) {
+    printCentered(64, 142, "WARN ON CREW", 1, C(255, 190, 60), bg);
+  }
+  drawDots(SCR_CREW, accent, C(40, 50, 55));
+}
+
 static void drawHome(uint16_t bg) {
   evaluateHealth();
+  bool flashOn = ((millis() / 280) & 1) != 0;
+
+  // Full-screen crew CRITICAL alert — hard to miss
+  if (crewHasCrit) {
+    uint16_t alertBg = flashOn ? C(160, 0, 0) : C(40, 0, 0);
+    tft.fillScreen(alertBg);
+    uint16_t fg = flashOn ? C(255, 255, 255) : C(255, 220, 60);
+    printCentered(64, 18, "!!! WARN !!!", 2, fg, alertBg);
+    printCentered(64, 48, "CREW CRITICAL", 1, C(255, 255, 255), alertBg);
+    if (crewWorstName[0]) {
+      printCentered(64, 68, crewWorstName, 2, C(255, 240, 100), alertBg);
+    }
+    printCentered(64, 100, "OPEN CREW TAB", 1, C(255, 200, 200), alertBg);
+    printCentered(64, 118, "BTN2 next page", 1, C(200, 160, 160), alertBg);
+    drawDots(SCR_HOME, C(255, 80, 80), C(80, 20, 20));
+    return;
+  }
+
   tft.fillScreen(bg);
   uint16_t accent = C(0, 200, 210);
   uint16_t mute = C(70, 90, 100);
@@ -663,10 +851,17 @@ static void drawHome(uint16_t bg) {
   uint16_t stCol = faceColor();
   printCentered(64, 72, statusLine, 1, stCol, bg);
 
-  char bit[40];
-  if (finger && bpm > 0) snprintf(bit, sizeof(bit), "HR%d SpO2%.0f", bpm, spo2);
-  else snprintf(bit, sizeof(bit), "AIR%.0f Rm%.1f", airQ, tC);
-  printCentered(64, 86, bit, 1, mute, bg);
+  if (crewHasWarn) {
+    char wline[28];
+    snprintf(wline, sizeof(wline), "CREW WARN %s",
+             crewWorstName[0] ? crewWorstName : "!");
+    printCentered(64, 86, wline, 1, flashOn ? C(255, 200, 40) : C(180, 120, 40), bg);
+  } else {
+    char bit[40];
+    if (finger && bpm > 0) snprintf(bit, sizeof(bit), "HR%d SpO2%.0f", bpm, spo2);
+    else snprintf(bit, sizeof(bit), "AIR%.0f Rm%.1f", airQ, tC);
+    printCentered(64, 86, bit, 1, mute, bg);
+  }
 
   const char *net = stationLinked() ? (btPeer ? "LINK BT" : "LINK USB")
                                     : (sdOk ? "OFFLINE>SD" : "NO LINK");
@@ -674,6 +869,11 @@ static void drawHome(uint16_t bg) {
                 stationLinked() ? C(80, 180, 120) : C(200, 140, 60), bg);
 
   printCentered(64, 114, DEVICE_ID, 1, mute, bg);
+  if (crewCount > 0) {
+    char csum[24];
+    snprintf(csum, sizeof(csum), "crew %u", (unsigned)crewCount);
+    printCentered(64, 128, csum, 1, mute, bg);
+  }
   drawDots(SCR_HOME, accent, C(40, 50, 55));
 }
 
@@ -849,6 +1049,7 @@ static void drawForce() {
 static void drawCurrent(float phase) {
   switch (screen) {
     case SCR_HOME:    drawHome(C(6, 10, 14)); break;
+    case SCR_CREW:    drawCrew(); break;
     case SCR_HEART:   drawHeart(phase); break;
     case SCR_AIR:     drawAir(phase); break;
     case SCR_CLIMATE: drawClimate(); break;
@@ -1063,11 +1264,14 @@ void loop() {
   if (now - lastNet >= 1000) {
     lastNet = now;
     sendTelemetry();
-    if (screen == SCR_HOME) dirty = true;
+    // Home flashes WARN; crew page refreshes when data arrives
+    if (screen == SCR_HOME || screen == SCR_CREW) dirty = true;
   }
 
-  bool animScreen = (screen == SCR_HEART || screen == SCR_AIR || screen == SCR_MOTION || screen == SCR_HOME);
-  uint32_t period = animScreen ? 200 : 400;
+  bool animScreen =
+      (screen == SCR_HEART || screen == SCR_AIR || screen == SCR_MOTION ||
+       screen == SCR_HOME || (screen == SCR_CREW && crewHasCrit));
+  uint32_t period = (screen == SCR_HOME && crewHasCrit) ? 140 : (animScreen ? 200 : 400);
   if (dirty || (now - lastUi >= period)) {
     lastUi = now;
     drawCurrent(now / 180.0f);

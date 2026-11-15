@@ -3,6 +3,7 @@
 <html lang="en">
 
 <head>
+
     <meta charset="UTF-8">
 
     <meta name="viewport"
@@ -10,25 +11,16 @@
 
     <title>PULSAR | Astronaut Monitoring</title>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;700&display=swap">
-
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="../css/astronaut.css">
 
-    <!-- embed=1: сторінка відкрита всередині розгорнутої плитки -->
-    <script>
-      if (new URLSearchParams(location.search).has("embed")) {
-        document.documentElement.classList.add("embed");
-      }
-    </script>
 </head>
 
 <body>
 
-    <!-- Верхня панель -->
+    <!-- ==========================================
+         ВЕРХНЯ ПАНЕЛЬ
+    =========================================== -->
 
     <header class="header">
 
@@ -51,156 +43,378 @@
             </svg>
 
             <div>
+
                 <h1>PULSAR</h1>
+
                 <p>Space Crew Health Monitoring</p>
+
             </div>
 
         </a>
 
+
+        <!-- Назва космічної місії -->
+
         <div class="mission">
-            <span>Lunar Exploration Mission</span>
-            <span class="mission-clock" id="utc-clock">--:--:-- UTC</span>
+            Lunar Exploration Mission
+        </div>
+
+        <div class="header-live">
+            <span id="link-chip" class="link-chip" data-state="offline">Offline</span>
+            <span id="utc-clock" class="utc-clock"></span>
         </div>
 
     </header>
 
 
-    <!-- Індивідуальна панель астронавта -->
+    <!-- ==========================================
+         ІНДИВІДУАЛЬНА ПАНЕЛЬ АСТРОНАВТА
+    =========================================== -->
 
     <div class="astronaut-layout">
 
-        <!-- Бокове меню -->
+
+        <!-- ======================================
+             БОКОВЕ МЕНЮ
+        ======================================= -->
 
         <aside class="sidebar">
 
-            <a href="../index.html" class="back-button">
-                Back to crew
+
+            <!-- Повернення до головної сторінки -->
+
+            <a href="../index.html"
+               class="back-button">
+
+                ← Back to crew
+
             </a>
 
 
-            <!-- Коротка інформація про астронавта -->
+            <!-- ==================================
+                 ІНФОРМАЦІЯ ПРО АСТРОНАВТА
+            =================================== -->
 
             <div class="sidebar-profile">
 
+
+                <!-- Аватар -->
+
                 <div class="profile-avatar"
                      id="profile-avatar">
+
                     —
+
                 </div>
 
-                <h2 id="profile-name">Loading...</h2>
+
+                <!-- Ім'я -->
+
+                <h2 id="profile-name">
+
+                    Loading...
+
+                </h2>
+
+
+                <!-- Роль в екіпажі -->
 
                 <p id="profile-role"></p>
 
+
+                <!-- Ідентифікатор -->
+
                 <span id="profile-id"></span>
+
+
+                <!-- Поточний статус -->
 
                 <span id="profile-status"
                       class="status">
+
                 </span>
 
             </div>
 
 
-            <!-- Навігація між розділами -->
+            <!-- ==================================
+                 НАВІГАЦІЯ МІЖ РОЗДІЛАМИ
+            =================================== -->
 
             <nav class="sidebar-navigation"
                  aria-label="Astronaut monitoring">
 
-                <button class="nav-button active"
+
+                <!-- ==================================
+                     HEALTH MONITORING
+                     Моніторинг здоров'я
+                =================================== -->
+
+                <button type="button"
+                        class="nav-button active"
                         data-section="health">
+
+                    <span class="nav-icon"
+                          aria-hidden="true">
+
+                        ♡
+
+                    </span>
+
                     Health Monitoring
+
                 </button>
 
-                <button class="nav-button"
+
+                <!-- ==================================
+                     ENVIRONMENT
+                     Навколишнє середовище
+                =================================== -->
+
+                <button type="button"
+                        class="nav-button"
                         data-section="environment">
+
+                    <span class="nav-icon"
+                          aria-hidden="true">
+
+                        ◎
+
+                    </span>
+
                     Environment
+
                 </button>
 
-                <button class="nav-button"
+
+                <!-- ==================================
+                     ANALYTICS
+                     Аналітика та історія вимірювань
+                =================================== -->
+
+                <button type="button"
+                        class="nav-button"
                         data-section="analytics">
+
+                    <span class="nav-icon"
+                          aria-hidden="true">
+
+                        ▥
+
+                    </span>
+
                     Analytics
+
                 </button>
 
-                <button class="nav-button"
+
+                <!-- ==================================
+                     AI HEALTH INSIGHTS
+                     Раннє виявлення тенденцій
+                =================================== -->
+
+                <button type="button"
+                        class="nav-button"
+                        data-section="insights">
+
+                    <span class="nav-icon"
+                          aria-hidden="true">
+
+                        ✧
+
+                    </span>
+
+                    AI Health Insights
+
+                </button>
+
+
+                <!-- ==================================
+                     HEALTH GUIDE
+                     Медична довідкова інформація
+                =================================== -->
+
+                <button type="button"
+                        class="nav-button"
                         data-section="guide">
+
+                    <span class="nav-icon"
+                          aria-hidden="true">
+
+                        ▤
+
+                    </span>
+
                     Health Guide
+
                 </button>
 
-                <button class="nav-button"
+
+                <!-- ==================================
+                     SETTINGS
+                     Медична картка та налаштування
+                =================================== -->
+
+                <button type="button"
+                        class="nav-button"
                         data-section="settings">
+
+                    <span class="nav-icon"
+                          aria-hidden="true">
+
+                        ⚙
+
+                    </span>
+
                     Settings
+
                 </button>
 
             </nav>
 
 
-            <!-- Кнопка швидкого доступу до SOS -->
+            <!-- ==================================
+                 SOS / EMERGENCY
+                 Кнопка екстреної допомоги
+            =================================== -->
 
-            <button class="sidebar-sos" id="sidebar-sos">
+            <button type="button"
+                    class="sidebar-sos"
+                    id="sidebar-sos">
+
                 SOS / Emergency
+
             </button>
 
         </aside>
 
 
-        <!-- Основна частина -->
+        <!-- ======================================
+             ОСНОВНА ЧАСТИНА СТОРІНКИ
+        ======================================= -->
 
         <main class="astronaut-main">
+
+
+            <!-- Заголовок поточного розділу -->
 
             <div class="section-heading">
 
                 <div>
 
                     <h2 id="section-title">
+
                         Health Monitoring
+
                     </h2>
 
                     <p id="section-description">
+
                         Physical health and daily well-being
+
                     </p>
 
                 </div>
 
+
+                <!-- Демонстраційний режим -->
+
+                <span class="demo-label">
+
+                    LIVE
+
+                </span>
+
             </div>
 
 
-            <!-- Динамічний вміст розділу -->
+            <!-- ==================================
+                 ДИНАМІЧНИЙ ВМІСТ РОЗДІЛУ
+            =================================== -->
 
-            <div id="section-content"></div>
+            <div id="section-content">
+
+                <!--
+                    Вміст створюється автоматично
+                    через astronaut.js.
+
+                    Доступні розділи:
+
+                    1. Health Monitoring
+                    2. Environment
+                    3. Analytics
+                    4. AI Health Insights
+                    5. Health Guide
+                    6. Settings
+                -->
+
+            </div>
 
         </main>
 
     </div>
 
 
+    <!-- ==========================================
+         НИЖНЯ ЧАСТИНА САЙТУ
+    =========================================== -->
+
     <footer>
-        <span><strong>PULSAR</strong> &nbsp;© 2026</span>
-        <span>Individual Monitoring</span>
-        <span>Server :4100</span>
+
+        PULSAR © 2026 |
+        Individual Monitoring |
+        Live · server :4100
+
     </footer>
 
+
+    <!-- ==========================================
+         ПІДКЛЮЧЕННЯ JAVASCRIPT-ФАЙЛІВ
+    =========================================== -->
+
+
+    <!-- ==========================================
+         NOTIFICATION CENTER
+         Спільний центр сповіщень екіпажу
+    =========================================== -->
 
     <script>
       window.PULSAR_API = window.PULSAR_API || "http://127.0.0.1:4100";
     </script>
     <script src="../js/live.js"></script>
+    <script src="../js/notifications.js"></script>
+
+
+    <!-- ==========================================
+         SOS SYSTEM
+         Система екстреної допомоги
+    =========================================== -->
+
     <script src="../js/sos.js"></script>
+
+
+    <!-- ==========================================
+         HEALTH GUIDE
+         Медична довідкова інформація
+    =========================================== -->
+
+    <script src="../js/guide.js"></script>
+
+
+    <!-- ==========================================
+         AI HEALTH INSIGHTS
+         Аналіз тенденцій та раннє виявлення
+    =========================================== -->
+
+    <script src="../js/insights.js"></script>
+
+
+    <!-- ==========================================
+         ASTRONAUT MONITORING
+         Основна логіка індивідуальної панелі
+    =========================================== -->
+
     <script src="../js/astronaut.js"></script>
-    <script>
-      // У розгорнутій плитці «Back to crew» та Esc згортають її назад
-      if (document.documentElement.classList.contains("embed") && window.parent !== window) {
-        const tell = (type) => window.parent.postMessage({ type }, location.origin);
-        document.querySelector(".back-button").addEventListener("click", (event) => {
-          event.preventDefault();
-          tell("pulsar:close");
-        });
-        document.addEventListener("keydown", (event) => {
-          if (event.key === "Escape" && !document.querySelector("dialog[open]")) {
-            tell("pulsar:close");
-          }
-        });
-        document.addEventListener("pulsar:sos-change", () => tell("pulsar:sos-change"));
-      }
-    </script>
 
 </body>
 

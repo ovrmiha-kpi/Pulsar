@@ -31,6 +31,7 @@ import {
   noteDaily,
   getDayHistory,
   enqueueDeviceCommand,
+  enqueueRawOutbound,
   takeOutbound,
   peekOutbound,
   seedDayRisks,
@@ -48,6 +49,31 @@ import {
   resetSimConfig,
   resetAllConfigs,
 } from "./sim.js";
+import {
+  buildExtendedSnapshot,
+  extendedPayload,
+  addCheckin,
+  setOverrides,
+  clearOverrides,
+  applyOverridesToSample,
+  EMULATE_KEYS,
+} from "./extended.js";
+import {
+  crewPayload,
+  setMedicalCard,
+  setSettings,
+  listNotifications,
+  addNotification,
+  patchNotification,
+  markAllNotificationsRead,
+  replaceNotifications,
+  getMissionUi,
+  setMissionUi,
+  getHabitat,
+  setHabitat,
+  maybeAlertNotification,
+  ensureCrewFields,
+} from "./crewstore.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC = path.join(__dirname, "..", "public");
@@ -61,6 +87,38 @@ const wsClients = new Set();
 const sosState = new Map();
 let ingestCount = 0;
 let lastLogMs = 0;
+let lastCrewPushMs = 0;
+let lastCrewSig = "";
+
+/** CREW|n|o:Label|w:Label|c:Label… → усім годинникам через bridge outbound */
+function pushCrewStatusToWatches(force = false) {
+  const now = Date.now();
+  if (!force && now - lastCrewPushMs < 2000) return;
+  const devices = listDevices();
+  if (!devices.length) return;
+
+  const parts = devices.map((d) => {
+    const connected = isConnected(d, OFFLINE_MS);
+    const st = String(
+      connected ? d.analysis?.status || "pending" : "pending"
+    ).toLowerCase();
+    const letter =
+      st === "critical" ? "c" : st === "warning" ? "w" : st === "normal" ? "o" : "p";
+    const label = String(d.label || d.device_no || d.id)
+      .replace(/[|\r\n]/g, "")
+      .slice(0, 10);
+    return `${letter}:${label}`;
+  });
+  const sig = parts.join("|");
+  if (!force && sig === lastCrewSig && now - lastCrewPushMs < 8000) return;
+  lastCrewSig = sig;
+  lastCrewPushMs = now;
+
+  const line = `CREW|${parts.length}|${parts.join("|")}`;
+  for (const d of devices) {
+    enqueueRawOutbound(d.id, line, { code: "CREW", dedupeMs: 1800 });
+  }
+}
 
 function nowIso() {
   return new Date().toISOString();
@@ -83,21 +141,46 @@ function parseSample(raw) {
 /** Критичний шлях — без await MySQL. */
 function ingestFast(raw, source) {
   const t0 = process.hrtime.bigint();
-  const { key, hr, spo2, temp, battery, recorded_at } = parseSample(raw);
-  const device = getDevice(key);
-  if (!device) throw new Error("unknown device: " + key);
+  let parsed = parseSample(raw);
+  const device = getDevice(parsed.key);
+  if (!device) throw new Error("unknown device: " + parsed.key);
 
   // Поки симуляція увімкнена — реальні USB/UDP пакети цього id ігноруємо
   if (isSimulating(device.id) && !String(source).startsWith("sim:")) {
     return { ok: true, skipped: "simulating", device_id: device.id, us: 0 };
   }
 
+  // Manual /panel overrides win over packet vitals
+  parsed = applyOverridesToSample(device, parsed);
+  const { key, hr, spo2, temp, battery, recorded_at } = parsed;
+
   const prev = seriesOf(device.id, 39);
   const series = [...prev, { t: recorded_at, hr, spo2, temp }];
   const risk = sampleRisk(hr, spo2, temp);
   noteDaily(device.id, { t: recorded_at, hr, spo2, temp }, risk);
-  const analysis = analyzeSeries(series, { days: getDayHistory(device.id) });
+  let analysis = analyzeSeries(series, { days: getDayHistory(device.id) });
   pushSample(device.id, { t: recorded_at, hr, spo2, temp }, analysis, battery);
+
+  // Середовище / wellbeing / аналітика — на сервері (sim + вивід із сенсорів)
+  const sim = getSimState(device.id);
+  const simProfile = isSimulating(device.id) ? sim.profile : "live";
+  const extSnap = buildExtendedSnapshot(
+    device,
+    { t: recorded_at, hr, spo2, temp },
+    analysis,
+    simProfile
+  );
+  analysis = {
+    ...analysis,
+    ...extSnap,
+    ...extendedPayload(device),
+  };
+  device.analysis = analysis;
+
+  const note = maybeAlertNotification(device, analysis);
+  if (note) {
+    broadcastWs({ type: "notification", notification: note });
+  }
 
   // Якщо аналіз каже «глибока перевірка» / підтвердити — черга на годинник
   if (analysis.deviceCommand) {
@@ -140,6 +223,7 @@ function ingestFast(raw, source) {
   });
 
   ingestCount++;
+  pushCrewStatusToWatches(false);
   const dtUs = Number(process.hrtime.bigint() - t0) / 1000;
   const now = Date.now();
   if (now - lastLogMs >= 500) {
@@ -154,9 +238,24 @@ function ingestFast(raw, source) {
 
 function devicePayload(d) {
   const connected = isConnected(d, OFFLINE_MS);
-  const a =
+  let a =
     d.analysis ||
     analyzeSeries(d.ring, { days: getDayHistory(d.id) });
+  // Якщо ще не було extended snapshot — порахувати з останнього sample
+  if (!d.ext?.ring?.length && d.ring?.length) {
+    const last = d.ring[d.ring.length - 1];
+    const sim = getSimState(d.id);
+    buildExtendedSnapshot(
+      d,
+      last,
+      a,
+      isSimulating(d.id) ? sim.profile : "live"
+    );
+  }
+  a = { ...a, ...extendedPayload(d) };
+  const crew = crewPayload(d);
+  // Medical baseline overrides sim baseline when set
+  if (crew.baseline) a.baseline = { ...(a.baseline || {}), ...crew.baseline };
   const sos = sosState.get(d.id)?.active === true;
   const sim = getSimState(d.id);
   return {
@@ -171,6 +270,9 @@ function devicePayload(d) {
     simulating: isSimulating(d.id),
     sim,
     pendingCommands: peekOutbound(d.id).length,
+    medicalCard: crew.medicalCard,
+    settings: crew.settings,
+    overrides: a.overrides || {},
     ...(connected
       ? a
       : {
@@ -185,9 +287,13 @@ function devicePayload(d) {
 
 function dashboard() {
   const devices = listDevices().map(devicePayload);
+  const notes = listNotifications();
   return {
     service: "pulsar-server",
     updatedAt: nowIso(),
+    serverTime: nowIso(),
+    ui: getMissionUi(),
+    notificationsUnread: notes.filter((n) => !n.read).length,
     mysql: mysqlReady(),
     ingestCount,
     sims: listSims(),
@@ -457,6 +563,96 @@ async function handleAdmin(url, req, res) {
       return true;
     }
 
+    // Force any site metric (vitals + cabin + wellbeing)
+    if (action === "emulate" && req.method === "POST") {
+      const replace = body.replace === true;
+      const patch = body.metrics || body;
+      const overrides = setOverrides(d, patch, { replace });
+      const last = d.ring[d.ring.length - 1];
+      const sample = applyOverridesToSample(d, {
+        device_id: d.id,
+        hr: overrides.hr ?? last?.hr ?? 72,
+        spo2: overrides.spo2 ?? last?.spo2 ?? 97,
+        temp: overrides.temp ?? last?.temp ?? 22,
+        battery: overrides.battery ?? d.battery ?? 80,
+        t: nowIso(),
+      });
+      // Push even while simulating (admin force)
+      const wasSim = isSimulating(d.id);
+      if (wasSim) {
+        // temporarily allow by using sim source path
+        ingestFast({ ...sample, device_id: d.id }, `sim:${d.id}`);
+      } else {
+        ingestFast({ ...sample, device_id: d.id }, "admin:emulate");
+      }
+      console.log(`[admin] emulate ${d.device_no} keys=${Object.keys(overrides).join(",") || "clear"}`);
+      broadcastWs({
+        type: "admin",
+        action: "emulate",
+        device_id: d.id,
+        dashboard: dashboard(),
+      });
+      sendJson(res, 200, {
+        ok: true,
+        overrides,
+        emulateKeys: EMULATE_KEYS,
+        device: devicePayload(d),
+      });
+      return true;
+    }
+
+    if (action === "emulate-clear" && req.method === "POST") {
+      clearOverrides(d);
+      console.log(`[admin] emulate-clear ${d.device_no}`);
+      broadcastWs({
+        type: "admin",
+        action: "emulate_clear",
+        device_id: d.id,
+        dashboard: dashboard(),
+      });
+      sendJson(res, 200, { ok: true, overrides: {}, device: devicePayload(d) });
+      return true;
+    }
+
+    if (action === "medical" && req.method === "POST") {
+      ensureCrewFields(d);
+      const saved = setMedicalCard(d, body);
+      broadcastWs({
+        type: "admin",
+        action: "medical",
+        device_id: d.id,
+        dashboard: dashboard(),
+      });
+      sendJson(res, 200, { ok: true, ...saved, device: devicePayload(d) });
+      return true;
+    }
+
+    if (action === "settings" && req.method === "POST") {
+      ensureCrewFields(d);
+      const settings = setSettings(d, body);
+      broadcastWs({
+        type: "admin",
+        action: "settings",
+        device_id: d.id,
+        dashboard: dashboard(),
+      });
+      sendJson(res, 200, { ok: true, settings, device: devicePayload(d) });
+      return true;
+    }
+
+    if (action === "checkin" && req.method === "POST") {
+      const row = addCheckin(d, body);
+      if (d.analysis) d.analysis = { ...d.analysis, ...extendedPayload(d) };
+      broadcastWs({
+        type: "admin",
+        action: "checkin",
+        device_id: d.id,
+        dashboard: dashboard(),
+      });
+      sendJson(res, 200, { ok: true, checkin: row, device: devicePayload(d) });
+      return true;
+    }
+
     sendJson(res, 404, { error: "unknown admin action" });
     return true;
   }
@@ -511,7 +707,61 @@ async function main() {
           http: HTTP_PORT,
           ingestCount,
           sims: listSims().length,
+          serverTime: nowIso(),
         });
+      }
+
+      if (url.pathname === "/api/time" && req.method === "GET") {
+        return sendJson(res, 200, {
+          serverTime: nowIso(),
+          epochMs: Date.now(),
+        });
+      }
+
+      if (url.pathname === "/api/mission/ui" && req.method === "GET") {
+        return sendJson(res, 200, { ui: getMissionUi() });
+      }
+      if (url.pathname === "/api/mission/ui" && req.method === "POST") {
+        const body = JSON.parse((await readBody(req)) || "{}");
+        return sendJson(res, 200, { ok: true, ui: setMissionUi(body) });
+      }
+
+      if (url.pathname === "/api/mission/habitat" && req.method === "GET") {
+        return sendJson(res, 200, { habitat: getHabitat() });
+      }
+      if (url.pathname === "/api/mission/habitat" && req.method === "POST") {
+        const body = JSON.parse((await readBody(req)) || "{}");
+        const habitat = setHabitat(body.habitat ?? body);
+        broadcastWs({ type: "habitat", habitat });
+        return sendJson(res, 200, { ok: true, habitat });
+      }
+
+      if (url.pathname === "/api/notifications" && req.method === "GET") {
+        return sendJson(res, 200, { notifications: listNotifications() });
+      }
+      if (url.pathname === "/api/notifications" && req.method === "POST") {
+        const body = JSON.parse((await readBody(req)) || "{}");
+        if (body.replace === true && Array.isArray(body.notifications)) {
+          const notifications = replaceNotifications(body.notifications);
+          broadcastWs({ type: "notifications", notifications });
+          return sendJson(res, 200, { ok: true, notifications });
+        }
+        const notification = addNotification(body);
+        broadcastWs({ type: "notification", notification });
+        return sendJson(res, 200, { ok: true, notification });
+      }
+      if (url.pathname === "/api/notifications/read-all" && req.method === "POST") {
+        const notifications = markAllNotificationsRead();
+        broadcastWs({ type: "notifications", notifications });
+        return sendJson(res, 200, { ok: true, notifications });
+      }
+      if (url.pathname.startsWith("/api/notifications/") && req.method === "POST") {
+        const id = decodeURIComponent(url.pathname.split("/").pop());
+        const body = JSON.parse((await readBody(req)) || "{}");
+        const notification = patchNotification(id, body);
+        if (!notification) return sendJson(res, 404, { error: "not found" });
+        broadcastWs({ type: "notification", notification });
+        return sendJson(res, 200, { ok: true, notification });
       }
 
       if (url.pathname === "/ingest" && req.method === "POST") {
@@ -577,7 +827,63 @@ async function main() {
             analysis: d.analysis || analyzeSeries(d.ring),
           });
         }
+        if (parts[3] === "analytics") {
+          const p = devicePayload(d);
+          return sendJson(res, 200, {
+            device_id: d.id,
+            baseline: p.baseline || null,
+            measurementHistory: p.measurementHistory || [],
+            wellbeingHistory: p.wellbeingHistory || [],
+            alertHistory: p.alertHistory || [],
+            series: p.analyticsSeries || {},
+            checkin: p.checkin || null,
+            checkinHistory: p.checkinHistory || [],
+          });
+        }
         return sendJson(res, 200, devicePayload(d));
+      }
+
+      if (url.pathname.startsWith("/api/devices/") && req.method === "POST") {
+        const parts = url.pathname.split("/").filter(Boolean);
+        const id = decodeURIComponent(parts[2]);
+        const d = getDevice(id);
+        if (!d) return sendJson(res, 404, { error: "not found" });
+        const body = JSON.parse((await readBody(req)) || "{}");
+        if (parts[3] === "checkin") {
+          const row = addCheckin(d, body);
+          if (d.analysis) {
+            d.analysis = { ...d.analysis, ...extendedPayload(d) };
+          }
+          broadcastWs({
+            type: "admin",
+            action: "checkin",
+            device_id: d.id,
+            dashboard: dashboard(),
+          });
+          return sendJson(res, 200, { ok: true, checkin: row, device: devicePayload(d) });
+        }
+        if (parts[3] === "medical") {
+          ensureCrewFields(d);
+          const saved = setMedicalCard(d, body);
+          broadcastWs({
+            type: "admin",
+            action: "medical",
+            device_id: d.id,
+            dashboard: dashboard(),
+          });
+          return sendJson(res, 200, { ok: true, ...saved, device: devicePayload(d) });
+        }
+        if (parts[3] === "settings") {
+          ensureCrewFields(d);
+          const settings = setSettings(d, body);
+          broadcastWs({
+            type: "admin",
+            action: "settings",
+            device_id: d.id,
+            dashboard: dashboard(),
+          });
+          return sendJson(res, 200, { ok: true, settings, device: devicePayload(d) });
+        }
       }
 
       // Панель керування (не crew-сайт)
@@ -606,6 +912,15 @@ async function main() {
     ws.on("close", () => wsClients.delete(ws));
   });
 
+  // Періодичний CREW-знімок для годинників (навіть без нового ingest)
+  setInterval(() => {
+    try {
+      pushCrewStatusToWatches(false);
+    } catch (e) {
+      console.warn("[crew→watch]", e.message);
+    }
+  }, 4000);
+
   server.listen(HTTP_PORT, () => {
     console.log("════════════════════════════════════════");
     console.log("  PULSAR SERVER  (RAM + MySQL async)");
@@ -614,7 +929,9 @@ async function main() {
     console.log(`  WS push        :${HTTP_PORT}/ws`);
     console.log(`  API (site)     :${HTTP_PORT}/api/dashboard`);
     console.log(`  ADMIN PANEL    :${HTTP_PORT}/panel`);
+    console.log("  Watch CREW     CREW|n|o:name|c:name…");
     console.log("════════════════════════════════════════");
+    pushCrewStatusToWatches(true);
   });
 }
 

@@ -12,7 +12,7 @@
 |-------|--------|------|
 | [`server/`](server/) | Прийом даних з годинника, тренди здоров’я в RAM, опційно MySQL, WebSocket | HTTP **4100**, UDP **4101** |
 | [`site/`](site/) | Фронт екіпажу (плитки, SOS, детальна сторінка) | **4200** |
-| [`scan/`](scan/) | Окрема карта станції + демо RF-скелетів (**не** підключено до server) | **4300** |
+| [`scan/`](scan/) | Desktop карта станції по **Wi‑Fi CSI** (ESP32 DevKit V1, не камера; **не** підключено до server) | COM USB |
 
 ```
 Годинник ESP32  ──USB/BT──►  bt-bridge  ──POST /ingest──►  server :4100
@@ -78,10 +78,14 @@ chmod +x start.sh
 
 На панелі `:4100/panel` можна:
 - увімкнути **симуляцію** на конкретному пристрої (`normal` / `rest` / `warning` / `critical`);
+- **Emulate** будь-яких показників сайту (HR, SpO₂, cabin, sleep, stress…);
+- редагувати **Medical card** і force check-in;
 - **перейменувати** пристрій (ім’я на сайті);
 - змінити роль, очистити історію, скинути SOS.
 
 Поки симуляція увімкнена для `device_id` — реальні пакети цього id ігноруються.
+
+Сервер також шле на годинник (через міст) рядки `CREW|n|o:Name|w:Name|c:Name` — вкладка **CREW** і великий WARN на Home.
 
 ---
 
@@ -98,7 +102,9 @@ npm install
 npm run bt -- COM11
 ```
 
-Міст шле JSON на `http://127.0.0.1:4100/ingest` і раз на 2 с пише `LINK\n` на ESP (для офлайн-режиму SD).
+Міст шле JSON на `http://127.0.0.1:4100/ingest`, раз на 2 с пише `LINK\n` на ESP і забирає outbound (`REC|…`, `CREW|…`) з `/api/bridge/outbound`.
+
+Перед прошивкою Arduino **зупиніть** міст (`Ctrl+C` у вікні bridge) — інакше `COM busy`.
 
 Без годинника — або панель симуляції, або:
 
@@ -151,13 +157,14 @@ prototype/
   start.sh           ← macOS/Linux: install + run
   server/            ← бек (Node, UDP/HTTP/WS, /panel)
   site/              ← фронт екіпажу (static + serve.js)
-  scan/              ← карта станції / RF skeleton demo (:4300)
+  scan/              ← CSI-карта станції (ESP32 DevKit V1 → USB Serial)
 ```
 
-Карта станції окремо:
+Карта станції (CSI, не веб):
 
-```bash
-cd prototype/scan && npm start   # http://127.0.0.1:4300
+```powershell
+cd prototype/scan
+.\run.ps1 --port COM11
 ```
 
 Детальніше по всьому репо: [`ARCHITECTURE.md`](../ARCHITECTURE.md) у корені.

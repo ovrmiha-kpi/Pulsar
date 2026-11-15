@@ -104,10 +104,13 @@ Write-Host @"
   Панель сервера:   http://127.0.0.1:4100/panel
   Health:           http://127.0.0.1:4100/health
 
-  Реальний годинник пізніше:
+  /panel: sim + Emulate metrics + Medical card
+  Watch (з -Com): LINK + CREW|… + REC|… → ESP
+
+  Реальний годинник:
     .\start.ps1 -Com COM11
-  Або симуляція без заліза:
+  Симуляція без заліза:
     .\start.ps1 -Demo
-    (або симуляція одного пристрою на /panel)
+  Перед Upload в Arduino — закрийте bridge (COM busy).
 ────────────────────────────────────────
 "@ -ForegroundColor Green

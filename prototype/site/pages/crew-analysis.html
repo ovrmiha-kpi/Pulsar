@@ -1,0 +1,1475 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>PULSAR | Crew Environmental Analysis</title>
+
+    <link rel="stylesheet" href="../css/style.css">
+
+    <link rel="stylesheet" href="../css/crew-analysis.css">
+
+</head>
+
+<body>
+
+    <!-- ==========================================
+         ВЕРХНЯ ПАНЕЛЬ САЙТУ
+    =========================================== -->
+
+    <header class="header">
+
+        <div class="brand">
+
+            <svg class="logo" viewBox="0 0 48 48"
+                 aria-hidden="true">
+
+                <circle cx="24" cy="24" r="19"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.5"/>
+
+                <path d="M2 24 H13 L18 15 L24 35 L30 9
+                         L35 24 H46"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.5"
+                      stroke-linejoin="round"/>
+
+            </svg>
+
+            <div>
+
+                <h1>PULSAR</h1>
+
+                <p>Space Crew Health Monitoring</p>
+
+            </div>
+
+        </div>
+
+        <div class="mission">
+
+            Lunar Exploration Mission
+
+        </div>
+
+    </header>
+
+
+    <!-- ==========================================
+         ОСНОВНА ЧАСТИНА СТОРІНКИ
+    =========================================== -->
+
+    <main class="crew-analysis-page">
+
+
+        <!-- ======================================
+             ЗАГОЛОВОК СТОРІНКИ
+        ======================================= -->
+
+        <section class="crew-analysis-top">
+
+            <div class="crew-analysis-heading">
+
+                <h2>Crew Environmental Analysis</h2>
+
+                <p>
+
+                    Collective health and habitat
+                    risk monitoring
+
+                </p>
+
+            </div>
+
+
+            <!-- Повернення на головну сторінку -->
+
+            <a href="../index.html"
+               class="crew-analysis-back">
+
+                <span aria-hidden="true">←</span>
+
+                Back to Dashboard
+
+            </a>
+
+        </section>
+
+
+        <!-- ======================================
+             ДЖЕРЕЛО ДАНИХ ТА СТАТУС СИСТЕМИ
+        ======================================= -->
+
+        <section class="crew-analysis-source">
+
+            <div class="crew-analysis-source-info">
+
+                <span class="crew-analysis-source-dot"
+                      aria-hidden="true">
+                </span>
+
+                <div>
+
+                    <strong id="analysis-source-title">
+
+                        Demonstration Mode
+
+                    </strong>
+
+                    <p id="analysis-source-description">
+
+                        Synthetic environmental and health data
+
+                    </p>
+
+                </div>
+
+            </div>
+
+            <span class="crew-analysis-demo-badge"
+                  id="analysis-mode-badge">
+
+                DEMO MODE
+
+            </span>
+
+        </section>
+
+
+        <!-- ======================================
+             ЗАГАЛЬНА СТАТИСТИКА ЕКІПАЖУ
+        ======================================= -->
+
+        <section class="crew-analysis-summary"
+                 aria-label="Crew analysis summary">
+
+
+            <!-- Кількість астронавтів -->
+
+            <article class="crew-analysis-stat">
+
+                <span class="crew-analysis-stat-icon"
+                      aria-hidden="true">
+
+                    ◎
+
+                </span>
+
+                <div>
+
+                    <span>Crew Members</span>
+
+                    <strong id="analysis-crew-count">
+
+                        —
+
+                    </strong>
+
+                    <small>Mission crew</small>
+
+                </div>
+
+            </article>
+
+
+            <!-- Кількість доступних вимірювань -->
+
+            <article class="crew-analysis-stat">
+
+                <span class="crew-analysis-stat-icon"
+                      aria-hidden="true">
+
+                    ▥
+
+                </span>
+
+                <div>
+
+                    <span>Data Availability</span>
+
+                    <strong id="analysis-data-availability">
+
+                        —
+
+                    </strong>
+
+                    <small>Available observations</small>
+
+                </div>
+
+            </article>
+
+
+            <!-- Астронавти зі схожими змінами -->
+
+            <article class="crew-analysis-stat warning">
+
+                <span class="crew-analysis-stat-icon"
+                      aria-hidden="true">
+
+                    ♡
+
+                </span>
+
+                <div>
+
+                    <span>Related Symptoms</span>
+
+                    <strong id="analysis-related-count">
+
+                        —
+
+                    </strong>
+
+                    <small>Crew members</small>
+
+                </div>
+
+            </article>
+
+
+            <!-- Спільні закономірності -->
+
+            <article class="crew-analysis-stat warning">
+
+                <span class="crew-analysis-stat-icon"
+                      aria-hidden="true">
+
+                    ⚠
+
+                </span>
+
+                <div>
+
+                    <span>Shared Risk Patterns</span>
+
+                    <strong id="analysis-risk-count">
+
+                        —
+
+                    </strong>
+
+                    <small>Detected patterns</small>
+
+                </div>
+
+            </article>
+
+        </section>
+
+
+        <!-- ======================================
+             ПАНЕЛЬ КЕРУВАННЯ АНАЛІЗОМ
+        ======================================= -->
+
+        <section class="crew-analysis-panel
+                        crew-analysis-controls">
+
+            <div class="crew-analysis-panel-heading">
+
+                <div class="crew-analysis-heading-icon"
+                     aria-hidden="true">
+
+                    ✧
+
+                </div>
+
+                <div>
+
+                    <h3>Environmental Risk Analysis</h3>
+
+                    <p>
+
+                        Analyze shared environmental
+                        and physiological changes
+
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <!-- Налаштування аналізу -->
+
+            <div class="crew-analysis-control-grid">
+
+
+                <!-- Вибір джерела даних -->
+
+                <div class="crew-analysis-field">
+
+                    <label for="analysis-source">
+
+                        Data Source
+
+                    </label>
+
+                    <select id="analysis-source">
+
+                        <option value="demo" selected>
+
+                            Demonstration Data
+
+                        </option>
+
+                        <option value="actual">
+
+                            Actual Crew Data
+
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <!-- Вибір демонстраційного сценарію -->
+
+                <div class="crew-analysis-field"
+                     id="analysis-scenario-field">
+
+                    <label for="analysis-scenario">
+
+                        Demonstration Scenario
+
+                    </label>
+
+                    <select id="analysis-scenario">
+
+                        <option value="normal">
+
+                            Normal Habitat
+
+                        </option>
+
+                        <option value="co2" selected>
+
+                            Elevated CO₂
+
+                        </option>
+
+                        <option value="oxygen">
+
+                            Oxygen &amp; Pressure Changes
+
+                        </option>
+
+                        <option value="thermal">
+
+                            Thermal Stress
+
+                        </option>
+
+                        <option value="individual">
+
+                            Individual Health Issue
+
+                        </option>
+
+                        <option value="insufficient">
+
+                            Insufficient Data
+
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <!-- Період аналізу -->
+
+                <div class="crew-analysis-field">
+
+                    <label for="analysis-period">
+
+                        Analysis Period
+
+                    </label>
+
+                    <select id="analysis-period">
+
+                        <option value="6" selected>
+
+                            Last 6 Hours
+
+                        </option>
+
+                        <option value="12">
+
+                            Last 12 Hours
+
+                        </option>
+
+                        <option value="24">
+
+                            Last 24 Hours
+
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <!-- Кнопка запуску -->
+
+                <div class="crew-analysis-field
+                            crew-analysis-run-field">
+
+                    <button type="button"
+                            id="run-crew-analysis"
+                            class="crew-analysis-run-button">
+
+                        <span aria-hidden="true">✧</span>
+
+                        Run Analysis
+
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <!-- Повідомлення про джерело даних -->
+
+            <div class="crew-analysis-notice"
+                 id="analysis-data-notice"
+                 role="status">
+
+                Demonstration scenarios use synthetic data.
+
+                They do not change astronaut records
+                or generate operational alerts.
+
+            </div>
+
+        </section>
+
+
+        <!-- ======================================
+             УМОВИ КОСМІЧНОГО МОДУЛЯ
+        ======================================= -->
+
+        <section class="crew-analysis-panel">
+
+            <div class="crew-analysis-panel-heading">
+
+                <div class="crew-analysis-heading-icon"
+                     aria-hidden="true">
+
+                    ◎
+
+                </div>
+
+                <div>
+
+                    <h3>Habitat Conditions</h3>
+
+                    <p>
+
+                        Shared spacecraft environmental
+                        measurements
+
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <!-- Інформація про космічний модуль -->
+
+            <div class="habitat-information">
+
+                <span>Habitat</span>
+
+                <strong id="analysis-habitat-name">
+
+                    —
+
+                </strong>
+
+                <span id="habitat-last-update">
+
+                    Awaiting measurements
+
+                </span>
+
+            </div>
+
+
+            <!-- Картки параметрів середовища -->
+
+            <div class="habitat-metrics-grid"
+                 id="habitat-metrics">
+
+
+                <!-- Вуглекислий газ -->
+
+                <article class="habitat-metric"
+                         data-habitat-metric="co2">
+
+                    <span class="habitat-metric-name">
+
+                        Carbon Dioxide
+
+                    </span>
+
+                    <strong class="habitat-metric-value"
+                            id="habitat-co2">
+
+                        —
+
+                    </strong>
+
+                    <span class="habitat-metric-unit">
+
+                        ppm
+
+                    </span>
+
+                    <small class="habitat-metric-status">
+
+                        Awaiting data
+
+                    </small>
+
+                </article>
+
+
+                <!-- Кисень -->
+
+                <article class="habitat-metric"
+                         data-habitat-metric="airOxygen">
+
+                    <span class="habitat-metric-name">
+
+                        Air Oxygen
+
+                    </span>
+
+                    <strong class="habitat-metric-value"
+                            id="habitat-oxygen">
+
+                        —
+
+                    </strong>
+
+                    <span class="habitat-metric-unit">
+
+                        %
+
+                    </span>
+
+                    <small class="habitat-metric-status">
+
+                        Awaiting data
+
+                    </small>
+
+                </article>
+
+
+                <!-- Атмосферний тиск -->
+
+                <article class="habitat-metric"
+                         data-habitat-metric="pressure">
+
+                    <span class="habitat-metric-name">
+
+                        Atmospheric Pressure
+
+                    </span>
+
+                    <strong class="habitat-metric-value"
+                            id="habitat-pressure">
+
+                        —
+
+                    </strong>
+
+                    <span class="habitat-metric-unit">
+
+                        kPa
+
+                    </span>
+
+                    <small class="habitat-metric-status">
+
+                        Awaiting data
+
+                    </small>
+
+                </article>
+
+
+                <!-- Температура повітря -->
+
+                <article class="habitat-metric"
+                         data-habitat-metric="airTemperature">
+
+                    <span class="habitat-metric-name">
+
+                        Air Temperature
+
+                    </span>
+
+                    <strong class="habitat-metric-value"
+                            id="habitat-temperature">
+
+                        —
+
+                    </strong>
+
+                    <span class="habitat-metric-unit">
+
+                        K
+
+                    </span>
+
+                    <small class="habitat-metric-status">
+
+                        Awaiting data
+
+                    </small>
+
+                </article>
+
+
+                <!-- Потужність дози опромінення -->
+
+                <article class="habitat-metric"
+                         data-habitat-metric="radiation">
+
+                    <span class="habitat-metric-name">
+
+                        Radiation Rate
+
+                    </span>
+
+                    <strong class="habitat-metric-value"
+                            id="habitat-radiation">
+
+                        —
+
+                    </strong>
+
+                    <span class="habitat-metric-unit">
+
+                        µSv/h
+
+                    </span>
+
+                    <small class="habitat-metric-status">
+
+                        Awaiting data
+
+                    </small>
+
+                </article>
+
+
+                <!-- Якість повітря -->
+
+                <article class="habitat-metric"
+                         data-habitat-metric="airQuality">
+
+                    <span class="habitat-metric-name">
+
+                        Air Quality
+
+                    </span>
+
+                    <strong class="habitat-metric-value"
+                            id="habitat-air-quality">
+
+                        —
+
+                    </strong>
+
+                    <span class="habitat-metric-unit">
+
+                        Sensor status
+
+                    </span>
+
+                    <small class="habitat-metric-status">
+
+                        Awaiting data
+
+                    </small>
+
+                </article>
+
+            </div>
+
+        </section>
+
+
+        <!-- ======================================
+             СПІЛЬНИЙ АНАЛІЗ ЕКІПАЖУ
+        ======================================= -->
+
+        <div class="crew-correlation-layout">
+
+
+            <!-- ==================================
+                 ВІЗУАЛІЗАЦІЯ ВЗАЄМОЗВ'ЯЗКІВ
+            =================================== -->
+
+            <section class="crew-analysis-panel">
+
+                <div class="crew-analysis-panel-heading">
+
+                    <div class="crew-analysis-heading-icon"
+                         aria-hidden="true">
+
+                        ⌘
+
+                    </div>
+
+                    <div>
+
+                        <h3>Crew Environmental Correlation</h3>
+
+                        <p>
+
+                            Shared habitat and individual
+                            health observations
+
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Вибір показника для візуалізації -->
+
+                <div class="crew-analysis-field">
+
+                    <label for="correlation-metric">
+
+                        Environmental Factor
+
+                    </label>
+
+                    <select id="correlation-metric">
+
+                        <option value="co2">
+
+                            Carbon Dioxide
+
+                        </option>
+
+                        <option value="airOxygen">
+
+                            Air Oxygen
+
+                        </option>
+
+                        <option value="pressure">
+
+                            Atmospheric Pressure
+
+                        </option>
+
+                        <option value="airTemperature">
+
+                            Air Temperature
+
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <!-- Інтерактивна схема -->
+
+                <div class="crew-correlation-map"
+                     id="crew-correlation-map">
+
+                    <!--
+                        SVG-схема створюється
+                        автоматично через JavaScript.
+                    -->
+
+                    <div class="crew-analysis-empty">
+
+                        <span aria-hidden="true">⌘</span>
+
+                        <h4>Awaiting analysis</h4>
+
+                        <p>
+
+                            Crew environmental relationships
+                            will appear here.
+
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Умовні позначення -->
+
+                <div class="crew-correlation-legend">
+
+                    <span>
+
+                        <i class="correlation-dot related">
+                        </i>
+
+                        Related observation
+
+                    </span>
+
+                    <span>
+
+                        <i class="correlation-dot unrelated">
+                        </i>
+
+                        No related pattern
+
+                    </span>
+
+                    <span>
+
+                        <i class="correlation-dot unavailable">
+                        </i>
+
+                        Insufficient data
+
+                    </span>
+
+                </div>
+
+            </section>
+
+
+            <!-- ==================================
+                 ІНФОРМАЦІЯ ПРО ВИБРАНОГО АСТРОНАВТА
+            =================================== -->
+
+            <section class="crew-analysis-panel">
+
+                <div class="crew-analysis-panel-heading">
+
+                    <div class="crew-analysis-heading-icon"
+                         aria-hidden="true">
+
+                        ♡
+
+                    </div>
+
+                    <div>
+
+                        <h3>Selected Crew Member</h3>
+
+                        <p>
+
+                            Individual health observations
+
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Детальна інформація -->
+
+                <div id="selected-crew-details"
+                     class="selected-crew-details">
+
+                    <div class="crew-analysis-empty">
+
+                        <span aria-hidden="true">◎</span>
+
+                        <h4>Select a crew member</h4>
+
+                        <p>
+
+                            Select an astronaut on the
+                            correlation map to review
+                            their observations.
+
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+        </div>
+
+
+        <!-- ======================================
+             ЗАГАЛЬНА ІНФОРМАЦІЯ ПРО ЕКІПАЖ
+        ======================================= -->
+
+        <section class="crew-analysis-panel">
+
+            <div class="crew-analysis-panel-heading">
+
+                <div class="crew-analysis-heading-icon"
+                     aria-hidden="true">
+
+                    ♡
+
+                </div>
+
+                <div>
+
+                    <h3>Crew Health Overview</h3>
+
+                    <p>
+
+                        Physiological measurements
+                        and reported well-being
+
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <!-- Таблиця астронавтів -->
+
+            <div class="crew-analysis-table-wrapper">
+
+                <table class="crew-analysis-table">
+
+                    <thead>
+
+                        <tr>
+
+                            <th scope="col">Astronaut</th>
+
+                            <th scope="col">Heart Rate</th>
+
+                            <th scope="col">SpO₂</th>
+
+                            <th scope="col">
+
+                                Skin Temperature
+
+                            </th>
+
+                            <th scope="col">Symptoms</th>
+
+                            <th scope="col">
+
+                                Environmental Relation
+
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody id="crew-analysis-table-body">
+
+                        <tr>
+
+                            <td colspan="6">
+
+                                Awaiting crew data
+
+                            </td>
+
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+
+        <!-- ======================================
+             РЕЗУЛЬТАТИ АНАЛІЗУ
+        ======================================= -->
+
+        <section class="crew-analysis-panel">
+
+            <div class="crew-analysis-panel-heading">
+
+                <div class="crew-analysis-heading-icon"
+                     aria-hidden="true">
+
+                    ⚠
+
+                </div>
+
+                <div>
+
+                    <h3>Shared Risk Detection</h3>
+
+                    <p>
+
+                        Potential relationships between
+                        habitat conditions and crew health
+
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <!-- Загальний результат -->
+
+            <div class="crew-analysis-result"
+                 id="crew-analysis-result"
+                 role="status">
+
+                <h4>Analysis not completed</h4>
+
+                <p>
+
+                    Run the analysis to identify
+                    possible shared risk patterns.
+
+                </p>
+
+            </div>
+
+
+            <!-- Виявлені закономірності -->
+
+            <div class="crew-risk-list"
+                 id="crew-risk-list">
+
+                <!--
+                    Результати формуються
+                    автоматично через JavaScript.
+                -->
+
+            </div>
+
+        </section>
+
+
+        <!-- ======================================
+             СИНХРОНІЗОВАНІ ГРАФІКИ
+        ======================================= -->
+
+        <section class="crew-analysis-panel">
+
+            <div class="crew-analysis-panel-heading">
+
+                <div class="crew-analysis-heading-icon"
+                     aria-hidden="true">
+
+                    ▥
+
+                </div>
+
+                <div>
+
+                    <h3>Environmental &amp; Health Trends</h3>
+
+                    <p>
+
+                        Time-aligned environmental
+                        and crew observations
+
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <!-- Графік середовища -->
+
+            <article class="crew-analysis-chart-panel">
+
+                <div class="crew-analysis-chart-heading">
+
+                    <h4 id="environment-chart-title">
+
+                        Habitat Environmental Trend
+
+                    </h4>
+
+                    <span id="environment-chart-unit">
+
+                        —
+
+                    </span>
+
+                </div>
+
+                <div class="crew-analysis-chart"
+                     id="environment-trend-chart">
+
+                    <p class="crew-analysis-empty">
+
+                        No environmental history available
+
+                    </p>
+
+                </div>
+
+            </article>
+
+
+            <!-- Графік самопочуття екіпажу -->
+
+            <article class="crew-analysis-chart-panel">
+
+                <div class="crew-analysis-chart-heading">
+
+                    <h4 id="health-chart-title">
+
+                        Crew Health Observations
+
+                    </h4>
+
+                    <span>Crew members</span>
+
+                </div>
+
+                <div class="crew-analysis-chart"
+                     id="crew-health-trend-chart">
+
+                    <p class="crew-analysis-empty">
+
+                        No synchronized health history available
+
+                    </p>
+
+                </div>
+
+            </article>
+
+
+            <p class="crew-analysis-chart-note">
+
+                Temporal association does not establish
+                a causal relationship.
+
+            </p>
+
+        </section>
+
+
+        <!-- ======================================
+             РЕКОМЕНДОВАНІ ПОДАЛЬШІ ДІЇ
+        ======================================= -->
+
+        <section class="crew-analysis-panel">
+
+            <div class="crew-analysis-panel-heading">
+
+                <div class="crew-analysis-heading-icon"
+                     aria-hidden="true">
+
+                    ✓
+
+                </div>
+
+                <div>
+
+                    <h3>Recommended Follow-up</h3>
+
+                    <p>
+
+                        Observation and verification
+                        according to mission protocols
+
+                    </p>
+
+                </div>
+
+            </div>
+
+            <div class="crew-analysis-recommendations"
+                 id="crew-analysis-recommendations">
+
+                <p class="crew-analysis-empty">
+
+                    Recommendations will appear
+                    after the analysis.
+
+                </p>
+
+            </div>
+
+        </section>
+
+
+        <!-- ======================================
+             МЕТОДОЛОГІЯ АНАЛІЗУ
+        ======================================= -->
+
+        <details class="crew-analysis-panel
+                        crew-analysis-methodology">
+
+            <summary>
+
+                <span aria-hidden="true">ⓘ</span>
+
+                <strong>Analysis Methodology</strong>
+
+                <span class="crew-analysis-chevron"
+                      aria-hidden="true">
+
+                    ⌄
+
+                </span>
+
+            </summary>
+
+            <div class="crew-analysis-methodology-content">
+
+                <p>
+
+                    PULSAR compares time-aligned crew
+                    health observations with shared
+                    spacecraft environmental measurements.
+
+                </p>
+
+                <div class="crew-analysis-method-grid">
+
+                    <article>
+
+                        <h4>01. Data Collection</h4>
+
+                        <p>
+
+                            Physiological measurements,
+                            reported symptoms and
+                            habitat sensor observations.
+
+                        </p>
+
+                    </article>
+
+                    <article>
+
+                        <h4>02. Data Synchronization</h4>
+
+                        <p>
+
+                            Comparison of valid observations
+                            within a shared time window
+                            and habitat.
+
+                        </p>
+
+                    </article>
+
+                    <article>
+
+                        <h4>03. Pattern Detection</h4>
+
+                        <p>
+
+                            Identification of similar
+                            observations among multiple
+                            crew members.
+
+                        </p>
+
+                    </article>
+
+                    <article>
+
+                        <h4>04. Environmental Comparison</h4>
+
+                        <p>
+
+                            Evaluation of corresponding
+                            environmental changes.
+
+                        </p>
+
+                    </article>
+
+                    <article>
+
+                        <h4>05. Risk Awareness</h4>
+
+                        <p>
+
+                            Presentation of possible shared
+                            risk patterns for human review.
+
+                        </p>
+
+                    </article>
+
+                    <article>
+
+                        <h4>06. Data Quality</h4>
+
+                        <p>
+
+                            Missing or insufficient data
+                            are not interpreted as
+                            normal health conditions.
+
+                        </p>
+
+                    </article>
+
+                </div>
+
+            </div>
+
+        </details>
+
+
+        <!-- ======================================
+             НАУКОВЕ ОБҐРУНТУВАННЯ
+        ======================================= -->
+
+        <section class="crew-analysis-panel
+                        crew-analysis-research">
+
+            <div class="crew-analysis-panel-heading">
+
+                <div class="crew-analysis-heading-icon"
+                     aria-hidden="true">
+
+                    ⌘
+
+                </div>
+
+                <div>
+
+                    <h3>Spaceflight Research Context</h3>
+
+                    <p>
+
+                        Human health beyond Earth
+
+                    </p>
+
+                </div>
+
+            </div>
+
+            <p>
+
+                Spaceflight introduces unique challenges
+                associated with altered gravity,
+                radiation, isolation, distance from Earth
+                and closed spacecraft environments.
+
+                Monitoring crew health together with
+                environmental conditions supports
+                mission-specific health awareness.
+
+            </p>
+
+            <a href="https://www.nasa.gov/hrp/"
+               target="_blank"
+               rel="noopener noreferrer">
+
+                NASA Human Research Program →
+
+            </a>
+
+        </section>
+
+
+        <!-- ======================================
+             ОБМЕЖЕННЯ СИСТЕМИ
+        ======================================= -->
+
+        <div class="crew-analysis-disclaimer">
+
+            <span aria-hidden="true">ⓘ</span>
+
+            <p>
+
+                PULSAR is a demonstration prototype.
+
+                Detected patterns indicate possible
+                associations, not confirmed causes
+                or medical diagnoses.
+
+                Operational use requires validated
+                sensors, approved mission criteria
+                and medical oversight.
+
+            </p>
+
+        </div>
+
+
+        <!-- ======================================
+             ІНФОРМАЦІЯ ПРО ОСТАННІЙ АНАЛІЗ
+        ======================================= -->
+
+        <div class="crew-analysis-page-footer">
+
+            <span>
+
+                PULSAR Environmental Intelligence
+
+            </span>
+
+            <span id="crew-analysis-last-update">
+
+                Last analysis: —
+
+            </span>
+
+        </div>
+
+    </main>
+
+
+    <!-- ==========================================
+         НИЖНЯ ЧАСТИНА САЙТУ
+    =========================================== -->
+
+    <footer>
+
+        PULSAR © 2026 |
+        NASA Space Apps Challenge |
+        Demo mode
+
+    </footer>
+
+
+    <!-- ==========================================
+         ПІДКЛЮЧЕННЯ JAVASCRIPT
+    =========================================== -->
+
+
+    <!-- Центр сповіщень -->
+
+    <script src="../js/notifications.js"></script>
+
+
+    <!-- Спільний аналіз екіпажу та середовища -->
+
+    <script src="../js/crew-analysis.js"></script>
+
+</body>
+
+</html>
