@@ -17,7 +17,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { WebSocketServer } from "ws";
-import { analyzeSeries } from "./trends.js";
+import { analyzeSeries, sampleRisk } from "./trends.js";
 import {
   seedDevices,
   getDevice,
@@ -28,6 +28,12 @@ import {
   renameDevice,
   setDeviceRole,
   clearRing,
+  noteDaily,
+  getDayHistory,
+  enqueueDeviceCommand,
+  takeOutbound,
+  peekOutbound,
+  seedDayRisks,
 } from "./memory.js";
 import { initMysql, enqueuePersist, getSeed, mysqlReady, enqueueMeta } from "./mysql.js";
 import {
@@ -88,8 +94,25 @@ function ingestFast(raw, source) {
 
   const prev = seriesOf(device.id, 39);
   const series = [...prev, { t: recorded_at, hr, spo2, temp }];
-  const analysis = analyzeSeries(series);
+  const risk = sampleRisk(hr, spo2, temp);
+  noteDaily(device.id, { t: recorded_at, hr, spo2, temp }, risk);
+  const analysis = analyzeSeries(series, { days: getDayHistory(device.id) });
   pushSample(device.id, { t: recorded_at, hr, spo2, temp }, analysis, battery);
+
+  // Якщо аналіз каже «глибока перевірка» / підтвердити — черга на годинник
+  if (analysis.deviceCommand) {
+    const queued = enqueueDeviceCommand(device.id, analysis.deviceCommand);
+    if (queued) {
+      console.log(
+        `[rec→device] ${device.device_no} ${queued.code}: ${queued.text}`
+      );
+      broadcastWs({
+        type: "device_command",
+        device_id: device.id,
+        command: queued,
+      });
+    }
+  }
 
   enqueuePersist({
     deviceId: device.id,
@@ -121,8 +144,9 @@ function ingestFast(raw, source) {
   const now = Date.now();
   if (now - lastLogMs >= 500) {
     lastLogMs = now;
+    const traj = analysis.trajectory?.direction || "—";
     console.log(
-      `[${source}] ${device.label || device.device_no} hr=${analysis.hr} spo2=${analysis.spo2} temp=${analysis.temp} ${analysis.statusLabel}  ${dtUs.toFixed(0)}µs  n=${ingestCount}`
+      `[${source}] ${device.label || device.device_no} hr=${analysis.hr} spo2=${analysis.spo2} temp=${analysis.temp} ${analysis.statusLabel} traj=${traj}  ${dtUs.toFixed(0)}µs  n=${ingestCount}`
     );
   }
   return { ok: true, device_id: device.id, us: dtUs, analysis };
@@ -130,7 +154,9 @@ function ingestFast(raw, source) {
 
 function devicePayload(d) {
   const connected = isConnected(d, OFFLINE_MS);
-  const a = d.analysis || analyzeSeries(d.ring);
+  const a =
+    d.analysis ||
+    analyzeSeries(d.ring, { days: getDayHistory(d.id) });
   const sos = sosState.get(d.id)?.active === true;
   const sim = getSimState(d.id);
   return {
@@ -144,6 +170,7 @@ function devicePayload(d) {
     sos,
     simulating: isSimulating(d.id),
     sim,
+    pendingCommands: peekOutbound(d.id).length,
     ...(connected
       ? a
       : {
@@ -374,6 +401,41 @@ async function handleAdmin(url, req, res) {
       return true;
     }
 
+    // Підсіяти денні ризики (тест погіршення день-за-днем)
+    if (action === "seed-days" && req.method === "POST") {
+      const days = seedDayRisks(d.id, body.days || []);
+      const analysis = analyzeSeries(d.ring, { days });
+      d.analysis = analysis;
+      if (analysis.deviceCommand) {
+        enqueueDeviceCommand(d.id, analysis.deviceCommand);
+      }
+      console.log(
+        `[admin] seed-days ${d.device_no} n=${days.length} traj=${analysis.trajectory?.direction}`
+      );
+      broadcastWs({
+        type: "admin",
+        action: "seed_days",
+        device_id: d.id,
+        dashboard: dashboard(),
+      });
+      sendJson(res, 200, { ok: true, days, device: devicePayload(d) });
+      return true;
+    }
+
+    if (action === "push-rec" && req.method === "POST") {
+      const code = body.code || "DEEP_CHECK";
+      const text =
+        body.text ||
+        "Рекомендація: проведіть глибокий аналіз стану здоров'я.";
+      const queued = enqueueDeviceCommand(d.id, {
+        code,
+        text,
+        line: `REC|${code}|${String(text).slice(0, 60)}`,
+      });
+      sendJson(res, 200, { ok: true, queued, pending: peekOutbound(d.id) });
+      return true;
+    }
+
     if (action === "sos" && req.method === "POST") {
       const active = body.active !== false && body.active !== 0;
       if (active) {
@@ -461,7 +523,16 @@ async function main() {
           device_id: result.device_id,
           skipped: result.skipped,
           status: result.analysis?.status,
+          trajectory: result.analysis?.trajectory?.direction,
+          deviceCommand: result.analysis?.deviceCommand || null,
         });
+      }
+
+      // Міст USB забирає команди для годинника (REC|CODE|text)
+      if (url.pathname === "/api/bridge/outbound" && req.method === "GET") {
+        const id = url.searchParams.get("device_id") || url.searchParams.get("id");
+        const commands = takeOutbound(id);
+        return sendJson(res, 200, { ok: true, commands });
       }
 
       if (url.pathname === "/api/dashboard" && req.method === "GET") {

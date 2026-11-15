@@ -61,6 +61,8 @@
       warning,
       pulseHistory: hrHist.length ? hrHist : pulse != null ? [pulse] : [],
       trends: d.trends || null,
+      trajectory: d.trajectory || null,
+      hypotheses: d.hypotheses || [],
       recommendations: d.recommendations || [],
       alert: d.alert || warning,
       sos: !!d.sos,
