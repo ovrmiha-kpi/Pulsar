@@ -1,0 +1,4156 @@
+
+/* ==================================================
+   PULSAR — CREW ENVIRONMENTAL ANALYSIS
+================================================== */
+
+
+/* ==================================================
+   ОСНОВНІ ПАРАМЕТРИ СТОРІНКИ
+================================================== */
+
+.crew-analysis-page {
+
+    --ca-background: #0a1220;
+    --ca-panel: #152338;
+    --ca-panel-dark: #0f1b2b;
+    --ca-border: #304258;
+
+    --ca-cyan: #4dd9ec;
+    --ca-green: #39d5a3;
+    --ca-yellow: #f5b94c;
+    --ca-red: #ff626f;
+
+    --ca-text: #e2edf5;
+    --ca-muted: #91a5bd;
+
+    width: 100%;
+
+    max-width: 1800px;
+
+    margin: 0 auto;
+
+    padding: 24px 30px 30px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 22px;
+
+    box-sizing: border-box;
+
+    color: var(--ca-text);
+
+}
+
+
+.crew-analysis-page *,
+.crew-analysis-page *::before,
+.crew-analysis-page *::after {
+
+    box-sizing: border-box;
+
+}
+
+
+.crew-analysis-page [hidden] {
+
+    display: none !important;
+
+}
+
+
+.crew-analysis-page button,
+.crew-analysis-page select,
+.crew-analysis-page input {
+
+    font-family: inherit;
+
+}
+
+
+.crew-analysis-page button:focus-visible,
+.crew-analysis-page a:focus-visible,
+.crew-analysis-page select:focus-visible,
+.crew-analysis-page summary:focus-visible,
+.crew-analysis-page [tabindex]:focus-visible {
+
+    outline: 2px solid var(--ca-cyan);
+
+    outline-offset: 3px;
+
+}
+
+
+/* ==================================================
+   ЗАГОЛОВОК СТОРІНКИ
+================================================== */
+
+.crew-analysis-top {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 20px;
+
+}
+
+
+.crew-analysis-heading {
+
+    min-width: 0;
+
+}
+
+
+.crew-analysis-heading h2 {
+
+    margin: 0 0 7px;
+
+    color: var(--ca-text);
+
+    font-size: 28px;
+
+    font-weight: 700;
+
+    line-height: 1.25;
+
+}
+
+
+.crew-analysis-heading p {
+
+    margin: 0;
+
+    color: var(--ca-muted);
+
+    font-size: 14px;
+
+    line-height: 1.5;
+
+}
+
+
+/* ==================================================
+   КНОПКА ПОВЕРНЕННЯ
+================================================== */
+
+.crew-analysis-back {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 9px;
+
+    flex-shrink: 0;
+
+    min-height: 42px;
+
+    padding: 10px 17px;
+
+    background: var(--ca-panel);
+
+    border: 1px solid var(--ca-border);
+
+    border-radius: 8px;
+
+    color: var(--ca-cyan);
+
+    text-decoration: none;
+
+    font-size: 13px;
+
+    font-weight: 600;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease;
+
+}
+
+
+.crew-analysis-back span {
+
+    font-size: 19px;
+
+    line-height: 1;
+
+}
+
+
+.crew-analysis-back:hover {
+
+    background: #1b354b;
+
+    border-color: var(--ca-cyan);
+
+    transform: translateX(-2px);
+
+}
+
+
+/* ==================================================
+   ДЖЕРЕЛО ДАНИХ
+================================================== */
+
+.crew-analysis-source {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 15px;
+
+    padding: 15px 19px;
+
+    background: #102538;
+
+    border: 1px solid #31586e;
+
+    border-radius: 10px;
+
+}
+
+
+.crew-analysis-source-info {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 13px;
+
+    min-width: 0;
+
+}
+
+
+.crew-analysis-source-info strong {
+
+    display: block;
+
+    margin-bottom: 4px;
+
+    color: var(--ca-cyan);
+
+    font-size: 14px;
+
+    font-weight: 600;
+
+}
+
+
+.crew-analysis-source-info p {
+
+    margin: 0;
+
+    color: var(--ca-muted);
+
+    font-size: 12px;
+
+    line-height: 1.5;
+
+}
+
+
+/* Індикатор джерела даних */
+
+.crew-analysis-source-dot {
+
+    width: 10px;
+
+    height: 10px;
+
+    flex-shrink: 0;
+
+    background: var(--ca-cyan);
+
+    border-radius: 50%;
+
+    box-shadow: 0 0 12px rgba(77, 217, 236, 0.45);
+
+}
+
+
+.crew-analysis-demo-badge {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    padding: 6px 10px;
+
+    border: 1px solid #38677c;
+
+    border-radius: 5px;
+
+    background: #17364a;
+
+    color: var(--ca-cyan);
+
+    font-size: 10px;
+
+    font-weight: 700;
+
+    letter-spacing: 0.8px;
+
+    white-space: nowrap;
+
+}
+
+
+/* Режим збережених даних */
+
+.crew-analysis-source.actual {
+
+    background: rgba(57, 213, 163, 0.06);
+
+    border-color: rgba(57, 213, 163, 0.3);
+
+}
+
+
+.crew-analysis-source.actual
+.crew-analysis-source-dot {
+
+    background: var(--ca-green);
+
+    box-shadow: 0 0 12px rgba(57, 213, 163, 0.35);
+
+}
+
+
+.crew-analysis-source.actual
+.crew-analysis-demo-badge {
+
+    color: var(--ca-green);
+
+    background: rgba(57, 213, 163, 0.08);
+
+    border-color: rgba(57, 213, 163, 0.3);
+
+}
+
+
+/* ==================================================
+   ЗАГАЛЬНА СТАТИСТИКА
+================================================== */
+
+.crew-analysis-summary {
+
+    display: grid;
+
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+
+    gap: 15px;
+
+}
+
+
+.crew-analysis-stat {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 15px;
+
+    min-width: 0;
+
+    min-height: 115px;
+
+    padding: 19px;
+
+    background: var(--ca-panel);
+
+    border: 1px solid var(--ca-border);
+
+    border-radius: 11px;
+
+    transition:
+        border-color 0.2s ease,
+        background 0.2s ease;
+
+}
+
+
+.crew-analysis-stat:hover {
+
+    border-color: #487086;
+
+    background: #182a3e;
+
+}
+
+
+.crew-analysis-stat-icon {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    width: 45px;
+
+    height: 45px;
+
+    flex-shrink: 0;
+
+    border: 1px solid #38677c;
+
+    border-radius: 10px;
+
+    background: #1c394d;
+
+    color: var(--ca-cyan);
+
+    font-size: 25px;
+
+}
+
+
+.crew-analysis-stat > div {
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: flex-start;
+
+    gap: 5px;
+
+    min-width: 0;
+
+}
+
+
+.crew-analysis-stat > div > span {
+
+    color: var(--ca-muted);
+
+    font-size: 12px;
+
+    line-height: 1.4;
+
+}
+
+
+.crew-analysis-stat strong {
+
+    color: var(--ca-cyan);
+
+    font-size: 30px;
+
+    font-weight: 700;
+
+    line-height: 1.15;
+
+    font-variant-numeric: tabular-nums;
+
+    overflow-wrap: anywhere;
+
+}
+
+
+.crew-analysis-stat small {
+
+    color: var(--ca-muted);
+
+    font-size: 11px;
+
+    line-height: 1.4;
+
+}
+
+
+/* Статистика несприятливих закономірностей */
+
+.crew-analysis-stat.warning .crew-analysis-stat-icon {
+
+    background: rgba(245, 185, 76, 0.08);
+
+    border-color: rgba(245, 185, 76, 0.25);
+
+    color: var(--ca-yellow);
+
+}
+
+
+.crew-analysis-stat.warning strong {
+
+    color: var(--ca-yellow);
+
+}
+
+
+.crew-analysis-stat.stable strong {
+
+    color: var(--ca-green);
+
+}
+
+
+.crew-analysis-stat.unavailable strong {
+
+    color: var(--ca-muted);
+
+}
+
+
+/* ==================================================
+   ЗАГАЛЬНЕ ОФОРМЛЕННЯ ПАНЕЛЕЙ
+================================================== */
+
+.crew-analysis-panel {
+
+    min-width: 0;
+
+    padding: 23px;
+
+    background: var(--ca-panel);
+
+    border: 1px solid var(--ca-border);
+
+    border-radius: 12px;
+
+}
+
+
+.crew-analysis-panel-heading {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 13px;
+
+    margin-bottom: 21px;
+
+}
+
+
+.crew-analysis-heading-icon {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    width: 40px;
+
+    height: 40px;
+
+    flex-shrink: 0;
+
+    background: #1c394d;
+
+    border: 1px solid #31586e;
+
+    border-radius: 9px;
+
+    color: var(--ca-cyan);
+
+    font-size: 23px;
+
+    line-height: 1;
+
+}
+
+
+.crew-analysis-panel-heading > div:last-child {
+
+    min-width: 0;
+
+}
+
+
+.crew-analysis-panel-heading h3 {
+
+    margin: 0 0 5px;
+
+    color: var(--ca-text);
+
+    font-size: 19px;
+
+    font-weight: 600;
+
+    line-height: 1.3;
+
+}
+
+
+.crew-analysis-panel-heading p {
+
+    margin: 0;
+
+    color: var(--ca-muted);
+
+    font-size: 12px;
+
+    line-height: 1.5;
+
+}
+
+
+/* ==================================================
+   ПАНЕЛЬ КЕРУВАННЯ АНАЛІЗОМ
+================================================== */
+
+.crew-analysis-controls {
+
+    border-color: #38677c;
+
+}
+
+
+.crew-analysis-controls
+.crew-analysis-panel-heading h3 {
+
+    color: var(--ca-cyan);
+
+    font-size: 21px;
+
+}
+
+
+.crew-analysis-control-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1fr)
+        minmax(0, 1.4fr)
+        minmax(0, 1fr)
+        minmax(150px, 0.8fr);
+
+    align-items: end;
+
+    gap: 16px;
+
+}
+
+
+/* Поля вибору */
+
+.crew-analysis-field {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 9px;
+
+    min-width: 0;
+
+}
+
+
+.crew-analysis-field label {
+
+    color: var(--ca-muted);
+
+    font-size: 12px;
+
+    font-weight: 600;
+
+}
+
+
+/* Випадаючі списки */
+
+.crew-analysis-field select {
+
+    display: block;
+
+    width: 100%;
+
+    min-width: 0;
+
+    height: 45px;
+
+    padding: 0 12px;
+
+    background: var(--ca-background);
+
+    border: 1px solid var(--ca-border);
+
+    border-radius: 7px;
+
+    color: var(--ca-text);
+
+    font-size: 13px;
+
+    cursor: pointer;
+
+    color-scheme: dark;
+
+    transition: border-color 0.2s ease;
+
+}
+
+
+.crew-analysis-field select:hover {
+
+    border-color: #528098;
+
+}
+
+
+.crew-analysis-field select:focus {
+
+    outline: none;
+
+    border-color: var(--ca-cyan);
+
+    box-shadow: 0 0 0 2px rgba(77, 217, 236, 0.1);
+
+}
+
+
+.crew-analysis-field select:disabled {
+
+    opacity: 0.5;
+
+    cursor: not-allowed;
+
+}
+
+
+/* ==================================================
+   КНОПКА ЗАПУСКУ АНАЛІЗУ
+================================================== */
+
+.crew-analysis-run-button {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 9px;
+
+    width: 100%;
+
+    min-height: 45px;
+
+    padding: 10px 17px;
+
+    border: 1px solid var(--ca-cyan);
+
+    border-radius: 7px;
+
+    background: var(--ca-cyan);
+
+    color: #0a1220;
+
+    font-size: 14px;
+
+    font-weight: 700;
+
+    cursor: pointer;
+
+    white-space: nowrap;
+
+    transition:
+        background 0.2s ease,
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+
+}
+
+
+.crew-analysis-run-button span {
+
+    font-size: 20px;
+
+    line-height: 1;
+
+}
+
+
+.crew-analysis-run-button:hover {
+
+    background: #86ebf5;
+
+    box-shadow: 0 4px 18px rgba(77, 217, 236, 0.15);
+
+    transform: translateY(-1px);
+
+}
+
+
+.crew-analysis-run-button:active {
+
+    transform: translateY(0);
+
+}
+
+
+.crew-analysis-run-button:disabled {
+
+    opacity: 0.5;
+
+    cursor: not-allowed;
+
+    transform: none;
+
+    box-shadow: none;
+
+}
+
+
+/* ==================================================
+   ПОВІДОМЛЕННЯ ПРО ДЖЕРЕЛО ДАНИХ
+================================================== */
+
+.crew-analysis-notice {
+
+    margin-top: 17px;
+
+    padding: 13px 15px;
+
+    background: rgba(77, 217, 236, 0.05);
+
+    border: 1px solid rgba(77, 217, 236, 0.2);
+
+    border-left: 3px solid var(--ca-cyan);
+
+    border-radius: 7px;
+
+    color: #a6c8d8;
+
+    font-size: 12px;
+
+    line-height: 1.7;
+
+}
+
+
+.crew-analysis-notice.warning {
+
+    background: rgba(245, 185, 76, 0.06);
+
+    border-color: rgba(245, 185, 76, 0.2);
+
+    border-left-color: var(--ca-yellow);
+
+    color: #e6c991;
+
+}
+
+
+/* ==================================================
+   ІНФОРМАЦІЯ ПРО КОСМІЧНИЙ МОДУЛЬ
+================================================== */
+
+.habitat-information {
+
+    display: flex;
+
+    align-items: center;
+
+    flex-wrap: wrap;
+
+    gap: 9px 12px;
+
+    margin-bottom: 18px;
+
+    padding: 12px 15px;
+
+    background: var(--ca-panel-dark);
+
+    border: 1px solid var(--ca-border);
+
+    border-radius: 8px;
+
+}
+
+
+.habitat-information > span {
+
+    color: var(--ca-muted);
+
+    font-size: 12px;
+
+}
+
+
+.habitat-information strong {
+
+    color: var(--ca-cyan);
+
+    font-size: 14px;
+
+    font-weight: 600;
+
+    overflow-wrap: anywhere;
+
+}
+
+
+#habitat-last-update {
+
+    margin-left: auto;
+
+    font-size: 11px;
+
+}
+
+
+/* ==================================================
+   КАРТКИ ПАРАМЕТРІВ СЕРЕДОВИЩА
+================================================== */
+
+.habitat-metrics-grid {
+
+    display: grid;
+
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+
+    gap: 13px;
+
+}
+
+
+.habitat-metric {
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: flex-start;
+
+    gap: 7px;
+
+    min-width: 0;
+
+    min-height: 143px;
+
+    padding: 15px;
+
+    background: var(--ca-panel-dark);
+
+    border: 1px solid var(--ca-border);
+
+    border-top: 3px solid #38677c;
+
+    border-radius: 9px;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease;
+
+}
+
+
+.habitat-metric:hover {
+
+    background: #132338;
+
+    border-color: #487086;
+
+}
+
+
+.habitat-metric-name {
+
+    min-height: 34px;
+
+    color: var(--ca-muted);
+
+    font-size: 12px;
+
+    font-weight: 500;
+
+    line-height: 1.4;
+
+}
+
+
+.habitat-metric-value {
+
+    max-width: 100%;
+
+    color: var(--ca-cyan);
+
+    font-size: 27px;
+
+    font-weight: 700;
+
+    line-height: 1.15;
+
+    font-variant-numeric: tabular-nums;
+
+    overflow-wrap: anywhere;
+
+}
+
+
+.habitat-metric-unit {
+
+    color: var(--ca-muted);
+
+    font-size: 11px;
+
+}
+
+
+.habitat-metric-status {
+
+    display: block;
+
+    margin-top: auto;
+
+    padding-top: 8px;
+
+    color: var(--ca-muted);
+
+    font-size: 11px;
+
+    line-height: 1.4;
+
+}
+
+
+/* ==================================================
+   СТАНИ ПАРАМЕТРІВ СЕРЕДОВИЩА
+================================================== */
+
+
+/* У межах демонстраційного сценарію */
+
+.habitat-metric.normal,
+.habitat-metric.stable {
+
+    border-top-color: var(--ca-green);
+
+}
+
+
+.habitat-metric.normal .habitat-metric-status,
+.habitat-metric.stable .habitat-metric-status {
+
+    color: var(--ca-green);
+
+}
+
+
+/* Потребує перевірки */
+
+.habitat-metric.warning,
+.habitat-metric.elevated {
+
+    border-color: rgba(245, 185, 76, 0.3);
+
+    border-top-color: var(--ca-yellow);
+
+    background: rgba(245, 185, 76, 0.045);
+
+}
+
+
+.habitat-metric.warning .habitat-metric-value,
+.habitat-metric.warning .habitat-metric-status,
+.habitat-metric.elevated .habitat-metric-value,
+.habitat-metric.elevated .habitat-metric-status {
+
+    color: var(--ca-yellow);
+
+}
+
+
+/* Критичний стан — лише для підтверджених даних */
+
+.habitat-metric.critical {
+
+    border-color: rgba(255, 98, 111, 0.3);
+
+    border-top-color: var(--ca-red);
+
+    background: rgba(255, 98, 111, 0.05);
+
+}
+
+
+.habitat-metric.critical .habitat-metric-value,
+.habitat-metric.critical .habitat-metric-status {
+
+    color: var(--ca-red);
+
+}
+
+
+/* Дані відсутні або застарілі */
+
+.habitat-metric.unavailable,
+.habitat-metric.pending,
+.habitat-metric.stale {
+
+    border-top-color: #53667b;
+
+}
+
+
+.habitat-metric.unavailable .habitat-metric-value,
+.habitat-metric.pending .habitat-metric-value,
+.habitat-metric.stale .habitat-metric-value {
+
+    color: var(--ca-muted);
+
+}
+
+
+/* ==================================================
+   СПІЛЬНИЙ АНАЛІЗ ЕКІПАЖУ
+================================================== */
+
+.crew-correlation-layout {
+
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 1.7fr)
+        minmax(0, 1fr);
+
+    align-items: stretch;
+
+    gap: 20px;
+
+}
+
+
+.crew-correlation-layout > .crew-analysis-panel {
+
+    min-width: 0;
+
+}
+
+
+/* ==================================================
+   СХЕМА ВЗАЄМОЗВ'ЯЗКІВ ЕКІПАЖУ
+================================================== */
+
+.crew-correlation-map {
+
+    position: relative;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    width: 100%;
+
+    min-width: 0;
+
+    min-height: 420px;
+
+    margin-top: 18px;
+
+    padding: 10px;
+
+    overflow: hidden;
+
+    background:
+
+        radial-gradient(
+            ellipse at center,
+            rgba(77, 217, 236, 0.045),
+            transparent 70%
+        ),
+
+        var(--ca-background);
+
+    border: 1px solid var(--ca-border);
+
+    border-radius: 10px;
+
+}
+
+
+/* Основний SVG схеми */
+
+.crew-correlation-map svg {
+
+    display: block;
+
+    width: 100%;
+
+    height: auto;
+
+    max-height: 530px;
+
+    overflow: visible;
+
+}
+
+
+/* Додаткова координатна сітка */
+
+.correlation-grid-circle {
+
+    fill: none;
+
+    stroke: #263e56;
+
+    stroke-width: 1;
+
+    stroke-dasharray: 4 6;
+
+    vector-effect: non-scaling-stroke;
+
+}
+
+
+.correlation-grid-line {
+
+    stroke: #263e56;
+
+    stroke-width: 1;
+
+    stroke-dasharray: 3 5;
+
+    vector-effect: non-scaling-stroke;
+
+}
+
+
+/* ==================================================
+   ЦЕНТРАЛЬНИЙ ЕЛЕМЕНТ СХЕМИ
+================================================== */
+
+.correlation-center {
+
+    color: var(--ca-cyan);
+
+}
+
+
+.correlation-center-circle {
+
+    fill: #14283a;
+
+    stroke: currentColor;
+
+    stroke-width: 2;
+
+    vector-effect: non-scaling-stroke;
+
+}
+
+
+.correlation-center-ring {
+
+    fill: none;
+
+    stroke: currentColor;
+
+    stroke-opacity: 0.35;
+
+    stroke-width: 1;
+
+    stroke-dasharray: 5 5;
+
+    vector-effect: non-scaling-stroke;
+
+}
+
+
+.correlation-center.warning {
+
+    color: var(--ca-yellow);
+
+}
+
+
+.correlation-center.unavailable {
+
+    color: var(--ca-muted);
+
+}
+
+
+.correlation-center-title {
+
+    fill: currentColor;
+
+    font-size: 19px;
+
+    font-weight: 700;
+
+    text-anchor: middle;
+
+}
+
+
+.correlation-center-value {
+
+    fill: currentColor;
+
+    font-size: 16px;
+
+    font-weight: 600;
+
+    text-anchor: middle;
+
+}
+
+
+.correlation-center-unit {
+
+    fill: var(--ca-muted);
+
+    font-size: 11px;
+
+    text-anchor: middle;
+
+}
+
+
+/* ==================================================
+   ЛІНІЇ ВЗАЄМОЗВ'ЯЗКІВ
+================================================== */
+
+.correlation-link {
+
+    fill: none;
+
+    stroke: #53667b;
+
+    stroke-width: 1.5;
+
+    stroke-opacity: 0.5;
+
+    stroke-dasharray: 5 5;
+
+    vector-effect: non-scaling-stroke;
+
+    transition:
+        stroke 0.2s ease,
+        stroke-opacity 0.2s ease;
+
+}
+
+
+.correlation-link.related {
+
+    stroke: var(--ca-yellow);
+
+    stroke-opacity: 0.9;
+
+    stroke-width: 2;
+
+}
+
+
+.correlation-link.unrelated {
+
+    stroke: var(--ca-green);
+
+    stroke-opacity: 0.45;
+
+}
+
+
+.correlation-link.unavailable {
+
+    stroke: var(--ca-muted);
+
+    stroke-opacity: 0.25;
+
+}
+
+
+.correlation-link.selected {
+
+    stroke-opacity: 1;
+
+    stroke-width: 2.5;
+
+}
+
+
+/* ==================================================
+   АСТРОНАВТИ НА ІНТЕРАКТИВНІЙ СХЕМІ
+================================================== */
+
+.correlation-node {
+
+    color: var(--ca-muted);
+
+    cursor: pointer;
+
+    outline: none;
+
+}
+
+
+.correlation-node.related {
+
+    color: var(--ca-yellow);
+
+}
+
+
+.correlation-node.unrelated {
+
+    color: var(--ca-green);
+
+}
+
+
+.correlation-node.unavailable {
+
+    color: var(--ca-muted);
+
+}
+
+
+/* Область натискання */
+
+.correlation-node-hit-area {
+
+    fill: transparent;
+
+    pointer-events: all;
+
+}
+
+
+/* Коло з ініціалами астронавта */
+
+.correlation-node-circle {
+
+    fill: #1a3046;
+
+    stroke: currentColor;
+
+    stroke-width: 1.5;
+
+    vector-effect: non-scaling-stroke;
+
+    transition:
+        fill 0.2s ease,
+        stroke-width 0.2s ease;
+
+}
+
+
+.correlation-node-ring {
+
+    fill: none;
+
+    stroke: currentColor;
+
+    stroke-width: 1;
+
+    stroke-opacity: 0.35;
+
+    stroke-dasharray: 4 4;
+
+    vector-effect: non-scaling-stroke;
+
+}
+
+
+.correlation-node-initials {
+
+    fill: currentColor;
+
+    font-size: 17px;
+
+    font-weight: 700;
+
+    text-anchor: middle;
+
+    dominant-baseline: middle;
+
+    pointer-events: none;
+
+}
+
+
+.correlation-node-name {
+
+    fill: var(--ca-text);
+
+    font-size: 12px;
+
+    font-weight: 500;
+
+    text-anchor: middle;
+
+    pointer-events: none;
+
+}
+
+
+.correlation-node-status {
+
+    fill: currentColor;
+
+    font-size: 10px;
+
+    text-anchor: middle;
+
+    pointer-events: none;
+
+}
+
+
+/* Наведення на астронавта */
+
+.correlation-node:hover .correlation-node-circle {
+
+    fill: #27465c;
+
+    stroke-width: 2.5;
+
+}
+
+
+/* Вибраний астронавт */
+
+.correlation-node.selected .correlation-node-circle {
+
+    fill: #213e52;
+
+    stroke: var(--ca-cyan);
+
+    stroke-width: 3;
+
+}
+
+
+.correlation-node.selected .correlation-node-ring {
+
+    stroke: var(--ca-cyan);
+
+    stroke-opacity: 0.9;
+
+    stroke-dasharray: none;
+
+}
+
+
+.correlation-node:focus-visible .correlation-node-ring {
+
+    stroke: var(--ca-cyan);
+
+    stroke-width: 2;
+
+    stroke-opacity: 1;
+
+}
+
+
+/* ==================================================
+   УМОВНІ ПОЗНАЧЕННЯ СХЕМИ
+================================================== */
+
+.crew-correlation-legend {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    flex-wrap: wrap;
+
+    gap: 12px 18px;
+
+    margin-top: 17px;
+
+}
+
+
+.crew-correlation-legend > span {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 7px;
+
+    color: var(--ca-muted);
+
+    font-size: 11px;
+
+}
+
+
+.correlation-dot {
+
+    display: inline-block;
+
+    width: 9px;
+
+    height: 9px;
+
+    flex-shrink: 0;
+
+    border-radius: 50%;
+
+}
+
+
+.correlation-dot.related {
+
+    background: var(--ca-yellow);
+
+}
+
+
+.correlation-dot.unrelated {
+
+    background: var(--ca-green);
+
+}
+
+
+.correlation-dot.unavailable {
+
+    background: var(--ca-muted);
+
+}
+
+
+/* ==================================================
+   ВИБРАНИЙ ЧЛЕН ЕКІПАЖУ
+================================================== */
+
+.selected-crew-details {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 17px;
+
+    min-width: 0;
+
+}
+
+
+/* Інформація про астронавта */
+
+.selected-crew-header {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 13px;
+
+    min-width: 0;
+
+    padding-bottom: 17px;
+
+    border-bottom: 1px solid var(--ca-border);
+
+}
+
+
+.selected-crew-avatar {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    width: 55px;
+
+    height: 55px;
+
+    flex-shrink: 0;
+
+    background: #263e56;
+
+    border: 1px solid #38677c;
+
+    border-radius: 50%;
+
+    color: var(--ca-cyan);
+
+    font-size: 20px;
+
+    font-weight: 700;
+
+}
+
+
+.selected-crew-name {
+
+    min-width: 0;
+
+}
+
+
+.selected-crew-name h4 {
+
+    margin: 0 0 5px;
+
+    color: var(--ca-text);
+
+    font-size: 18px;
+
+    font-weight: 600;
+
+    overflow-wrap: anywhere;
+
+}
+
+
+.selected-crew-name p {
+
+    margin: 0;
+
+    color: var(--ca-muted);
+
+    font-size: 12px;
+
+    line-height: 1.5;
+
+}
+
+
+/* ==================================================
+   ПОКАЗНИКИ ВИБРАНОГО АСТРОНАВТА
+================================================== */
+
+.selected-crew-metrics {
+
+    display: grid;
+
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    gap: 11px;
+
+}
+
+
+.selected-crew-metric {
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: flex-start;
+
+    gap: 7px;
+
+    min-width: 0;
+
+    min-height: 88px;
+
+    padding: 13px;
+
+    background: var(--ca-panel-dark);
+
+    border: 1px solid var(--ca-border);
+
+    border-radius: 8px;
+
+}
+
+
+.selected-crew-metric > span {
+
+    color: var(--ca-muted);
+
+    font-size: 11px;
+
+    line-height: 1.4;
+
+}
+
+
+.selected-crew-metric strong {
+
+    color: var(--ca-cyan);
+
+    font-size: 23px;
+
+    font-weight: 700;
+
+    font-variant-numeric: tabular-nums;
+
+    overflow-wrap: anywhere;
+
+}
+
+
+.selected-crew-metric small {
+
+    color: var(--ca-muted);
+
+    font-size: 11px;
+
+}
+
+
+/* ==================================================
+   СИМПТОМИ ТА САМОПОЧУТТЯ
+================================================== */
+
+.selected-crew-observations {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 10px;
+
+}
+
+
+.selected-crew-observations h4 {
+
+    margin: 0;
+
+    color: var(--ca-text);
+
+    font-size: 14px;
+
+    font-weight: 600;
+
+}
+
+
+.selected-crew-observations p {
+
+    margin: 0;
+
+    color: var(--ca-muted);
+
+    font-size: 12px;
+
+    line-height: 1.6;
+
+    overflow-wrap: anywhere;
+
+}
+
+
+.selected-crew-symptoms {
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 7px;
+
+}
+
+
+.crew-symptom-tag {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 5px;
+
+    max-width: 100%;
+
+    padding: 6px 9px;
+
+    background: #1c3548;
+
+    border: 1px solid #38677c;
+
+    border-radius: 5px;
+
+    color: var(--ca-cyan);
+
+    font-size: 11px;
+
+    line-height: 1.4;
+
+    overflow-wrap: anywhere;
+
+}
+
+
+.crew-symptom-tag.warning,
+.crew-symptom-tag.related {
+
+    color: var(--ca-yellow);
+
+    background: rgba(245, 185, 76, 0.07);
+
+    border-color: rgba(245, 185, 76, 0.25);
+
+}
+
+
+.crew-symptom-tag.unavailable {
+
+    color: var(--ca-muted);
+
+    background: var(--ca-panel-dark);
+
+    border-color: var(--ca-border);
+
+}
+
+
+/* ==================================================
+   ЗВ'ЯЗОК ІЗ ПАРАМЕТРАМИ СЕРЕДОВИЩА
+================================================== */
+
+.selected-crew-relation {
+
+    padding: 13px;
+
+    background: var(--ca-panel-dark);
+
+    border: 1px solid var(--ca-border);
+
+    border-left: 3px solid var(--ca-muted);
+
+    border-radius: 7px;
+
+}
+
+
+.selected-crew-relation strong {
+
+    display: block;
+
+    margin-bottom: 7px;
+
+    color: var(--ca-muted);
+
+    font-size: 13px;
+
+}
+
+
+.selected-crew-relation p {
+
+    margin: 0;
+
+    color: var(--ca-muted);
+
+    font-size: 12px;
+
+    line-height: 1.6;
+
+}
+
+
+.selected-crew-relation.related {
+
+    border-left-color: var(--ca-yellow);
+
+    background: rgba(245, 185, 76, 0.045);
+
+}
+
+
+.selected-crew-relation.related strong {
+
+    color: var(--ca-yellow);
+
+}
+
+
+.selected-crew-relation.unrelated {
+
+    border-left-color: var(--ca-green);
+
+}
+
+
+.selected-crew-relation.unrelated strong {
+
+    color: var(--ca-green);
+
+}
+
+
+/* ==================================================
+   ПЕРЕХІД ДО ПРОФІЛЮ АСТРОНАВТА
+================================================== */
+
+.selected-crew-profile-button {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 8px;
+
+    width: 100%;
+
+    min-height: 42px;
+
+    margin-top: auto;
+
+    padding: 11px 14px;
+
+    background: #1c394d;
+
+    border: 1px solid #38677c;
+
+    border-radius: 7px;
+
+    color: var(--ca-cyan);
+
+    text-decoration: none;
+
+    font-size: 13px;
+
+    font-weight: 600;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease;
+
+}
+
+
+.selected-crew-profile-button:hover {
+
+    background: #244b61;
+
+    border-color: var(--ca-cyan);
+
+}
+
+
+/* ==================================================
+   ТАБЛИЦЯ СТАНУ ЕКІПАЖУ
+================================================== */
+
+.crew-analysis-table-wrapper {
+
+    width: 100%;
+
+    min-width: 0;
+
+    overflow-x: auto;
+
+    border: 1px solid var(--ca-border);
+
+    border-radius: 9px;
+
+    scrollbar-width: thin;
+
+    scrollbar-color: #38677c var(--ca-panel-dark);
+
+}
+
+
+.crew-analysis-table {
+
+    width: 100%;
+
+    min-width: 760px;
+
+    border-collapse: collapse;
+
+    text-align: left;
+
+    font-size: 13px;
+
+}
+
+
+.crew-analysis-table thead {
+
+    background: #1b3045;
+
+}
+
+
+.crew-analysis-table th {
+
+    padding: 15px 14px;
+
+    color: var(--ca-muted);
+
+    font-size: 11px;
+
+    font-weight: 600;
+
+    line-height: 1.5;
+
+    white-space: nowrap;
+
+}
+
+
+.crew-analysis-table td {
+
+    padding: 15px 14px;
+
+    border-top: 1px solid var(--ca-border);
+
+    color: var(--ca-text);
+
+    line-height: 1.5;
+
+    vertical-align: middle;
+
+}
+
+
+.crew-analysis-table tbody tr {
+
+    background: var(--ca-panel-dark);
+
+    transition: background 0.2s ease;
+
+}
+
+
+.crew-analysis-table tbody tr:hover {
+
+    background: #192d41;
+
+}
+
+
+.crew-analysis-table tbody tr.selected {
+
+    background: #1a3448;
+
+}
+
+
+.crew-analysis-table tbody tr[data-crew-id] {
+
+    cursor: pointer;
+
+}
+
+
+/* Показники в таблиці */
+
+.crew-analysis-table .crew-table-value {
+
+    color: var(--ca-cyan);
+
+    font-weight: 600;
+
+    font-variant-numeric: tabular-nums;
+
+    white-space: nowrap;
+
+}
+
+
+.crew-table-person {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+}
+
+
+.crew-table-avatar {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    width: 34px;
+
+    height: 34px;
+
+    flex-shrink: 0;
+
+    background: #263e56;
+
+    border-radius: 50%;
+
+    color: var(--ca-cyan);
+
+    font-size: 12px;
+
+    font-weight: 600;
+
+}
+
+
+.crew-table-person strong {
+
+    display: block;
+
+    margin-bottom: 3px;
+
+    color: var(--ca-text);
+
+    font-size: 13px;
+
+    font-weight: 600;
+
+    white-space: nowrap;
+
+}
+
+
+.crew-table-person small {
+
+    display: block;
+
+    color: var(--ca-muted);
+
+    font-size: 11px;
+
+}
+
+
+/* Кнопка вибору в таблиці */
+
+.crew-table-person-button {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+    padding: 0;
+
+    border: none;
+
+    background: transparent;
+
+    color: inherit;
+
+    text-align: left;
+
+    cursor: pointer;
+
+}
+
+
+.crew-table-person-button:hover strong {
+
+    color: var(--ca-cyan);
+
+}
+
+
+/* Статус взаємозв'язку */
+
+.crew-relation-badge {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 6px;
+
+    padding: 6px 9px;
+
+    background: #1a2b3c;
+
+    border: 1px solid var(--ca-border);
+
+    border-radius: 5px;
+
+    color: var(--ca-muted);
+
+    font-size: 11px;
+
+    line-height: 1.4;
+
+}
+
+
+.crew-relation-badge.related {
+
+    background: rgba(245, 185, 76, 0.08);
+
+    border-color: rgba(245, 185, 76, 0.25);
+
+    color: var(--ca-yellow);
+
+}
+
+
+.crew-relation-badge.unrelated {
+
+    background: rgba(57, 213, 163, 0.06);
+
+    border-color: rgba(57, 213, 163, 0.2);
+
+    color: var(--ca-green);
+
+}
+
+
+/* ==================================================
+   ЗАГАЛЬНИЙ РЕЗУЛЬТАТ АНАЛІЗУ
+================================================== */
+
+.crew-analysis-result {
+
+    padding: 20px;
+
+    background: var(--ca-panel-dark);
+
+    border: 1px solid var(--ca-border);
+
+    border-left: 4px solid var(--ca-cyan);
+
+    border-radius: 9px;
+
+}
+
+
+.crew-analysis-result h4 {
+
+    margin: 0 0 9px;
+
+    color: var(--ca-cyan);
+
+    font-size: 19px;
+
+    font-weight: 600;
+
+    line-height: 1.4;
+
+}
+
+
+.crew-analysis-result p {
+
+    margin: 0;
+
+    color: var(--ca-muted);
+
+    font-size: 13px;
+
+    line-height: 1.75;
+
+}
+
+
+/* Потенційна спільна закономірність */
+
+.crew-analysis-result.warning,
+.crew-analysis-result.attention {
+
+    background: rgba(245, 185, 76, 0.055);
+
+    border-color: rgba(245, 185, 76, 0.23);
+
+    border-left-color: var(--ca-yellow);
+
+}
+
+
+.crew-analysis-result.warning h4,
+.crew-analysis-result.attention h4 {
+
+    color: var(--ca-yellow);
+
+}
+
+
+/* Спільних змін не виявлено */
+
+.crew-analysis-result.normal,
+.crew-analysis-result.stable {
+
+    background: rgba(57, 213, 163, 0.045);
+
+    border-color: rgba(57, 213, 163, 0.2);
+
+    border-left-color: var(--ca-green);
+
+}
+
+
+.crew-analysis-result.normal h4,
+.crew-analysis-result.stable h4 {
+
+    color: var(--ca-green);
+
+}
+
+
+/* Недостатньо даних */
+
+.crew-analysis-result.insufficient,
+.crew-analysis-result.unavailable {
+
+    background: var(--ca-panel-dark);
+
+    border-left-color: var(--ca-muted);
+
+}
+
+
+.crew-analysis-result.insufficient h4,
+.crew-analysis-result.unavailable h4 {
+
+    color: var(--ca-muted);
+
+}
+
+
+/* Індивідуальне відхилення */
+
+.crew-analysis-result.individual {
+
+    background: rgba(77, 217, 236, 0.045);
+
+    border-left-color: var(--ca-cyan);
+
+}
+
+
+/* ==================================================
+   СПИСОК ВИЯВЛЕНИХ ЗАКОНОМІРНОСТЕЙ
+================================================== */
+
+.crew-risk-list {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+
+    gap: 16px;
+
+}
+
+
+.crew-risk-list:not(:empty) {
+
+    margin-top: 19px;
+
+}
+
+
+.crew-risk-card {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 15px;
+
+    min-width: 0;
+
+    padding: 19px;
+
+    background: var(--ca-panel-dark);
+
+    border: 1px solid var(--ca-border);
+
+    border-top: 3px solid var(--ca-yellow);
+
+    border-radius: 9px;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease;
+
+}
+
+
+.crew-risk-card:hover {
+
+    background: #132338;
+
+    border-color: #78623d;
+
+}
+
+
+.crew-risk-card-header {
+
+    display: flex;
+
+    align-items: flex-start;
+
+    gap: 11px;
+
+}
+
+
+.crew-risk-card-icon {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    width: 39px;
+
+    height: 39px;
+
+    flex-shrink: 0;
+
+    background: rgba(245, 185, 76, 0.09);
+
+    border: 1px solid rgba(245, 185, 76, 0.23);
+
+    border-radius: 8px;
+
+    color: var(--ca-yellow);
+
+    font-size: 21px;
+
+}
+
+
+.crew-risk-card-header h4 {
+
+    margin: 0 0 6px;
+
+    color: var(--ca-yellow);
+
+    font-size: 16px;
+
+    font-weight: 600;
+
+    line-height: 1.4;
+
+}
+
+
+.crew-risk-card-header p {
+
+    margin: 0;
+
+    color: var(--ca-muted);
+
+    font-size: 11px;
+
+    line-height: 1.5;
+
+}
+
+
+.crew-risk-description {
+
+    margin: 0;
+
+    color: var(--ca-text);
+
+    font-size: 13px;
+
+    line-height: 1.7;
+
+}
+
+
+/* ==================================================
+   ДОКАЗОВІ СПОСТЕРЕЖЕННЯ
+================================================== */
+
+.crew-risk-evidence {
+
+    display: grid;
+
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    gap: 10px;
+
+}
+
+
+.crew-risk-evidence-item {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 6px;
+
+    min-width: 0;
+
+    padding: 12px;
+
+    background: var(--ca-background);
+
+    border: 1px solid var(--ca-border);
+
+    border-radius: 7px;
+
+}
+
+
+.crew-risk-evidence-item span {
+
+    color: var(--ca-muted);
+
+    font-size: 11px;
+
+    line-height: 1.5;
+
+}
+
+
+.crew-risk-evidence-item strong {
+
+    color: var(--ca-yellow);
+
+    font-size: 17px;
+
+    font-weight: 600;
+
+    overflow-wrap: anywhere;
+
+}
+
+
+/* Астронавти, пов'язані зі спостереженням */
+
+.crew-risk-members {
+
+    display: flex;
+
+    align-items: center;
+
+    flex-wrap: wrap;
+
+    gap: 7px;
+
+}
+
+
+.crew-risk-member {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 5px;
+
+    padding: 6px 9px;
+
+    background: rgba(245, 185, 76, 0.06);
+
+    border: 1px solid rgba(245, 185, 76, 0.2);
+
+    border-radius: 5px;
+
+    color: var(--ca-yellow);
+
+    font-size: 11px;
+
+}
+
+
+.crew-risk-card-footer {
+
+    margin-top: auto;
+
+    padding-top: 12px;
+
+    border-top: 1px solid var(--ca-border);
+
+    color: var(--ca-muted);
+
+    font-size: 11px;
+
+    line-height: 1.6;
+
+}
+
+
+/* ==================================================
+   СИНХРОНІЗОВАНІ ГРАФІКИ
+================================================== */
+
+.crew-analysis-chart-panel {
+
+    min-width: 0;
+
+    padding: 17px;
+
+    background: var(--ca-panel-dark);
+
+    border: 1px solid var(--ca-border);
+
+    border-radius: 9px;
+
+}
+
+
+.crew-analysis-chart-panel
++ .crew-analysis-chart-panel {
+
+    margin-top: 15px;
+
+}
+
+
+.crew-analysis-chart-heading {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    flex-wrap: wrap;
+
+    gap: 8px 12px;
+
+    margin-bottom: 16px;
+
+}
+
+
+.crew-analysis-chart-heading h4 {
+
+    margin: 0;
+
+    color: var(--ca-text);
+
+    font-size: 15px;
+
+    font-weight: 600;
+
+}
+
+
+.crew-analysis-chart-heading > span {
+
+    color: var(--ca-muted);
+
+    font-size: 11px;
+
+}
+
+
+/* ==================================================
+   АДАПТИВНИЙ КОНТЕЙНЕР ГРАФІКА
+================================================== */
+
+.crew-analysis-chart {
+
+    position: relative;
+
+    display: block;
+
+    width: 100%;
+
+    min-width: 0;
+
+    min-height: 230px;
+
+    overflow-x: auto;
+
+    scrollbar-width: thin;
+
+    scrollbar-color: #38677c var(--ca-panel-dark);
+
+}
+
+
+/* SVG із нормальною висотою та пропорціями */
+
+.crew-analysis-chart svg {
+
+    display: block;
+
+    width: 100%;
+
+    height: 240px;
+
+    min-width: 320px;
+
+    overflow: hidden;
+
+}
+
+
+/* ==================================================
+   ЦИФРИ ТА ПІДПИСИ НА ГРАФІКАХ
+================================================== */
+
+.crew-analysis-chart svg text {
+
+    fill: var(--ca-muted);
+
+    font-family: Arial, sans-serif;
+
+    font-size: 12px;
+
+    font-weight: 400;
+
+    font-variant-numeric: tabular-nums;
+
+}
+
+
+.crew-analysis-chart .crew-chart-axis-label {
+
+    fill: var(--ca-muted);
+
+    font-size: 11px;
+
+}
+
+
+/* Горизонтальні лінії сітки */
+
+.crew-chart-grid {
+
+    stroke: #304258;
+
+    stroke-width: 1;
+
+    stroke-dasharray: 4 5;
+
+    vector-effect: non-scaling-stroke;
+
+}
+
+
+/* Осі графіка */
+
+.crew-chart-axis {
+
+    stroke: #536b82;
+
+    stroke-width: 1;
+
+    vector-effect: non-scaling-stroke;
+
+}
+
+
+/* ==================================================
+   ЛІНІЯ ГРАФІКА СЕРЕДОВИЩА
+================================================== */
+
+.crew-environment-line {
+
+    fill: none;
+
+    stroke: var(--ca-cyan);
+
+    stroke-width: 2.5;
+
+    stroke-linecap: round;
+
+    stroke-linejoin: round;
+
+    vector-effect: non-scaling-stroke;
+
+}
+
+
+.crew-environment-point {
+
+    fill: var(--ca-cyan);
+
+    stroke: var(--ca-panel-dark);
+
+    stroke-width: 1;
+
+    vector-effect: non-scaling-stroke;
+
+}
+
+
+.crew-environment-point:hover {
+
+    fill: #ffffff;
+
+    stroke: var(--ca-cyan);
+
+    stroke-width: 2;
+
+}
+
+
+/* ==================================================
+   ГРАФІК ПОКАЗНИКІВ ЕКІПАЖУ
+================================================== */
+
+.crew-health-line {
+
+    fill: none;
+
+    stroke: var(--ca-yellow);
+
+    stroke-width: 2.5;
+
+    stroke-linecap: round;
+
+    stroke-linejoin: round;
+
+    vector-effect: non-scaling-stroke;
+
+}
+
+
+.crew-health-point {
+
+    fill: var(--ca-yellow);
+
+    stroke: var(--ca-panel-dark);
+
+    stroke-width: 1;
+
+    vector-effect: non-scaling-stroke;
+
+}
+
+
+.crew-health-bar {
+
+    fill: var(--ca-yellow);
+
+    fill-opacity: 0.7;
+
+    stroke: var(--ca-yellow);
+
+    stroke-width: 1;
+
+    vector-effect: non-scaling-stroke;
+
+    transition: fill-opacity 0.2s ease;
+
+}
+
+
+.crew-health-bar:hover {
+
+    fill-opacity: 1;
+
+}
+
+
+/* ==================================================
+   ДЕМОНСТРАЦІЙНА МЕЖА НА ГРАФІКУ
+================================================== */
+
+.crew-chart-threshold {
+
+    fill: none;
+
+    stroke: var(--ca-yellow);
+
+    stroke-width: 1.5;
+
+    stroke-dasharray: 7 5;
+
+    stroke-opacity: 0.7;
+
+    vector-effect: non-scaling-stroke;
+
+}
+
+
+.crew-analysis-chart
+.crew-chart-threshold-label {
+
+    fill: var(--ca-yellow);
+
+    font-size: 11px;
+
+}
+
+
+/* ==================================================
+   ЛЕГЕНДА ГРАФІКА
+================================================== */
+
+.crew-chart-legend {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    flex-wrap: wrap;
+
+    gap: 12px 20px;
+
+    padding-top: 12px;
+
+}
+
+
+.crew-chart-legend span {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 7px;
+
+    color: var(--ca-muted);
+
+    font-size: 11px;
+
+}
+
+
+.crew-chart-legend-line {
+
+    display: inline-block;
+
+    width: 21px;
+
+    height: 3px;
+
+    border-radius: 3px;
+
+    background: var(--ca-cyan);
+
+}
+
+
+.crew-chart-legend-line.health {
+
+    background: var(--ca-yellow);
+
+}
+
+
+/* Пояснення до графіків */
+
+.crew-analysis-chart-note {
+
+    margin: 15px 0 0;
+
+    color: var(--ca-muted);
+
+    font-size: 11px;
+
+    line-height: 1.6;
+
+}
+
+
+/* ==================================================
+   РЕКОМЕНДОВАНІ ПОДАЛЬШІ ДІЇ
+================================================== */
+
+.crew-analysis-recommendations {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 11px;
+
+}
+
+
+.crew-analysis-recommendation {
+
+    display: flex;
+
+    align-items: flex-start;
+
+    gap: 12px;
+
+    padding: 15px;
+
+    background: var(--ca-panel-dark);
+
+    border: 1px solid var(--ca-border);
+
+    border-radius: 8px;
+
+}
+
+
+.crew-recommendation-icon {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    width: 29px;
+
+    height: 29px;
+
+    flex-shrink: 0;
+
+    background: #1c394d;
+
+    border-radius: 50%;
+
+    color: var(--ca-cyan);
+
+    font-size: 15px;
+
+}
+
+
+.crew-analysis-recommendation strong {
+
+    display: block;
+
+    margin-bottom: 5px;
+
+    color: var(--ca-text);
+
+    font-size: 13px;
+
+    font-weight: 600;
+
+}
+
+
+.crew-analysis-recommendation p {
+
+    margin: 0;
+
+    color: var(--ca-muted);
+
+    font-size: 12px;
+
+    line-height: 1.7;
+
+}
+
+
+/* ==================================================
+   МЕТОДОЛОГІЯ АНАЛІЗУ
+================================================== */
+
+.crew-analysis-methodology {
+
+    padding: 0;
+
+    overflow: hidden;
+
+}
+
+
+.crew-analysis-methodology summary {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+
+    min-height: 65px;
+
+    padding: 17px 23px;
+
+    color: var(--ca-text);
+
+    font-size: 15px;
+
+    cursor: pointer;
+
+    list-style: none;
+
+    transition: background 0.2s ease;
+
+}
+
+
+.crew-analysis-methodology summary::-webkit-details-marker {
+
+    display: none;
+
+}
+
+
+.crew-analysis-methodology summary::marker {
+
+    content: "";
+
+}
+
+
+.crew-analysis-methodology summary:hover {
+
+    background: #1b3045;
+
+}
+
+
+.crew-analysis-methodology summary > span:first-child {
+
+    color: var(--ca-cyan);
+
+    font-size: 22px;
+
+}
+
+
+.crew-analysis-methodology summary strong {
+
+    font-size: 15px;
+
+    font-weight: 600;
+
+}
+
+
+.crew-analysis-chevron {
+
+    margin-left: auto;
+
+    color: var(--ca-muted);
+
+    font-size: 20px;
+
+    transition: transform 0.2s ease;
+
+}
+
+
+.crew-analysis-methodology[open] summary {
+
+    background: #1b3045;
+
+    border-bottom: 1px solid var(--ca-border);
+
+}
+
+
+.crew-analysis-methodology[open]
+.crew-analysis-chevron {
+
+    transform: rotate(180deg);
+
+}
+
+
+.crew-analysis-methodology-content {
+
+    padding: 20px 23px 23px;
+
+}
+
+
+.crew-analysis-methodology-content > p {
+
+    margin: 0 0 17px;
+
+    color: var(--ca-muted);
+
+    font-size: 13px;
+
+    line-height: 1.7;
+
+}
+
+
+/* ==================================================
+   ЕТАПИ МЕТОДОЛОГІЇ
+================================================== */
+
+.crew-analysis-method-grid {
+
+    display: grid;
+
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+
+    gap: 12px;
+
+}
+
+
+.crew-analysis-method-grid article {
+
+    min-width: 0;
+
+    padding: 16px;
+
+    background: var(--ca-panel-dark);
+
+    border: 1px solid var(--ca-border);
+
+    border-radius: 8px;
+
+}
+
+
+.crew-analysis-method-grid h4 {
+
+    margin: 0 0 9px;
+
+    color: var(--ca-cyan);
+
+    font-size: 14px;
+
+    font-weight: 600;
+
+    line-height: 1.4;
+
+}
+
+
+.crew-analysis-method-grid p {
+
+    margin: 0;
+
+    color: var(--ca-muted);
+
+    font-size: 12px;
+
+    line-height: 1.7;
+
+}
+
+
+/* ==================================================
+   НАУКОВЕ ОБҐРУНТУВАННЯ
+================================================== */
+
+.crew-analysis-research > p {
+
+    margin: 0 0 16px;
+
+    color: var(--ca-muted);
+
+    font-size: 13px;
+
+    line-height: 1.8;
+
+}
+
+
+.crew-analysis-research > a {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 6px;
+
+    color: var(--ca-cyan);
+
+    text-decoration: none;
+
+    font-size: 13px;
+
+    font-weight: 600;
+
+    line-height: 1.5;
+
+}
+
+
+.crew-analysis-research > a:hover {
+
+    text-decoration: underline;
+
+}
+
+
+/* ==================================================
+   ВІДСУТНІСТЬ ДАНИХ
+================================================== */
+
+.crew-analysis-empty {
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 10px;
+
+    width: 100%;
+
+    min-height: 130px;
+
+    margin: 0;
+
+    padding: 20px;
+
+    background: rgba(10, 18, 32, 0.25);
+
+    border: 1px dashed var(--ca-border);
+
+    border-radius: 8px;
+
+    color: var(--ca-muted);
+
+    text-align: center;
+
+    font-size: 12px;
+
+    line-height: 1.6;
+
+}
+
+
+.crew-analysis-empty > span {
+
+    color: #536b82;
+
+    font-size: 34px;
+
+    line-height: 1;
+
+}
+
+
+.crew-analysis-empty h4 {
+
+    margin: 0;
+
+    color: var(--ca-text);
+
+    font-size: 15px;
+
+    font-weight: 500;
+
+}
+
+
+.crew-analysis-empty p {
+
+    max-width: 320px;
+
+    margin: 0;
+
+    color: var(--ca-muted);
+
+    font-size: 12px;
+
+    line-height: 1.6;
+
+}
+
+
+.crew-correlation-map .crew-analysis-empty {
+
+    min-height: 300px;
+
+    background: transparent;
+
+    border: none;
+
+}
+
+
+.crew-analysis-chart .crew-analysis-empty {
+
+    min-height: 230px;
+
+}
+
+
+/* ==================================================
+   ОБМЕЖЕННЯ СИСТЕМИ
+================================================== */
+
+.crew-analysis-disclaimer {
+
+    display: flex;
+
+    align-items: flex-start;
+
+    gap: 12px;
+
+    padding: 16px 19px;
+
+    background: rgba(77, 217, 236, 0.025);
+
+    border: 1px solid var(--ca-border);
+
+    border-radius: 9px;
+
+}
+
+
+.crew-analysis-disclaimer > span {
+
+    flex-shrink: 0;
+
+    color: var(--ca-muted);
+
+    font-size: 20px;
+
+    line-height: 1.3;
+
+}
+
+
+.crew-analysis-disclaimer p {
+
+    margin: 0;
+
+    color: var(--ca-muted);
+
+    font-size: 12px;
+
+    line-height: 1.75;
+
+}
+
+
+/* ==================================================
+   НИЖНЯ ІНФОРМАЦІЙНА ПАНЕЛЬ
+================================================== */
+
+.crew-analysis-page-footer {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    flex-wrap: wrap;
+
+    gap: 10px;
+
+    padding: 0 2px;
+
+    color: var(--ca-muted);
+
+    font-size: 11px;
+
+    line-height: 1.5;
+
+}
+
+
+/* ==================================================
+   СМУГИ ПРОКРУЧУВАННЯ
+================================================== */
+
+.crew-analysis-table-wrapper::-webkit-scrollbar,
+.crew-analysis-chart::-webkit-scrollbar {
+
+    height: 7px;
+
+}
+
+
+.crew-analysis-table-wrapper::-webkit-scrollbar-track,
+.crew-analysis-chart::-webkit-scrollbar-track {
+
+    background: var(--ca-background);
+
+    border-radius: 5px;
+
+}
+
+
+.crew-analysis-table-wrapper::-webkit-scrollbar-thumb,
+.crew-analysis-chart::-webkit-scrollbar-thumb {
+
+    background: #38677c;
+
+    border-radius: 5px;
+
+}
+
+
+/* ==================================================
+   АНІМАЦІЇ
+================================================== */
+
+@keyframes crewAnalysisAppear {
+
+    from {
+
+        opacity: 0;
+
+        transform: translateY(7px);
+
+    }
+
+    to {
+
+        opacity: 1;
+
+        transform: translateY(0);
+
+    }
+
+}
+
+
+/* Клас для нових результатів аналізу */
+
+.crew-analysis-animate {
+
+    animation: crewAnalysisAppear 0.25s ease-out both;
+
+}
+
+
+.crew-analysis-methodology[open]
+.crew-analysis-methodology-content {
+
+    animation: crewAnalysisAppear 0.2s ease-out both;
+
+}
+
+
+/* ==================================================
+   АДАПТИВНІСТЬ — ВЕЛИКІ НОУТБУКИ
+================================================== */
+
+@media (max-width: 1400px) {
+
+    .habitat-metrics-grid {
+
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+
+    }
+
+    .habitat-metric {
+
+        min-height: 130px;
+
+    }
+
+    .habitat-metric-name {
+
+        min-height: auto;
+
+    }
+
+}
+
+
+/* ==================================================
+   АДАПТИВНІСТЬ — НОУТБУКИ
+================================================== */
+
+@media (max-width: 1200px) {
+
+    .crew-analysis-page {
+
+        padding: 22px;
+
+        gap: 19px;
+
+    }
+
+    .crew-analysis-panel {
+
+        padding: 20px;
+
+    }
+
+    .crew-analysis-stat {
+
+        padding: 15px;
+
+        gap: 11px;
+
+    }
+
+    .crew-analysis-stat-icon {
+
+        width: 38px;
+
+        height: 38px;
+
+        font-size: 21px;
+
+    }
+
+    .crew-analysis-stat strong {
+
+        font-size: 26px;
+
+    }
+
+    .crew-analysis-control-grid {
+
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+
+    }
+
+    .crew-correlation-layout {
+
+        grid-template-columns:
+            minmax(0, 1.5fr)
+            minmax(0, 1fr);
+
+        gap: 16px;
+
+    }
+
+    .crew-correlation-map {
+
+        min-height: 370px;
+
+    }
+
+    .crew-analysis-methodology {
+
+        padding: 0;
+
+    }
+
+}
+
+
+/* ==================================================
+   АДАПТИВНІСТЬ — ПЛАНШЕТИ
+================================================== */
+
+@media (max-width: 950px) {
+
+    .crew-analysis-summary {
+
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    }
+
+    .crew-correlation-layout {
+
+        grid-template-columns: minmax(0, 1fr);
+
+    }
+
+    .crew-correlation-map {
+
+        min-height: 420px;
+
+    }
+
+    .crew-analysis-method-grid {
+
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    }
+
+    .selected-crew-metrics {
+
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+
+    }
+
+}
+
+
+/* ==================================================
+   АДАПТИВНІСТЬ — МОБІЛЬНІ ПРИСТРОЇ
+================================================== */
+
+@media (max-width: 700px) {
+
+    .crew-analysis-page {
+
+        padding: 17px 14px;
+
+        gap: 15px;
+
+    }
+
+    .crew-analysis-top {
+
+        flex-direction: column;
+
+        align-items: stretch;
+
+        gap: 14px;
+
+    }
+
+    .crew-analysis-heading h2 {
+
+        font-size: 24px;
+
+    }
+
+    .crew-analysis-heading p {
+
+        font-size: 12px;
+
+    }
+
+    .crew-analysis-back {
+
+        align-self: flex-start;
+
+    }
+
+    .crew-analysis-panel {
+
+        padding: 16px;
+
+    }
+
+    .crew-analysis-panel-heading {
+
+        gap: 10px;
+
+        margin-bottom: 17px;
+
+    }
+
+    .crew-analysis-panel-heading h3 {
+
+        font-size: 17px;
+
+    }
+
+    .crew-analysis-panel-heading p {
+
+        font-size: 11px;
+
+    }
+
+    .crew-analysis-controls
+    .crew-analysis-panel-heading h3 {
+
+        font-size: 18px;
+
+    }
+
+    .crew-analysis-heading-icon {
+
+        width: 35px;
+
+        height: 35px;
+
+        font-size: 20px;
+
+    }
+
+    .crew-analysis-source {
+
+        padding: 12px;
+
+    }
+
+    .crew-analysis-summary {
+
+        gap: 10px;
+
+    }
+
+    .crew-analysis-stat {
+
+        min-height: 100px;
+
+        padding: 12px;
+
+    }
+
+    .crew-analysis-stat strong {
+
+        font-size: 24px;
+
+    }
+
+    .crew-analysis-stat small {
+
+        font-size: 10px;
+
+    }
+
+    .crew-analysis-control-grid {
+
+        grid-template-columns: minmax(0, 1fr);
+
+        gap: 13px;
+
+    }
+
+    .habitat-metrics-grid {
+
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+
+        gap: 10px;
+
+    }
+
+    .habitat-metric {
+
+        min-height: 130px;
+
+        padding: 13px;
+
+    }
+
+    .habitat-metric-value {
+
+        font-size: 24px;
+
+    }
+
+    #habitat-last-update {
+
+        width: 100%;
+
+        margin-left: 0;
+
+    }
+
+    .crew-correlation-map {
+
+        min-height: 310px;
+
+        padding: 6px;
+
+    }
+
+    .crew-correlation-legend {
+
+        justify-content: flex-start;
+
+    }
+
+    .selected-crew-metrics {
+
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    }
+
+    .crew-analysis-result {
+
+        padding: 16px;
+
+    }
+
+    .crew-analysis-result h4 {
+
+        font-size: 17px;
+
+    }
+
+    .crew-risk-card {
+
+        padding: 15px;
+
+    }
+
+    .crew-analysis-chart-panel {
+
+        padding: 11px;
+
+    }
+
+    .crew-analysis-chart svg {
+
+        height: 220px;
+
+    }
+
+    .crew-analysis-methodology {
+
+        padding: 0;
+
+    }
+
+    .crew-analysis-methodology summary {
+
+        padding: 15px 16px;
+
+    }
+
+    .crew-analysis-methodology-content {
+
+        padding: 16px;
+
+    }
+
+}
+
+
+/* ==================================================
+   АДАПТИВНІСТЬ — МАЛЕНЬКІ ЕКРАНИ
+================================================== */
+
+@media (max-width: 450px) {
+
+    .crew-analysis-heading h2 {
+
+        font-size: 22px;
+
+    }
+
+    .crew-analysis-source {
+
+        align-items: flex-start;
+
+        flex-direction: column;
+
+    }
+
+    .crew-analysis-summary {
+
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    }
+
+    .crew-analysis-stat {
+
+        flex-direction: column;
+
+        align-items: flex-start;
+
+        gap: 9px;
+
+    }
+
+    .crew-analysis-stat-icon {
+
+        width: 33px;
+
+        height: 33px;
+
+        font-size: 18px;
+
+    }
+
+    .crew-analysis-stat > div > span {
+
+        font-size: 11px;
+
+    }
+
+    .crew-analysis-stat strong {
+
+        font-size: 25px;
+
+    }
+
+    .habitat-metric-name {
+
+        font-size: 11px;
+
+    }
+
+    .habitat-metric-value {
+
+        font-size: 23px;
+
+    }
+
+    .habitat-information {
+
+        padding: 11px;
+
+    }
+
+    .crew-correlation-map {
+
+        min-height: 250px;
+
+    }
+
+    .selected-crew-avatar {
+
+        width: 45px;
+
+        height: 45px;
+
+        font-size: 17px;
+
+    }
+
+    .selected-crew-name h4 {
+
+        font-size: 16px;
+
+    }
+
+    .crew-risk-evidence {
+
+        grid-template-columns: minmax(0, 1fr);
+
+    }
+
+    .crew-analysis-method-grid {
+
+        grid-template-columns: minmax(0, 1fr);
+
+    }
+
+    .crew-analysis-page-footer {
+
+        flex-direction: column;
+
+        align-items: flex-start;
+
+    }
+
+}
+
+
+/* ==================================================
+   ДУЖЕ ВУЗЬКІ ЕКРАНИ
+================================================== */
+
+@media (max-width: 340px) {
+
+    .crew-analysis-summary,
+
+    .habitat-metrics-grid,
+
+    .selected-crew-metrics {
+
+        grid-template-columns: minmax(0, 1fr);
+
+    }
+
+}
+
+
+/* ==================================================
+   ВИМКНЕННЯ АНІМАЦІЙ
+   ВІДПОВІДНО ДО НАЛАШТУВАНЬ ПРИСТРОЮ
+================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+
+    .crew-analysis-page *,
+
+    .crew-analysis-page *::before,
+
+    .crew-analysis-page *::after {
+
+        animation-duration: 0.01ms !important;
+
+        transition-duration: 0.01ms !important;
+
+        scroll-behavior: auto !important;
+
+    }
+
+}
+
+
+/* ==================================================
+   КІНЕЦЬ CREW ENVIRONMENTAL ANALYSIS
+================================================== */

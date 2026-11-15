@@ -226,6 +226,40 @@ export function peekOutbound(id) {
 }
 
 /**
+ * Сира лінія на годинник (CREW|…, REC|…).
+ * dedupeMs — не дублювати той самий line частіше ніж раз на N мс.
+ */
+export function enqueueRawOutbound(id, line, { code = "RAW", dedupeMs = 2000 } = {}) {
+  const text = String(line || "").trim();
+  if (!text) return null;
+  const d = getDevice(id);
+  if (!d) return null;
+  const now = Date.now();
+  const key = `raw:${code}:${text}`;
+  if (
+    d.lastRawOutboundKey === key &&
+    d.lastRawOutboundAt &&
+    now - d.lastRawOutboundAt < dedupeMs
+  ) {
+    return null;
+  }
+  d.lastRawOutboundKey = key;
+  d.lastRawOutboundAt = now;
+  const row = {
+    id: `${id}-${now}-raw`,
+    code,
+    text: text.slice(0, 120),
+    line: text.endsWith("\n") ? text : `${text}\n`,
+    created_at: new Date(now).toISOString(),
+  };
+  const q = outbound.get(d.id) || [];
+  q.push(row);
+  if (q.length > 12) q.splice(0, q.length - 12);
+  outbound.set(d.id, q);
+  return row;
+}
+
+/**
  * Новий семпл для live UI.
  * Тримаємо лише сьогодні + не більше SITE_RING точок.
  */

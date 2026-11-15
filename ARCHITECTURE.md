@@ -4,9 +4,10 @@
 
 | Шар | Де | Роль |
 |-----|-----|------|
-| **1. Device** | ESP32 [`Physik/watch/`](Physik/watch/) | сенсори + TFT; JSON телеметрія; офлайн → SD |
+| **1. Device** | ESP32 [`prototype/hardware/watch/`](prototype/hardware/watch/) | сенсори + TFT; JSON телеметрія; офлайн → SD |
 | **2. Server** | [`prototype/server/`](prototype/server/) | UDP/HTTP ingest, RAM + тренди, MySQL async, WS/API |
-| **3. Site** | [`prototype/site/`](prototype/site/) | панель PULSAR (з Хакатон.zip), live з server |
+| **3. Site** | [`prototype/site/`](prototype/site/) | панель PULSAR, live з server |
+| **Bridge** | [`prototype/bridge/`](prototype/bridge/) | USB/BT Serial → `/ingest` + outbound `CREW`/`REC` |
 
 **ESP — не станція.** Станція = ПК (server + site).
 
@@ -20,16 +21,14 @@
 │  └─────────────────┘     │ MySQL async    │  │
 │                          └────────▲───────┘  │
 └───────────────────────────────────┼──────────┘
-                                    │ USB bridge або UDP
+                                    │ USB bridge
                          ┌──────────┴──────────┐
                          │ ESP32 = годинник    │
-                         │ Physik/watch/…      │
+                         │ hardware/watch/…    │
                          └─────────────────────┘
 ```
 
 ## Запуск
-
-Найпростіше для колег — скрипт у [`prototype/`](prototype/) (див. [`prototype/README.md`](prototype/README.md)):
 
 ```powershell
 cd prototype
@@ -48,23 +47,9 @@ cd prototype
 Вручну:
 
 ```bash
-# 1) MySQL (опційно; без нього server працює в RAM)
-cd prototype/server
-npm install
-npm run db:up
-npm start
-
-# 2) Сайт
-cd ../site
-npm start          # http://localhost:4200
-
-# 3) Тест без заліза
-cd ../server
-npm run demo       # UDP → :4101
-
-# 4) Реальний годинник (USB)
-cd ../../site/prototype
-npm run bt -- COM11   # → POST http://127.0.0.1:4100/ingest
+cd prototype/server && npm install && npm start
+cd ../site && npm start
+cd ../bridge && npm install && npm run bt -- COM11
 ```
 
 ## Канали
@@ -75,10 +60,9 @@ npm run bt -- COM11   # → POST http://127.0.0.1:4100/ingest
 | HTTP ingest | `POST :4100/ingest` |
 | API dashboard | `GET :4100/api/dashboard` |
 | SOS | `POST :4100/api/sos` `{ "id": "dev001" }` |
+| Bridge outbound | `GET :4100/api/bridge/outbound` (`CREW|…`, `REC|…`) |
 | WebSocket | `ws://host:4100/ws` |
 | Site | `http://localhost:4200` |
+| Admin panel | `http://localhost:4100/panel` |
 
-## Legacy
-
-Старий split `site/prototype` (web:3847 / api:3848 / compute:3850) — архів/референс. Новий канон: `prototype/server` + `prototype/site`.  
-`bt-bridge` тепер за замовчуванням шле на `:4100/ingest`.
+Hardware docs: [`prototype/hardware/`](prototype/hardware/). CSI scan (optional): [`prototype/archive/scan/`](prototype/archive/scan/).

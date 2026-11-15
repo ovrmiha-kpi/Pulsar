@@ -21,7 +21,7 @@ $ErrorActionPreference = "Stop"
 $Root = $PSScriptRoot
 $Server = Join-Path $Root "server"
 $Site = Join-Path $Root "site"
-$Bridge = Join-Path $Root "..\site\prototype" | Resolve-Path
+$Bridge = Join-Path $Root "bridge"
 
 function Need-Node {
   if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
@@ -60,7 +60,7 @@ Npm-Install $Server "prototype/server"
 if (Test-Path (Join-Path $Site "package.json")) {
   Npm-Install $Site "prototype/site"
 }
-Npm-Install $Bridge.Path "site/prototype (USB bridge)"
+Npm-Install $Bridge "prototype/bridge (USB)"
 
 if ($InstallOnly) {
   Write-Host "`nГотово: лише встановлення пакетів." -ForegroundColor Green
@@ -92,7 +92,7 @@ if ($Demo) {
 if ($Com) {
   Start-Sleep -Seconds 1
   Write-Host "USB bridge → $Com (Serial Monitor має бути закритий)" -ForegroundColor Yellow
-  Start-InNewWindow "pulsar-bridge $Com" $Bridge.Path "npm run bt -- $Com"
+  Start-InNewWindow "pulsar-bridge $Com" $Bridge "npm run bt -- $Com"
 }
 
 Write-Host @"
@@ -104,10 +104,13 @@ Write-Host @"
   Панель сервера:   http://127.0.0.1:4100/panel
   Health:           http://127.0.0.1:4100/health
 
-  Реальний годинник пізніше:
+  /panel: sim + Emulate metrics + Medical card
+  Watch (з -Com): LINK + CREW|… + REC|… → ESP
+
+  Реальний годинник:
     .\start.ps1 -Com COM11
-  Або симуляція без заліза:
+  Симуляція без заліза:
     .\start.ps1 -Demo
-    (або симуляція одного пристрою на /panel)
+  Перед Upload в Arduino — закрийте bridge (COM busy).
 ────────────────────────────────────────
 "@ -ForegroundColor Green

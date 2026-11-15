@@ -1,20 +1,44 @@
-// ==============================
-// ОТРИМАННЯ ID ПРИСТРОЮ
-// ==============================
+
+// ==================================================
+// PULSAR — ASTRONAUT PROFILE
+// ==================================================
+
+// ==================================================
+// ОТРИМАННЯ ID АСТРОНАВТА
+// ==================================================
 
 const params = new URLSearchParams(window.location.search);
 
 const astronautId = params.get("id");
 const requestedSection = params.get("section");
 
+const STORAGE_KEY = "pulsar_live_crew_cache";
+
 let crew = [];
-/** @type {any} */
 let astronaut = null;
 
+async function loadAstronautFromServer() {
+    if (!astronautId) return null;
+    if (window.PulsarLive?.fetchDevice) {
+        return window.PulsarLive.fetchDevice(astronautId);
+    }
+    return null;
+}
 
-// ==============================
+try {
+    crew = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || "[]");
+    if (!Array.isArray(crew)) crew = [];
+} catch (_) {
+    crew = [];
+}
+
+astronaut =
+    crew.find((person) => String(person.id) === String(astronautId)) || null;
+
+
+// ==================================================
 // HTML-ЕЛЕМЕНТИ
-// ==============================
+// ==================================================
 
 const sectionContent =
     document.getElementById("section-content");
@@ -25,46 +49,81 @@ const sectionTitle =
 const sectionDescription =
     document.getElementById("section-description");
 
-
-// ==============================
+// ==================================================
 // ДОПОМІЖНІ ФУНКЦІЇ
-// ==============================
+// ==================================================
 
 function escapeHTML(value) {
-
     return String(value ?? "—")
         .replaceAll("&", "&amp;")
         .replaceAll("<", "&lt;")
         .replaceAll(">", "&gt;")
         .replaceAll('"', "&quot;")
         .replaceAll("'", "&#39;");
-
 }
-
 
 function getStatusClass(status) {
 
     const statuses = [
-        "Critical", "Warning", "Pending", "Normal"
+        "Critical",
+        "Warning",
+        "Pending",
+        "Normal"
     ];
 
     return statuses.includes(status)
-
         ? status.toLowerCase()
-
         : "pending";
-
 }
 
+// ==================================================
+// ЗБЕРЕЖЕННЯ ДАНИХ
+// СИНХРОНІЗАЦІЯ З NOTIFICATION CENTER
+// ==================================================
 
 function saveCrew() {
+
+    try {
+        sessionStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify(crew)
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Cannot save demo data:",
+            error
+        );
+
+        return false;
+    }
+
+    // Повідомляємо інші модулі про оновлення
+
+    try {
+        document.dispatchEvent(
+            new CustomEvent("pulsar:crew-change", {
+                detail: {
+                    crew: crew
+                }
+            })
+        );
+
+    } catch (error) {
+
+        console.error(
+            "Cannot synchronize notifications:",
+            error
+        );
+    }
+
     return true;
 }
 
-
-// ==============================
+// ==================================================
 // ПРОФІЛЬ АСТРОНАВТА
-// ==============================
+// ==================================================
 
 function renderProfile() {
 
@@ -86,25 +145,23 @@ function renderProfile() {
 
     document.getElementById("profile-id")
         .textContent =
-            String(astronaut.device_no || astronaut.id);
+            `AST-${String(astronaut.id).padStart(3, "0")}`;
 
     const statusElement =
         document.getElementById("profile-status");
 
     statusElement.textContent =
-        `${astronaut.status}`;
+        `● ${astronaut.status}`;
 
     statusElement.className =
         `status ${getStatusClass(astronaut.status)}`;
 
     document.title = `PULSAR | ${astronaut.name}`;
-
 }
 
-
-// ==============================
+// ==================================================
 // ІНФОРМАЦІЯ ПРО РОЗДІЛИ
-// ==============================
+// ==================================================
 
 const sections = {
 
@@ -126,6 +183,12 @@ const sections = {
             "Measurement history and individual health trends"
     },
 
+    insights: {
+        title: "AI Health Insights",
+        description:
+            "Early trend detection and proactive health monitoring"
+    },
+
     guide: {
         title: "Health Guide",
         description:
@@ -140,10 +203,75 @@ const sections = {
 
 };
 
+// ==================================================
+// НАВІГАЦІЯ ТА АНІМАЦІЇ
+// ==================================================
 
-// ==============================
-// НАВІГАЦІЯ
-// ==============================
+let currentSection = null;
+let sectionAnimations = [];
+
+function animateSection() {
+
+    sectionAnimations.forEach(animation => {
+        animation.cancel();
+    });
+
+    sectionAnimations = [];
+
+    // Персональні налаштування
+
+    if (astronaut?.settings?.animations === false) {
+        return;
+    }
+
+    // Системні налаштування
+
+    if (
+        window.matchMedia(
+            "(prefers-reduced-motion: reduce)"
+        ).matches
+    ) {
+        return;
+    }
+
+    const elements = [
+        sectionTitle,
+        sectionDescription,
+        sectionContent
+    ];
+
+    elements.forEach(element => {
+
+        if (typeof element?.animate !== "function") {
+            return;
+        }
+
+        const animation = element.animate(
+
+            [
+                {
+                    opacity: 0,
+                    transform: "translateY(8px)"
+                },
+                {
+                    opacity: 1,
+                    transform: "translateY(0)"
+                }
+            ],
+
+            {
+                duration: 250,
+                easing: "ease-out"
+            }
+        );
+
+        sectionAnimations.push(animation);
+    });
+}
+
+// ==================================================
+// ВІДКРИТТЯ РОЗДІЛУ
+// ==================================================
 
 function openSection(section) {
 
@@ -151,14 +279,17 @@ function openSection(section) {
         section = "health";
     }
 
+    const sectionChanged =
+        currentSection !== null &&
+        currentSection !== section;
+
     sectionTitle.textContent =
         sections[section].title;
 
     sectionDescription.textContent =
         sections[section].description;
 
-
-    // Виділення активного пункту меню
+    // Активний пункт меню
 
     document.querySelectorAll(".nav-button")
         .forEach(button => {
@@ -175,11 +306,9 @@ function openSection(section) {
                 "aria-current",
                 isActive ? "true" : "false"
             );
-
         });
 
-
-    // Відображення відповідного розділу
+    // Відображення розділу
 
     switch (section) {
 
@@ -195,6 +324,10 @@ function openSection(section) {
             renderAnalytics();
             break;
 
+        case "insights":
+            renderInsights();
+            break;
+
         case "guide":
             renderGuide();
             break;
@@ -202,11 +335,9 @@ function openSection(section) {
         case "settings":
             renderSettings();
             break;
-
     }
 
-
-    // Оновлення адреси
+    // Оновлення адреси сторінки
 
     const url = new URL(window.location.href);
 
@@ -214,28 +345,27 @@ function openSection(section) {
 
     window.history.replaceState({}, "", url);
 
+    currentSection = section;
+
+    if (sectionChanged) {
+        animateSection();
+    }
 }
 
-
-// ==============================
+// ==================================================
 // УНІВЕРСАЛЬНА КАРТКА ПОКАЗНИКА
-// ==============================
+// ==================================================
 
 function createIndicator(indicator) {
 
     const hasValue =
-
         indicator.value !== null &&
-
         indicator.value !== undefined &&
-
         indicator.value !== "" &&
-
         (
             typeof indicator.value !== "number" ||
             Number.isFinite(indicator.value)
         );
-
 
     return `
 
@@ -253,11 +383,9 @@ function createIndicator(indicator) {
             <div class="indicator-reading">
 
                 <strong>
-
                     ${hasValue
                         ? escapeHTML(indicator.value)
                         : "—"}
-
                 </strong>
 
                 <span>${escapeHTML(indicator.unit)}</span>
@@ -273,7 +401,7 @@ function createIndicator(indicator) {
             <small class="indicator-source">
 
                 ${hasValue
-                    ? "Last server reading"
+                    ? "Demo measurement"
                     : "Awaiting measurement"}
 
             </small>
@@ -281,156 +409,113 @@ function createIndicator(indicator) {
         </article>
 
     `;
-
 }
 
-
-// ==============================
+// ==================================================
 // ДОВІДКОВА ІНФОРМАЦІЯ
-// ==============================
+// ==================================================
 
 const healthMetadata = {
 
     "Heart Rate": {
-
         key: "pulse",
         source: "Heart rate sensor",
-
         description:
             "Number of heartbeats per minute.",
-
         measurement:
             "Use a compatible heart rate sensor according " +
             "to its operating instructions.",
-
         importance:
             "Heart rate can change with activity, stress " +
             "and health conditions."
-
     },
 
     "Blood Oxygen": {
-
         key: "oxygen",
         source: "Pulse oximeter",
-
         description:
             "Peripheral blood oxygen saturation (SpO₂).",
-
         measurement:
             "Use a compatible pulse oximeter.",
-
         importance:
             "Provides information about blood oxygenation."
-
     },
 
     "Skin Temperature": {
-
         key: "temperature",
         source: "Skin temperature sensor",
-
         description:
             "Temperature at the surface of the body.",
-
         measurement:
             "Use a compatible skin-contact temperature sensor.",
-
         importance:
             "Tracks skin temperature changes. It is not " +
             "equivalent to core body temperature."
-
     },
 
     "Body Mass": {
-
         key: "mass",
         source: "Specialized instrument",
-
         description:
             "Mass of the astronaut.",
-
         measurement:
             "Use an instrument suitable for the mission's " +
             "gravity conditions.",
-
         importance:
             "Helps track physical changes during missions."
-
     },
 
     "Grip Strength": {
-
         key: "gripStrength",
         source: "Grip dynamometer",
-
         description:
             "Force produced by the hand muscles.",
-
         measurement:
             "Use a suitable grip dynamometer and " +
             "an approved measurement procedure.",
-
         importance:
             "Helps track muscular performance."
-
     },
 
     "Acceleration": {
-
         key: "acceleration",
         source: "Accelerometer",
-
         description:
             "Rate of change of velocity.",
-
         measurement:
             "Data obtained from the accelerometer.",
-
         importance:
             "Helps characterize movement and activity."
-
     },
 
     "Body Movement": {
-
         key: "movement",
         source: "Motion sensor",
-
         description:
             "Movement detected by the wearable device.",
-
         measurement:
             "Use supported motion sensor data.",
-
         importance:
             "Supports movement monitoring. A wrist sensor " +
             "does not directly measure all body movements."
-
     },
 
     "Physical Activity": {
-
         key: "activity",
         source: "Processed motion data",
-
         description:
             "Recorded physical activity level.",
-
         measurement:
             "Use activity estimates from the approved system.",
-
         importance:
             "Helps visualize changes in daily activity."
-
     }
 
 };
 
-
-// ==============================
+// ==================================================
 // ФІЗИЧНІ ПОКАЗНИКИ
-// ==============================
+// ==================================================
 
 function getHealthIndicators() {
 
@@ -440,7 +525,7 @@ function getHealthIndicators() {
             name: "Heart Rate",
             value: astronaut.pulse,
             unit: "bpm",
-            icon: "",
+            icon: "♡",
             description: "Current heart rate"
         },
 
@@ -456,7 +541,7 @@ function getHealthIndicators() {
             name: "Skin Temperature",
             value: astronaut.temperature,
             unit: "°C",
-            icon: "",
+            icon: "♨",
             description: "Temperature measured at the skin"
         },
 
@@ -464,7 +549,7 @@ function getHealthIndicators() {
             name: "Body Mass",
             value: astronaut.mass,
             unit: "kg",
-            icon: "",
+            icon: "◫",
             description: "Body mass measurement"
         },
 
@@ -472,7 +557,7 @@ function getHealthIndicators() {
             name: "Grip Strength",
             value: astronaut.gripStrength,
             unit: "N",
-            icon: "",
+            icon: "✊",
             description: "Hand grip force"
         },
 
@@ -480,7 +565,7 @@ function getHealthIndicators() {
             name: "Acceleration",
             value: astronaut.acceleration,
             unit: "m/s²",
-            icon: "",
+            icon: "↗",
             description: "Accelerometer measurement"
         },
 
@@ -488,7 +573,7 @@ function getHealthIndicators() {
             name: "Body Movement",
             value: astronaut.movement,
             unit: "",
-            icon: "",
+            icon: "↔",
             description: "Device-recorded movement"
         },
 
@@ -496,34 +581,28 @@ function getHealthIndicators() {
             name: "Physical Activity",
             value: astronaut.activity,
             unit: "",
-            icon: "",
+            icon: "⚡",
             description: "Physical activity level"
         }
 
     ];
-
 }
 
-
-// ==============================
+// ==================================================
 // HEALTH MONITORING
-// ==============================
+// ==================================================
 
 function renderHealth() {
 
     const cards = getHealthIndicators()
-
         .map(createIndicator)
-
         .join("");
-
 
     sectionContent.innerHTML = `
 
         <div class="health-layout">
 
-
-            <!-- ЛІВИЙ БЛОК -->
+            <!-- ФІЗИЧНЕ ЗДОРОВ'Я -->
 
             <section class="health-panel">
 
@@ -543,7 +622,6 @@ function renderHealth() {
 
                 </div>
 
-
                 <div class="information-panel
                     ${getStatusClass(astronaut.status)}">
 
@@ -556,12 +634,11 @@ function renderHealth() {
             </section>
 
 
-            <!-- ПРАВИЙ БЛОК -->
+            <!-- ПСИХОЛОГІЧНЕ САМОПОЧУТТЯ -->
 
             <div class="wellbeing-column">
 
                 ${createWellbeingPanel()}
-
 
                 <section class="health-panel">
 
@@ -583,54 +660,42 @@ function renderHealth() {
 
     `;
 
-
     setupCheckin();
-
 }
 
-
-// ==============================
+// ==================================================
 // WELL-BEING MONITORING
-// ==============================
+// ==================================================
 
 function createWellbeingPanel() {
 
     const sleepDuration = astronaut.sleepDuration;
-
     const sleepQuality = astronaut.sleepQuality;
-
     const stressLevel = astronaut.stressLevel;
 
-
-    // Перевірка даних
+    // Перевірка тривалості сну
 
     const hasSleep =
-
         Number.isFinite(sleepDuration) &&
+        sleepDuration >= 0 &&
+        sleepDuration <= 24;
 
-        sleepDuration >= 0 && sleepDuration <= 24;
-
+    // Перевірка якості сну
 
     const hasQuality =
-
         typeof sleepQuality === "string" &&
-
         sleepQuality.trim() !== "";
 
+    // Перевірка рівня стресу
 
     const hasStress =
-
         Number.isFinite(stressLevel) &&
-
-        stressLevel >= 0 && stressLevel <= 10;
-
+        stressLevel >= 0 &&
+        stressLevel <= 10;
 
     const stressPercent = hasStress
-
         ? stressLevel * 10
-
         : 0;
-
 
     return `
 
@@ -644,15 +709,13 @@ function createWellbeingPanel() {
 
             </div>
 
-
             <div class="wellbeing-grid">
 
-
-                <!-- Тривалість сну -->
+                <!-- ТРИВАЛІСТЬ СНУ -->
 
                 <article class="indicator-card">
 
-                    <span class="indicator-icon"></span>
+                    <span class="indicator-icon">☾</span>
 
                     <h4>Sleep Duration</h4>
 
@@ -681,11 +744,11 @@ function createWellbeingPanel() {
                 </article>
 
 
-                <!-- Якість сну -->
+                <!-- ЯКІСТЬ СНУ -->
 
                 <article class="indicator-card">
 
-                    <span class="indicator-icon"></span>
+                    <span class="indicator-icon">◇</span>
 
                     <h4>Sleep Quality</h4>
 
@@ -714,7 +777,7 @@ function createWellbeingPanel() {
             </div>
 
 
-            <!-- Рівень стресу -->
+            <!-- РІВЕНЬ СТРЕСУ -->
 
             <article class="indicator-card stress-card">
 
@@ -732,20 +795,15 @@ function createWellbeingPanel() {
 
                 </div>
 
-
                 ${hasStress ? `
 
                     <div class="stress-progress"
-
                          role="img"
-
                          aria-label="Stress estimate:
                          ${stressLevel} out of 10">
 
                         <div class="stress-progress-fill"
-
                              style="width: ${stressPercent}%">
-
                         </div>
 
                     </div>
@@ -760,7 +818,6 @@ function createWellbeingPanel() {
 
                 ` : ""}
 
-
                 <small class="indicator-source">
 
                     ${hasStress
@@ -771,7 +828,6 @@ function createWellbeingPanel() {
 
             </article>
 
-
             <p class="automatic-data-note">
 
                 Read-only data · No manual input
@@ -781,26 +837,83 @@ function createWellbeingPanel() {
         </section>
 
     `;
-
 }
 
-
-// ==============================
+// ==================================================
 // DAILY CHECK-IN
-// ==============================
+// СТРУКТУРОВАНІ СИМПТОМИ
+// CREW ENVIRONMENTAL ANALYSIS
+// ==================================================
+
+const CHECKIN_SYMPTOMS = [
+
+    {
+        code: "headache",
+        label: "Headache"
+    },
+
+    {
+        code: "fatigue",
+        label: "Fatigue"
+    },
+
+    {
+        code: "dizziness",
+        label: "Dizziness"
+    },
+
+    {
+        code: "nausea",
+        label: "Nausea"
+    },
+
+    {
+        code: "shortness_of_breath",
+        label: "Shortness of breath"
+    },
+
+    {
+        code: "muscle_weakness",
+        label: "Muscle weakness"
+    },
+
+    {
+        code: "sleep_difficulties",
+        label: "Sleep difficulties"
+    },
+
+    {
+        code: "eye_discomfort",
+        label: "Eye discomfort"
+    }
+
+];
+
+// Ідентифікатор демонстраційного модуля
+
+const CHECKIN_DEMO_HABITAT = "DEMO-HABITAT-01";
+
+// ==================================================
+// СТВОРЕННЯ ФОРМИ DAILY CHECK-IN
+// ==================================================
 
 function createCheckinForm() {
 
     const moods = [
 
-        { name: "Poor", emoji: "" },
-        { name: "Low", emoji: "" },
-        { name: "Neutral", emoji: "" },
-        { name: "Good", emoji: "" },
-        { name: "Great", emoji: "" }
+        { name: "Poor", emoji: "😞" },
+
+        { name: "Low", emoji: "🙁" },
+
+        { name: "Neutral", emoji: "😐" },
+
+        { name: "Good", emoji: "🙂" },
+
+        { name: "Great", emoji: "😄" }
 
     ];
 
+    // Кнопки вибору настрою
 
     const moodButtons = moods.map(mood => `
 
@@ -821,13 +934,31 @@ function createCheckinForm() {
 
     `).join("");
 
+    // Структуровані симптоми
+
+    const symptomOptions = CHECKIN_SYMPTOMS.map(item => `
+
+        <label class="checkin-symptom-option">
+
+            <input type="checkbox"
+                   name="reported-symptom"
+                   value="${escapeHTML(item.code)}">
+
+            <span>
+
+                ${escapeHTML(item.label)}
+
+            </span>
+
+        </label>
+
+    `).join("");
 
     return `
 
         <form class="checkin-form" id="checkin-form">
 
-
-            <!-- Настрій -->
+            <!-- ВИБІР НАСТРОЮ -->
 
             <fieldset class="checkin-field checkin-fieldset">
 
@@ -844,60 +975,117 @@ function createCheckinForm() {
             </fieldset>
 
 
-            <!-- Коментарі -->
+            <!-- СТРУКТУРОВАНІ СИМПТОМИ -->
+
+            <fieldset class="checkin-field checkin-fieldset">
+
+                <legend>Reported Symptoms</legend>
+
+                <div class="checkin-symptom-grid">
+
+                    ${symptomOptions}
+
+                </div>
+
+                <label class="checkin-symptom-option
+                              checkin-no-symptoms">
+
+                    <input type="checkbox"
+                           id="checkin-no-symptoms">
+
+                    <span>No symptoms to report</span>
+
+                </label>
+
+                <small class="checkin-symptom-help">
+
+                    Select all that apply.
+                    Leaving this section blank
+                    means symptoms were not assessed.
+
+                </small>
+
+            </fieldset>
+
+
+            <!-- ДОДАТКОВІ НОТАТКИ -->
 
             <div class="checkin-field">
 
                 <label for="symptoms">
 
-                    Symptoms & Notes (optional)
+                    Additional Notes (optional)
 
                 </label>
 
                 <textarea id="symptoms"
-
-                          placeholder="Describe how you feel..."
-
+                          placeholder="Describe any additional observations..."
                           maxlength="1000"></textarea>
 
             </div>
 
 
-            <button type="submit"
+            <!-- КОСМІЧНИЙ МОДУЛЬ -->
 
+            <p class="checkin-symptom-help">
+
+                Habitat: Lunar Habitat — Simulation
+
+            </p>
+
+
+            <!-- ПОПЕРЕДНЄ ОПИТУВАННЯ -->
+
+            ${astronaut.checkin?.date ? `
+
+                <p class="checkin-symptom-help">
+
+                    Last check-in:
+
+                    ${escapeHTML(
+                        formatAnalyticsDate(
+                            astronaut.checkin.date
+                        )
+                    )}
+
+                </p>
+
+            ` : ""}
+
+
+            <!-- КНОПКА ЗБЕРЕЖЕННЯ -->
+
+            <button type="submit"
                     class="add-button save-checkin">
 
                 Save Check-in
 
             </button>
 
-
             <p class="checkin-message"
-
                id="checkin-message"
-
-               role="status">
-
-            </p>
-
+               role="status"></p>
 
             <p class="checkin-notice">
 
                 Demo only. Use fictional information.
-                Self-reported data is not a medical diagnosis.
+
+                Structured symptoms are stored
+                for demo crew analysis.
+
+                They do not generate operational
+                alerts or medical diagnoses.
 
             </p>
 
         </form>
 
     `;
-
 }
 
-
-// ==============================
+// ==================================================
 // ЛОГІКА DAILY CHECK-IN
-// ==============================
+// ==================================================
 
 function setupCheckin() {
 
@@ -907,7 +1095,7 @@ function setupCheckin() {
     const moodInput =
         document.getElementById("selected-mood");
 
-    const symptoms =
+    const notes =
         document.getElementById("symptoms");
 
     const message =
@@ -916,15 +1104,23 @@ function setupCheckin() {
     const moodButtons =
         form.querySelectorAll(".mood-button");
 
+    const symptomInputs = Array.from(
+        form.querySelectorAll(
+            'input[name="reported-symptom"]'
+        )
+    );
 
-    // Вибір настрою
+    const noSymptoms =
+        document.getElementById("checkin-no-symptoms");
+
+    // ==================================================
+    // ВИБІР НАСТРОЮ
+    // ==================================================
 
     function selectMood(mood) {
 
         const valid = Array.from(moodButtons).some(
-
             button => button.dataset.mood === mood
-
         );
 
         moodInput.value = valid ? mood : "";
@@ -943,13 +1139,8 @@ function setupCheckin() {
                 "aria-pressed",
                 String(selected)
             );
-
         });
-
     }
-
-
-    // Натискання на емодзі
 
     moodButtons.forEach(button => {
 
@@ -958,68 +1149,128 @@ function setupCheckin() {
             selectMood(button.dataset.mood);
 
             message.textContent = "";
-
         });
-
     });
 
+    // ==================================================
+    // ВІДСУТНІСТЬ СИМПТОМІВ
+    // ==================================================
 
-    // Відновлення попереднього запису
+    noSymptoms.addEventListener("change", function () {
 
-    const previousCheckin = astronaut.checkin;
+        if (noSymptoms.checked) {
 
-    if (previousCheckin) {
-
-        selectMood(previousCheckin.mood || "");
-
-        symptoms.value =
-            previousCheckin.symptoms || "";
-
-        message.textContent =
-            "Last demo check-in loaded.";
-
-    }
-
-
-    symptoms.addEventListener("input", function () {
+            symptomInputs.forEach(input => {
+                input.checked = false;
+            });
+        }
 
         message.textContent = "";
-
     });
 
+    // ==================================================
+    // ВИБІР ОКРЕМИХ СИМПТОМІВ
+    // ==================================================
 
-    // Збереження історії
+    symptomInputs.forEach(input => {
+
+        input.addEventListener("change", function () {
+
+            if (input.checked) {
+                noSymptoms.checked = false;
+            }
+
+            message.textContent = "";
+        });
+    });
+
+    notes.addEventListener("input", function () {
+        message.textContent = "";
+    });
+
+    // ==================================================
+    // ЗБЕРЕЖЕННЯ ОПИТУВАННЯ
+    // ==================================================
 
     form.addEventListener("submit", function (event) {
 
         event.preventDefault();
 
-        if (!moodInput.value) {
+        // Перевірка настрою
+
+        if (!Array.from(moodButtons).some(
+            button => button.dataset.mood === moodInput.value
+        )) {
 
             message.textContent =
                 "Please select your mood.";
 
             return;
-
         }
 
+        // Дозволені коди симптомів
+
+        const allowedCodes = new Set(
+            CHECKIN_SYMPTOMS.map(item => item.code)
+        );
+
+        // Отримання вибраних симптомів
+
+        const selectedCodes = [...new Set(
+
+            symptomInputs
+                .filter(input => input.checked)
+                .map(input => input.value)
+                .filter(code => allowedCodes.has(code))
+
+        )];
+
+        // Розрізняємо відсутність інформації
+        // та явне повідомлення про відсутність симптомів
+
+        const structuredSymptoms = selectedCodes.length
+
+            ? selectedCodes
+
+            : noSymptoms.checked
+
+                ? []
+
+                : null;
+
+        // Попередні дані
 
         const previous = astronaut.checkin;
 
         const previousHistory =
             astronaut.checkinHistory;
 
+        // Часова мітка
+
+        const timestamp = new Date().toISOString();
+
+        // Новий запис
 
         const newCheckin = {
 
             mood: moodInput.value,
 
-            symptoms: symptoms.value.trim(),
+            // Довільні нотатки у старому форматі
 
-            date: new Date().toISOString()
+            symptoms: notes.value.trim(),
 
+            // Структуровані симптоми
+
+            structuredSymptoms,
+
+            date: timestamp,
+
+            habitatId: CHECKIN_DEMO_HABITAT,
+
+            source: "demo"
         };
 
+        // Історія опитувань
 
         const history = Array.isArray(previousHistory)
 
@@ -1027,8 +1278,7 @@ function setupCheckin() {
 
             : [];
 
-
-        // Збереження старого запису
+        // Зберігаємо старий запис
 
         if (
             previous &&
@@ -1036,13 +1286,10 @@ function setupCheckin() {
                 item => item?.date === previous.date
             )
         ) {
-
             history.push(previous);
-
         }
 
-
-        // Додавання нового запису
+        // Додаємо новий запис
 
         history.push(newCheckin);
 
@@ -1050,33 +1297,40 @@ function setupCheckin() {
 
         astronaut.checkinHistory = history;
 
+        // Збереження даних
 
-        // Збереження
+        // Демонстраційні записи не додаються
+        // до healthObservations із джерелом actual.
 
-        if (saveCrew()) {
-
-            message.textContent =
-                "Daily check-in saved for this demo.";
-
-        } else {
-
-            astronaut.checkin = previous;
-
-            astronaut.checkinHistory = previousHistory;
-
-            message.textContent =
-                "Demo storage is unavailable.";
-
-        }
-
+        message.textContent = "Saving…";
+        (async () => {
+            try {
+                if (window.PulsarLive?.postCheckin) {
+                    const res = await window.PulsarLive.postCheckin(astronaut.id, newCheckin);
+                    if (res.device) {
+                        Object.assign(astronaut, window.PulsarLive.mapDevice
+                            ? window.PulsarLive.mapDevice(res.device)
+                            : res.device);
+                    } else {
+                        astronaut.checkin = res.checkin || newCheckin;
+                    }
+                }
+                saveCrew();
+                form.reset();
+                selectMood("");
+                message.textContent = "✓ Daily check-in saved.";
+            } catch (err) {
+                astronaut.checkin = previous;
+                astronaut.checkinHistory = previousHistory;
+                message.textContent = err.message || "Check-in failed.";
+            }
+        })();
     });
-
 }
 
-
-// ==============================
+// ==================================================
 // ENVIRONMENT
-// ==============================
+// ==================================================
 
 function renderEnvironment() {
 
@@ -1086,7 +1340,7 @@ function renderEnvironment() {
             name: "Atmospheric Pressure",
             value: astronaut.pressure,
             unit: "kPa",
-            icon: "",
+            icon: "◴",
             description: "Ambient atmospheric pressure"
         },
 
@@ -1094,7 +1348,7 @@ function renderEnvironment() {
             name: "Air Temperature",
             value: astronaut.airTemperature,
             unit: "K",
-            icon: "",
+            icon: "♨",
             description: "Air temperature in kelvins"
         },
 
@@ -1126,7 +1380,7 @@ function renderEnvironment() {
             name: "Radiation Rate",
             value: astronaut.radiation,
             unit: "µSv/h",
-            icon: "",
+            icon: "☢",
             description: "Current radiation dose rate"
         },
 
@@ -1134,12 +1388,11 @@ function renderEnvironment() {
             name: "Accumulated Radiation",
             value: astronaut.radiationDose,
             unit: "mSv",
-            icon: "",
+            icon: "☢",
             description: "Accumulated radiation dose"
         }
 
     ];
-
 
     sectionContent.innerHTML = `
 
@@ -1164,18 +1417,11 @@ function renderEnvironment() {
         </section>
 
     `;
-
 }
-
 
 // ==================================================
 // ANALYTICS
 // ==================================================
-
-
-// ==============================
-// ПЕРЕЛІК ПОКАЗНИКІВ
-// ==============================
 
 const analyticsMetrics = [
 
@@ -1193,7 +1439,6 @@ const analyticsMetrics = [
 
     ["acceleration", "Acceleration", "m/s²", "Physical Health"],
 
-
     // Середовище
 
     ["pressure", "Atmospheric Pressure", "kPa", "Environment"],
@@ -1204,13 +1449,11 @@ const analyticsMetrics = [
 
     ["co2", "Carbon Dioxide", "ppm", "Environment"],
 
-
     // Радіація
 
     ["radiation", "Radiation Rate", "µSv/h", "Radiation"],
 
     ["radiationDose", "Accumulated Radiation", "mSv", "Radiation"],
-
 
     // Сон та стрес
 
@@ -1220,14 +1463,16 @@ const analyticsMetrics = [
 
 ].map(([key, name, unit, group]) => ({
 
-    key, name, unit, group
+    key,
+    name,
+    unit,
+    group
 
 }));
 
-
-// ==============================
+// ==================================================
 // ФОРМАТУВАННЯ ЗНАЧЕНЬ
-// ==============================
+// ==================================================
 
 function formatAnalyticsValue(value) {
 
@@ -1236,18 +1481,12 @@ function formatAnalyticsValue(value) {
         ? Number(value.toFixed(2)).toString()
 
         : "—";
-
 }
-
-
-// Форматування дати
 
 function formatAnalyticsDate(value) {
 
     if (value == null || value === "") {
-
         return "Date unavailable";
-
     }
 
     const date = new Date(value);
@@ -1257,38 +1496,28 @@ function formatAnalyticsDate(value) {
         ? date.toLocaleString("en-GB", {
 
             day: "2-digit",
-
             month: "short",
-
             year: "numeric",
-
             hour: "2-digit",
-
             minute: "2-digit"
 
         })
 
         : "Date unavailable";
-
 }
-
-
-// Перевірка часової мітки
 
 function hasValidTimestamp(item) {
 
     return item.timestamp != null &&
-
         item.timestamp !== "" &&
-
         Number.isFinite(
             new Date(item.timestamp).getTime()
         );
-
 }
 
-
-// Повідомлення про відсутність даних
+// ==================================================
+// ВІДСУТНІСТЬ ДАНИХ
+// ==================================================
 
 function createAnalyticsEmpty(message) {
 
@@ -1296,42 +1525,46 @@ function createAnalyticsEmpty(message) {
 
         <div class="analytics-empty">
 
-            <span class="analytics-empty-icon"></span>
+            <span class="analytics-empty-icon">▥</span>
 
             <span>${escapeHTML(message)}</span>
 
         </div>
 
     `;
-
 }
 
-
-// ==============================
+// ==================================================
 // ІСТОРІЯ ВИМІРЮВАНЬ
-// ==============================
+// ==================================================
 
 function getMeasurementHistory(key) {
 
     let history = astronaut.history?.[key];
 
+    if (!Array.isArray(history) && astronaut.analyticsSeries?.[key]) {
+        history = astronaut.analyticsSeries[key].map((p) => ({
+            value: Number(p.v),
+            timestamp: p.t ?? null,
+        }));
+    }
 
-    // Підтримка попереднього графіка пульсу
+    if (!Array.isArray(history) && Array.isArray(astronaut.measurementHistory)) {
+        history = astronaut.measurementHistory
+            .map((row) => ({
+                value: Number(row?.[key]),
+                timestamp: row?.timestamp ?? null,
+            }))
+            .filter((item) => Number.isFinite(item.value));
+    }
 
     if (key === "pulse" && !Array.isArray(history)) {
-
         history = astronaut.pulseHistory;
-
     }
 
     if (!Array.isArray(history)) {
-
         return [];
-
     }
-
-
-    // Перетворення даних на єдиний формат
 
     return history.map(item =>
 
@@ -1360,29 +1593,23 @@ function getMeasurementHistory(key) {
             key !== "stressLevel" ||
             item.value >= 0 && item.value <= 10
         )
-
     );
-
 }
 
-
-// ==============================
+// ==================================================
 // ФІЛЬТРАЦІЯ ЗА ПЕРІОДОМ
-// ==============================
+// ==================================================
 
 function filterMeasurementHistory(history, period) {
 
     const dated = history
-
         .filter(hasValidTimestamp)
-
         .sort((a, b) =>
 
             new Date(a.timestamp) -
             new Date(b.timestamp)
 
         );
-
 
     if (period === "all") {
 
@@ -1391,23 +1618,17 @@ function filterMeasurementHistory(history, period) {
             ? dated
 
             : [...history];
-
     }
-
 
     const duration = {
 
         "24h": 1,
-
         "7d": 7,
-
         "30d": 30
 
     }[period] * 86400000;
 
-
     const now = Date.now();
-
 
     return dated.filter(item => {
 
@@ -1415,35 +1636,25 @@ function filterMeasurementHistory(history, period) {
             new Date(item.timestamp).getTime();
 
         return time >= now - duration && time <= now;
-
     });
-
 }
 
-
-// ==============================
+// ==================================================
 // СТАТИСТИКА
-// ==============================
+// ==================================================
 
 function calculateMeasurementStats(history) {
 
     if (!history.length) {
 
         return {
-
             average: null,
-
             minimum: null,
-
             maximum: null
-
         };
-
     }
 
-
     const values = history.map(item => item.value);
-
 
     return {
 
@@ -1456,13 +1667,12 @@ function calculateMeasurementStats(history) {
 
         maximum:
             values.reduce((a, b) => Math.max(a, b))
-
     };
-
 }
 
-
-// Картка статистики
+// ==================================================
+// КАРТКА СТАТИСТИЧНОГО ПОКАЗНИКА
+// ==================================================
 
 function createAnalyticsStat(name, value, unit = "") {
 
@@ -1475,7 +1685,6 @@ function createAnalyticsStat(name, value, unit = "") {
             ? value
 
             : "—";
-
 
     return `
 
@@ -1490,57 +1699,29 @@ function createAnalyticsStat(name, value, unit = "") {
         </div>
 
     `;
-
 }
 
-
-// ==============================
-// УНІВЕРСАЛЬНИЙ ГРАФІК SVG
-// ==============================
-
-// Ширина графіка в панелі, що стоїть у двох колонках (>1200px) або в одній
-function halfPanelChartWidth() {
-
-    const full = sectionContent ? sectionContent.clientWidth : 640;
-
-    const column = window.innerWidth > 1200
-        ? (full - 24) / 2
-        : full;
-
-    // мінус поля панелі, поля графіка та рамки
-    return column - 48 - 38;
-
-}
+// ==================================================
+// УНІВЕРСАЛЬНИЙ SVG-ГРАФІК
+// ==================================================
 
 function createAnalyticsChart(
-
     history,
-
     unit,
-
-    color = "#288bff",
-
-    type = "line",
-
-    chartWidth = 640
-
+    color = "#4dd9ec",
+    type = "line"
 ) {
 
     if (!history.length) {
 
         return createAnalyticsEmpty(
-
             "No measurement history available"
-
         );
-
     }
 
+    // Розміри графіка
 
-    // Розміри графіка: ширина = реальна ширина контейнера в px,
-    // тож 1 одиниця viewBox = 1 px і підписи не масштабуються.
-
-    const width = Math.max(320, Math.round(chartWidth));
+    const width = 640;
     const height = 250;
 
     const left = 65;
@@ -1551,22 +1732,16 @@ function createAnalyticsChart(
     const w = width - left - right;
     const h = height - top - bottom;
 
-
     // Межі значень
 
     const stats = calculateMeasurementStats(history);
 
     let min = stats.minimum;
-
     let max = stats.maximum;
-
-
-    // Стовпчиковий графік
 
     if (type === "bar") {
 
         min = Math.min(0, min);
-
         max = Math.max(1, max);
 
     } else {
@@ -1578,37 +1753,28 @@ function createAnalyticsChart(
             : (max - min) * 0.1;
 
         min -= pad;
-
         max += pad;
-
     }
-
 
     // Шкала стресу
 
     if (unit === "/10") {
 
         min = 0;
-
         max = 10;
-
     }
-
 
     const range = max - min || 1;
 
-
-    // Перевірка часових міток
+    // Часові мітки
 
     const hasDates = history.every(hasValidTimestamp);
-
 
     const first = hasDates
 
         ? new Date(history[0].timestamp).getTime()
 
         : 0;
-
 
     const last = hasDates
 
@@ -1617,7 +1783,6 @@ function createAnalyticsChart(
         ).getTime()
 
         : 0;
-
 
     // Координати точок
 
@@ -1651,27 +1816,18 @@ function createAnalyticsChart(
 
                         : i / (history.length - 1)
                 );
-
         }
 
-
-        const y = top + h -
-
+        const y =
+            top + h -
             (item.value - min) / range * h;
 
-
         return {
-
             ...item,
-
             x,
-
             y
-
         };
-
     });
-
 
     // Горизонтальна сітка
 
@@ -1684,45 +1840,31 @@ function createAnalyticsChart(
         grid += `
 
             <line
-
                 x1="${left}"
-
                 x2="${width - right}"
-
                 y1="${y}"
-
                 y2="${y}"
-
-                stroke="#2e2e32"
-
+                stroke="#304258"
                 stroke-dasharray="4 4"
-
             />
 
             <text
-
                 x="${left - 10}"
-
                 y="${y + 4}"
-
                 text-anchor="end"
+                fill="#91a5bd"
+                font-size="11">
 
-                fill="#a3a3a8"
-
-                font-size="11"
-
-            >
-
-                ${formatAnalyticsValue(max - i * range / 4)}
+                ${formatAnalyticsValue(
+                    max - i * range / 4
+                )}
 
             </text>
 
         `;
-
     }
 
-
-    // Підказки на графіку
+    // Підказка
 
     const tooltip = point => escapeHTML(
 
@@ -1735,47 +1877,30 @@ function createAnalyticsChart(
 
                 : ""
         )
-
     );
-
 
     const zeroY = top + h - (0 - min) / range * h;
 
     const barWidth = Math.min(
-
         45,
-
         w / history.length * 0.65
-
     );
-
 
     let shapes = "";
 
-
-    // ==============================
-    // СТОВПЧИКОВИЙ ГРАФІК
-    // ==============================
+    // Стовпчиковий графік
 
     if (type === "bar") {
 
         shapes = points.map(point => `
 
             <rect
-
                 x="${point.x - barWidth / 2}"
-
                 y="${Math.min(point.y, zeroY)}"
-
                 width="${barWidth}"
-
                 height="${Math.abs(zeroY - point.y)}"
-
                 rx="3"
-
-                fill="${color}"
-
-            >
+                fill="${color}">
 
                 <title>${tooltip(point)}</title>
 
@@ -1783,65 +1908,41 @@ function createAnalyticsChart(
 
         `).join("");
 
-    }
+    } else {
 
-
-    // ==============================
-    // ЛІНІЙНИЙ ГРАФІК
-    // ==============================
-
-    else {
+        // Лінійний графік
 
         const linePoints = points.map(point =>
-
             `${point.x},${point.y}`
-
         ).join(" ");
-
 
         shapes = `
 
             <polyline
-
                 points="${linePoints}"
-
                 fill="none"
-
                 stroke="${color}"
-
                 stroke-width="2.5"
-
                 stroke-linejoin="round"
-
                 stroke-linecap="round"
-
             />
 
         `;
 
-
         shapes += points.map(point => `
 
             <circle
-
                 cx="${point.x}"
-
                 cy="${point.y}"
-
                 r="4"
-
-                fill="${color}"
-
-            >
+                fill="${color}">
 
                 <title>${tooltip(point)}</title>
 
             </circle>
 
         `).join("");
-
     }
-
 
     // Підписи осі X
 
@@ -1851,7 +1952,6 @@ function createAnalyticsChart(
 
         : "First sample";
 
-
     const lastLabel = hasDates
 
         ? formatAnalyticsDate(
@@ -1860,7 +1960,6 @@ function createAnalyticsChart(
 
         : "Latest sample";
 
-
     // Готовий графік
 
     return `
@@ -1868,69 +1967,42 @@ function createAnalyticsChart(
         <div class="analytics-chart">
 
             <svg
-
                 viewBox="0 0 ${width} ${height}"
-
                 role="img"
-
-                aria-label="Measurement history chart"
-
-            >
+                aria-label="Measurement history chart">
 
                 <text
-
                     x="${left}"
-
                     y="12"
-
-                    fill="#a3a3a8"
-
-                    font-size="11"
-
-                >
+                    fill="#91a5bd"
+                    font-size="11">
 
                     ${escapeHTML(unit)}
 
                 </text>
 
-
                 ${grid}
 
                 ${shapes}
 
-
                 <text
-
                     x="${left}"
-
                     y="${height - 12}"
-
-                    fill="#a3a3a8"
-
-                    font-size="10"
-
-                >
+                    fill="#91a5bd"
+                    font-size="10">
 
                     ${escapeHTML(firstLabel)}
 
                 </text>
 
-
                 ${history.length > 1 ? `
 
                     <text
-
                         x="${width - right}"
-
                         y="${height - 12}"
-
-                        fill="#a3a3a8"
-
+                        fill="#91a5bd"
                         font-size="10"
-
-                        text-anchor="end"
-
-                    >
+                        text-anchor="end">
 
                         ${escapeHTML(lastLabel)}
 
@@ -1941,7 +2013,6 @@ function createAnalyticsChart(
             </svg>
 
         </div>
-
 
         <p class="analytics-chart-note">
 
@@ -1960,13 +2031,11 @@ function createAnalyticsChart(
         </p>
 
     `;
-
 }
 
-
-// ==============================
+// ==================================================
 // MEASUREMENT HISTORY
-// ==============================
+// ==================================================
 
 function renderMeasurementHistory() {
 
@@ -1976,24 +2045,21 @@ function renderMeasurementHistory() {
     const period =
         document.getElementById("analytics-period").value;
 
-
     const metric = analyticsMetrics.find(
-
         item => item.key === selectedKey
-
     );
 
     if (!metric) return;
 
-
     const full = getMeasurementHistory(metric.key);
 
-    const history = filterMeasurementHistory(full, period);
+    const history =
+        filterMeasurementHistory(full, period);
 
-    const stats = calculateMeasurementStats(history);
+    const stats =
+        calculateMeasurementStats(history);
 
-
-    // Статистичні показники
+    // Статистика
 
     document.getElementById("analytics-summary")
         .innerHTML = [
@@ -2008,37 +2074,31 @@ function renderMeasurementHistory() {
 
         ].map(([name, value]) =>
 
-            createAnalyticsStat(name, value, metric.unit)
+            createAnalyticsStat(
+                name,
+                value,
+                metric.unit
+            )
 
         ).join("");
-
 
     // Графік
 
     const chart =
         document.getElementById("analytics-chart-content");
 
-
     if (
-
         period !== "all" &&
-
         full.length > 0 &&
-
         full.every(item => !hasValidTimestamp(item))
-
     ) {
 
         chart.innerHTML = createAnalyticsEmpty(
-
             "Timestamps unavailable. Select All Time."
-
         );
 
         return;
-
     }
-
 
     chart.innerHTML = createAnalyticsChart(
 
@@ -2046,25 +2106,20 @@ function renderMeasurementHistory() {
 
         metric.unit,
 
-        "#288bff",
+        "#4dd9ec",
 
         metric.key === "sleepDuration"
 
             ? "bar"
 
-            : "line",
-
-        (chart.clientWidth || 678) - 38
-
+            : "line"
     );
 
+    // Повідомлення про відсутні часові мітки
 
     if (
-
         period !== "all" &&
-
         full.some(item => !hasValidTimestamp(item))
-
     ) {
 
         chart.insertAdjacentHTML(
@@ -2076,17 +2131,13 @@ function renderMeasurementHistory() {
                 Samples without timestamps are excluded.
 
             </p>`
-
         );
-
     }
-
 }
 
-
-// ==============================
+// ==================================================
 // УНІВЕРСАЛЬНА ТАБЛИЦЯ
-// ==============================
+// ==================================================
 
 function analyticsTable(headers, rows) {
 
@@ -2117,13 +2168,11 @@ function analyticsTable(headers, rows) {
         </div>
 
     `;
-
 }
 
-
-// ==============================
+// ==================================================
 // BASELINE COMPARISON
-// ==============================
+// ==================================================
 
 function createBaselineComparison() {
 
@@ -2137,17 +2186,29 @@ function createBaselineComparison() {
 
         let change = "—";
 
+        // Перевірка відповідності кисті
+
+        const referenceHand =
+            astronaut.baseline?.gripReferenceHand;
+
+        const sameHand =
+
+            metric.key !== "gripStrength" ||
+
+            (
+                ["Right", "Left"].includes(referenceHand) &&
+                astronaut.gripHand === referenceHand
+            );
+
+        // Обчислення різниці
 
         if (
-
+            sameHand &&
             Number.isFinite(baseline) &&
-
             Number.isFinite(current)
-
         ) {
 
             const difference = current - baseline;
-
 
             const delta =
 
@@ -2165,7 +2226,6 @@ function createBaselineComparison() {
 
                             : null;
 
-
             if (delta !== null) {
 
                 change =
@@ -2175,7 +2235,6 @@ function createBaselineComparison() {
                     formatAnalyticsValue(delta) +
 
                     (
-
                         metric.key === "temperature"
 
                             ? " °C"
@@ -2185,13 +2244,9 @@ function createBaselineComparison() {
                                 ? " pp"
 
                                 : "%"
-
                     );
-
             }
-
         }
-
 
         const reading = value =>
 
@@ -2201,7 +2256,6 @@ function createBaselineComparison() {
                     " " + metric.unit
 
                 : "—";
-
 
         return `
 
@@ -2230,9 +2284,7 @@ function createBaselineComparison() {
             </tr>
 
         `;
-
     }).join("");
-
 
     return analyticsTable(
 
@@ -2245,18 +2297,20 @@ function createBaselineComparison() {
         <p class="analytics-chart-note">
 
             Baseline differences are not medical diagnoses.
+
             pp = percentage points.
+
+            Grip strength changes require matching
+            hand information.
 
         </p>
 
     `;
-
 }
 
-
-// ==============================
+// ==================================================
 // WELL-BEING HISTORY
-// ==============================
+// ==================================================
 
 function createWellbeingHistory() {
 
@@ -2265,60 +2319,45 @@ function createWellbeingHistory() {
         getMeasurementHistory("sleepDuration"),
 
         "all"
-
     );
-
 
     const stress = filterMeasurementHistory(
 
         getMeasurementHistory("stressLevel"),
 
         "all"
-
     );
 
+    const sleepStats =
+        calculateMeasurementStats(sleep);
 
-    const sleepStats = calculateMeasurementStats(sleep);
-
-    const stressStats = calculateMeasurementStats(stress);
-
+    const stressStats =
+        calculateMeasurementStats(stress);
 
     return `
 
         <div class="wellbeing-history-summary">
 
             ${createAnalyticsStat(
-
                 "Average Sleep",
-
                 sleepStats.average,
-
                 "hours"
-
             )}
 
             ${createAnalyticsStat(
-
                 "Latest Sleep Quality",
-
                 astronaut.sleepQuality
-
             )}
 
             ${createAnalyticsStat(
-
                 "Average Stress",
-
                 stressStats.average,
-
                 "/10"
-
             )}
 
         </div>
 
-
-        <!-- СТОВПЧИКОВИЙ ГРАФІК СНУ -->
+        <!-- ГРАФІК ТРИВАЛОСТІ СНУ -->
 
         <h4 class="analytics-subheading">
 
@@ -2327,21 +2366,13 @@ function createWellbeingHistory() {
         </h4>
 
         ${createAnalyticsChart(
-
             sleep,
-
             "hours",
-
-            "#288bff",
-
-            "bar",
-
-            halfPanelChartWidth()
-
+            "#4dd9ec",
+            "bar"
         )}
 
-
-        <!-- ЛІНІЙНИЙ ГРАФІК СТРЕСУ -->
+        <!-- ГРАФІК РІВНЯ СТРЕСУ -->
 
         <h4 class="analytics-subheading">
 
@@ -2350,82 +2381,98 @@ function createWellbeingHistory() {
         </h4>
 
         ${createAnalyticsChart(
-
             stress,
-
             "/10",
-
-            "#ffbe2e",
-
-            "line",
-
-            halfPanelChartWidth()
-
+            "#b6a2ff",
+            "line"
         )}
 
     `;
-
 }
 
+// ==================================================
+// ФОРМАТУВАННЯ СТРУКТУРОВАНИХ СИМПТОМІВ
+// ==================================================
 
-// ==============================
+function formatCheckinSymptoms(item) {
+
+    // Дані відсутні або запис старого формату
+
+    if (!Array.isArray(item?.structuredSymptoms)) {
+
+        return "Not assessed / not recorded";
+    }
+
+    // Явна відсутність симптомів
+
+    if (item.structuredSymptoms.length === 0) {
+
+        return "No symptoms reported";
+    }
+
+    // Перетворення кодів на назви
+
+    return item.structuredSymptoms.map(code => {
+
+        const definition = CHECKIN_SYMPTOMS.find(
+            symptom => symptom.code === code
+        );
+
+        return definition?.label || String(code);
+
+    }).join(", ");
+}
+
+// ==================================================
 // DAILY CHECK-IN HISTORY
-// ==============================
+// ==================================================
 
 function createCheckinHistory() {
 
     const history = Array.isArray(astronaut.checkinHistory)
 
         ? astronaut.checkinHistory.filter(
-
             item => item && typeof item === "object"
-
         )
 
         : [];
 
+    // Підтримка попереднього формату
 
     if (!history.length && astronaut.checkin) {
 
         history.push(astronaut.checkin);
-
     }
-
 
     if (!history.length) {
 
         return createAnalyticsEmpty(
-
             "No check-ins recorded"
-
         );
-
     }
 
+    // Іконки настрою
 
     const moods = {
 
-        Poor: "",
-
-        Low: "",
-
-        Neutral: "",
-
-        Good: "",
-
-        Great: ""
+        Poor: "😞",
+        Low: "🙁",
+        Neutral: "😐",
+        Good: "🙂",
+        Great: "😄"
 
     };
 
+    // Сортування за датою
 
     history.sort((a, b) =>
 
         (Date.parse(b.date) || 0) -
-
         (Date.parse(a.date) || 0)
 
     );
 
+    // Створення записів
 
     const items = history.map(item => `
 
@@ -2455,13 +2502,26 @@ function createCheckinHistory() {
 
             </div>
 
+            <!-- Структуровані симптоми -->
 
             <p class="checkin-history-notes">
 
+                <strong>Reported symptoms:</strong>
+
                 ${escapeHTML(
+                    formatCheckinSymptoms(item)
+                )}
 
+            </p>
+
+            <!-- Додаткові нотатки -->
+
+            <p class="checkin-history-notes">
+
+                <strong>Additional notes:</strong>
+
+                ${escapeHTML(
                     item.symptoms || "No additional notes"
-
                 )}
 
             </p>
@@ -2469,7 +2529,6 @@ function createCheckinHistory() {
         </article>
 
     `).join("");
-
 
     return `
 
@@ -2480,46 +2539,35 @@ function createCheckinHistory() {
         </div>
 
     `;
-
 }
 
-
-// ==============================
+// ==================================================
 // ALERT HISTORY
-// ==============================
+// ==================================================
 
 function createAlertHistory() {
 
     const alerts = Array.isArray(astronaut.alertHistory)
 
         ? astronaut.alertHistory.filter(
-
             item => item && typeof item === "object"
-
         )
 
         : [];
 
-
     if (!alerts.length) {
 
         return createAnalyticsEmpty(
-
             "No alert history available"
-
         );
-
     }
-
 
     alerts.sort((a, b) =>
 
         (Date.parse(b.timestamp) || 0) -
-
         (Date.parse(a.timestamp) || 0)
 
     );
-
 
     const rows = alerts.map(alert => `
 
@@ -2540,7 +2588,7 @@ function createAlertHistory() {
                 <span class="alert-history-status
                     ${getStatusClass(alert.severity)}">
 
-                    ${escapeHTML(
+                    ● ${escapeHTML(
                         alert.severity || "Unknown"
                     )}
 
@@ -2552,47 +2600,37 @@ function createAlertHistory() {
 
     `).join("");
 
-
     return analyticsTable(
 
         ["Date & Time", "Alert", "Severity"],
 
         rows
-
     );
-
 }
 
-
-// ==============================
+// ==================================================
 // ГОЛОВНА СТОРІНКА ANALYTICS
-// ==============================
+// ==================================================
 
 function renderAnalytics() {
 
     const groups = [
 
         "Physical Health",
-
         "Environment",
-
         "Radiation",
-
         "Well-being"
 
     ];
 
-
-    // Список показників
+    // Список показників за категоріями
 
     const options = groups.map(group => `
 
         <optgroup label="${escapeHTML(group)}">
 
             ${analyticsMetrics
-
                 .filter(metric => metric.group === group)
-
                 .map(metric => `
 
                     <option value="${metric.key}">
@@ -2607,15 +2645,11 @@ function renderAnalytics() {
 
     `).join("");
 
-
-    // Вміст сторінки
-
     sectionContent.innerHTML = `
 
         <div class="analytics-layout">
 
-
-            <!-- 1. MEASUREMENT HISTORY -->
+            <!-- MEASUREMENT HISTORY -->
 
             <section class="analytics-panel">
 
@@ -2628,6 +2662,7 @@ function renderAnalytics() {
 
                 </p>
 
+                <!-- ФІЛЬТРИ ГРАФІКА -->
 
                 <div class="analytics-controls">
 
@@ -2647,7 +2682,6 @@ function renderAnalytics() {
 
                     </div>
 
-
                     <div class="analytics-field">
 
                         <label for="analytics-period">
@@ -2659,19 +2693,27 @@ function renderAnalytics() {
                         <select id="analytics-period">
 
                             <option value="24h">
+
                                 Last 24 Hours
+
                             </option>
 
                             <option value="7d">
+
                                 Last 7 Days
+
                             </option>
 
                             <option value="30d">
+
                                 Last 30 Days
+
                             </option>
 
                             <option value="all" selected>
+
                                 All Time
+
                             </option>
 
                         </select>
@@ -2680,29 +2722,23 @@ function renderAnalytics() {
 
                 </div>
 
-
                 <div class="analytics-summary"
-                     id="analytics-summary">
-
-                </div>
-
+                     id="analytics-summary"></div>
 
                 <p class="analytics-chart-note">
 
                     Current is the latest available reading.
+
                     Other statistics refer to the selected period.
 
                 </p>
 
-
-                <div id="analytics-chart-content">
-
-                </div>
+                <div id="analytics-chart-content"></div>
 
             </section>
 
 
-            <!-- 2. BASELINE COMPARISON -->
+            <!-- BASELINE COMPARISON -->
 
             <section class="analytics-panel">
 
@@ -2720,10 +2756,7 @@ function renderAnalytics() {
             </section>
 
 
-            <!-- 3 ТА 4. ДВА БЛОКИ ПОРУЧ -->
-
             <div class="analytics-two-columns">
-
 
                 <!-- WELL-BEING HISTORY -->
 
@@ -2761,7 +2794,7 @@ function renderAnalytics() {
             </div>
 
 
-            <!-- 5. ALERT HISTORY -->
+            <!-- ALERT HISTORY -->
 
             <section class="analytics-panel">
 
@@ -2781,37 +2814,53 @@ function renderAnalytics() {
 
     `;
 
-
-    // Перемикання показників
+    // Обробники подій
 
     document.getElementById("analytics-metric")
 
         .addEventListener(
-
             "change",
-
             renderMeasurementHistory
-
         );
-
-
-    // Перемикання періодів
 
     document.getElementById("analytics-period")
 
         .addEventListener(
-
             "change",
-
             renderMeasurementHistory
-
         );
 
-
     renderMeasurementHistory();
-
 }
 
+// ==================================================
+// AI HEALTH INSIGHTS
+// ==================================================
+
+function renderInsights() {
+
+    if (typeof window.renderHealthInsights !== "function") {
+
+        sectionContent.innerHTML = `
+
+            <div class="information-panel">
+
+                <h3>Health Insights unavailable</h3>
+
+                <p>Unable to load the analysis module.</p>
+
+            </div>
+
+        `;
+
+        return;
+    }
+
+    window.renderHealthInsights(
+        sectionContent,
+        astronaut
+    );
+}
 
 // ==================================================
 // HEALTH GUIDE
@@ -2819,168 +2868,1803 @@ function renderAnalytics() {
 
 function renderGuide() {
 
-    const hazards = [
+    renderHealthGuide(sectionContent);
+}
 
-        {
-            title: "Space Radiation",
+// ==================================================
+// MEDICAL CARD
+// ==================================================
 
-            description:
-                "Radiation exposure is monitored through " +
-                "dose rate and accumulated radiation data."
+// Універсальне створення медичного поля
+
+function medicalField(
+    key,
+    label,
+    type = "text",
+    options = {}
+) {
+
+    return {
+        key,
+        label,
+        type,
+        ...options
+    };
+}
+
+// ==================================================
+// СТРУКТУРА МЕДИЧНОЇ КАРТКИ
+// ==================================================
+
+const medicalSections = [
+
+    // ==================================================
+    // 1. PERSONAL INFORMATION
+    // ==================================================
+
+    {
+        key: "personal",
+
+        title: "Personal Information",
+
+        icon: "◎",
+
+        fields: [
+
+            medicalField(
+                "name",
+                "Full Name",
+                "readonly"
+            ),
+
+            medicalField(
+                "id",
+                "Astronaut ID",
+                "readonly"
+            ),
+
+            medicalField(
+                "birthDate",
+                "Date of Birth",
+                "date",
+                { past: true }
+            ),
+
+            medicalField(
+                "age",
+                "Age",
+                "calculated",
+                { unit: "years" }
+            ),
+
+            medicalField("sex", "Sex", "select", {
+
+                options: [
+                    "Female",
+                    "Male",
+                    "Other",
+                    "Not specified"
+                ]
+            }),
+
+            medicalField("bloodType", "Blood Type", "select", {
+
+                options: [
+                    "A+", "A-",
+                    "B+", "B-",
+                    "AB+", "AB-",
+                    "O+", "O-"
+                ]
+            }),
+
+            medicalField(
+                "role",
+                "Crew Role",
+                "readonly"
+            ),
+
+            medicalField(
+                "mission",
+                "Mission",
+                "readonly"
+            ),
+
+            medicalField(
+                "missionStart",
+                "Mission Start Date",
+                "date"
+            ),
+
+            medicalField(
+                "missionEnvironment",
+                "Mission Environment",
+                "select",
+                {
+                    options: [
+                        "Earth",
+                        "Space Station",
+                        "Spacecraft",
+                        "Lunar Surface",
+                        "Mars Surface",
+                        "Other"
+                    ]
+                }
+            )
+
+        ]
+    },
+
+    // ==================================================
+    // 2. PHYSICAL DEVELOPMENT
+    // ==================================================
+
+    {
+        key: "physical",
+
+        title: "Physical Development",
+
+        icon: "♡",
+
+        description:
+            "Pre-flight reference measurements entered by " +
+            "medical personnel. Not live sensor readings.",
+
+        fields: [
+
+            medicalField(
+                "height",
+                "Height",
+                "number",
+                { unit: "cm", min: 1 }
+            ),
+
+            medicalField(
+                "mass",
+                "Body Mass",
+                "number",
+                { unit: "kg", min: 1 }
+            ),
+
+            medicalField(
+                "chestRest",
+                "Chest Circumference — Rest",
+                "number",
+                { unit: "cm", min: 1 }
+            ),
+
+            medicalField(
+                "chestInhale",
+                "Chest Circumference — Inhale",
+                "number",
+                { unit: "cm", min: 1 }
+            ),
+
+            medicalField(
+                "chestExhale",
+                "Chest Circumference — Exhale",
+                "number",
+                { unit: "cm", min: 1 }
+            ),
+
+            medicalField(
+                "lungCapacity",
+                "Vital Lung Capacity",
+                "number",
+                { unit: "L", min: 0 }
+            ),
+
+            medicalField(
+                "rightGrip",
+                "Right Hand Grip",
+                "number",
+                { unit: "N", min: 0 }
+            ),
+
+            medicalField(
+                "leftGrip",
+                "Left Hand Grip",
+                "number",
+                { unit: "N", min: 0 }
+            ),
+
+            medicalField(
+                "pulse",
+                "Resting Heart Rate",
+                "number",
+                { unit: "bpm", min: 0 }
+            ),
+
+            medicalField(
+                "oxygen",
+                "Blood Oxygen",
+                "number",
+                {
+                    unit: "%",
+                    min: 0,
+                    max: 100
+                }
+            ),
+
+            medicalField(
+                "temperature",
+                "Skin Temperature",
+                "number",
+                { unit: "°C" }
+            ),
+
+            medicalField(
+                "bmi",
+                "Body Mass Index",
+                "calculated",
+                { unit: "kg/m²" }
+            ),
+
+            medicalField(
+                "gripReferenceHand",
+                "Grip Strength Reference Hand",
+                "select",
+                {
+                    options: ["Right", "Left"]
+                }
+            )
+
+        ]
+    },
+
+    // ==================================================
+    // 3. OBJECTIVE EXAMINATION
+    // ==================================================
+
+    {
+        key: "objective",
+
+        title: "Objective Examination",
+
+        icon: "✚",
+
+        description:
+            "Clinical findings recorded during " +
+            "a medical examination.",
+
+        fields: [
+
+            medicalField(
+                "constitution",
+                "Body Constitution"
+            ),
+
+            medicalField(
+                "skin",
+                "Skin Condition",
+                "textarea"
+            ),
+
+            medicalField(
+                "musculoskeletal",
+                "Musculoskeletal System",
+                "textarea"
+            ),
+
+            medicalField(
+                "respiratory",
+                "Respiratory System",
+                "textarea"
+            ),
+
+            medicalField(
+                "respiratoryRate",
+                "Respiratory Rate",
+                "number",
+                {
+                    unit: "breaths/min",
+                    min: 0
+                }
+            ),
+
+            medicalField(
+                "chestShape",
+                "Chest Shape"
+            ),
+
+            medicalField(
+                "bloodPressure",
+                "Blood Pressure",
+                "text",
+                {
+                    unit: "mmHg",
+                    placeholder: "Systolic / Diastolic"
+                }
+            ),
+
+            medicalField(
+                "cardiovascular",
+                "Cardiovascular System",
+                "textarea"
+            ),
+
+            medicalField(
+                "digestive",
+                "Digestive System",
+                "textarea"
+            ),
+
+            medicalField(
+                "rightEye",
+                "Right Eye Vision"
+            ),
+
+            medicalField(
+                "leftEye",
+                "Left Eye Vision"
+            ),
+
+            medicalField(
+                "hearing",
+                "Hearing"
+            ),
+
+            medicalField(
+                "nervous",
+                "Nervous System",
+                "textarea"
+            ),
+
+            medicalField(
+                "otherSystems",
+                "Other Organs & Systems",
+                "textarea"
+            ),
+
+            medicalField(
+                "boneHealth",
+                "Bone Health",
+                "textarea"
+            ),
+
+            medicalField(
+                "muscleHealth",
+                "Muscle Health",
+                "textarea"
+            ),
+
+            medicalField(
+                "vestibular",
+                "Vestibular Function",
+                "textarea"
+            ),
+
+            medicalField(
+                "coordination",
+                "Motor Coordination",
+                "textarea"
+            ),
+
+            medicalField(
+                "psychological",
+                "Psychological Assessment",
+                "textarea"
+            )
+
+        ]
+    },
+
+    // ==================================================
+    // 4. HEALTH ASSESSMENT
+    // ==================================================
+
+    {
+        key: "assessment",
+
+        title: "Health Assessment",
+
+        icon: "✓",
+
+        description:
+            "Medical conclusions are entered by a specialist, " +
+            "not generated automatically.",
+
+        fields: [
+
+            medicalField(
+                "physicalAssessment",
+                "Physical Development Assessment",
+                "textarea"
+            ),
+
+            medicalField(
+                "generalAssessment",
+                "General Health Assessment",
+                "select",
+                {
+                    options: [
+                        "Healthy",
+                        "Generally Healthy",
+                        "Requires Medical Observation",
+                        "Requires Medical Evaluation"
+                    ]
+                }
+            ),
+
+            medicalField(
+                "fitness",
+                "Medical Fitness for Mission Duties",
+                "select",
+                {
+                    options: [
+                        "Fit for Mission Duties",
+                        "Fit with Restrictions",
+                        "Temporarily Unfit",
+                        "Unfit for Mission Duties",
+                        "Pending Medical Evaluation"
+                    ]
+                }
+            ),
+
+            medicalField(
+                "recommendations",
+                "Medical Recommendations",
+                "textarea"
+            ),
+
+            medicalField(
+                "additionalExams",
+                "Additional Examinations",
+                "textarea"
+            ),
+
+            medicalField(
+                "examDate",
+                "Examination Date",
+                "date",
+                { past: true }
+            ),
+
+            medicalField(
+                "nextExam",
+                "Next Examination Date",
+                "date"
+            ),
+
+            medicalField(
+                "examiner",
+                "Medical Examiner"
+            )
+
+        ]
+    },
+
+    // ==================================================
+    // 5. MEDICAL HISTORY
+    // ==================================================
+
+    {
+        key: "medicalHistory",
+
+        title: "Medical History",
+
+        icon: "▤",
+
+        fields: [
+
+            medicalField(
+                "allergies",
+                "Allergies",
+                "textarea"
+            ),
+
+            medicalField(
+                "conditions",
+                "Chronic Conditions",
+                "textarea"
+            ),
+
+            medicalField(
+                "illnesses",
+                "Previous Illnesses",
+                "textarea"
+            ),
+
+            medicalField(
+                "injuries",
+                "Previous Injuries",
+                "textarea"
+            ),
+
+            medicalField(
+                "surgeries",
+                "Previous Surgeries",
+                "textarea"
+            ),
+
+            medicalField(
+                "medications",
+                "Current Medications",
+                "textarea"
+            ),
+
+            medicalField(
+                "contraindications",
+                "Medical Contraindications",
+                "textarea"
+            ),
+
+            medicalField(
+                "restrictions",
+                "Physical Activity Restrictions",
+                "textarea"
+            ),
+
+            medicalField(
+                "vaccinations",
+                "Vaccination History",
+                "textarea"
+            ),
+
+            medicalField(
+                "notes",
+                "Medical Notes",
+                "textarea"
+            )
+
+        ]
+    }
+
+];
+
+// ==================================================
+// ПОТОЧНА ДАТА
+// ==================================================
+
+function medicalToday() {
+
+    const date = new Date();
+
+    return `${date.getFullYear()}-${String(
+        date.getMonth() + 1
+    ).padStart(2, "0")}-${String(
+        date.getDate()
+    ).padStart(2, "0")}`;
+}
+
+// ==================================================
+// ОБЧИСЛЕННЯ ВІКУ
+// ==================================================
+
+function calculateMedicalAge(birthDate) {
+
+    if (!birthDate) return null;
+
+    const birth = new Date(
+        birthDate + "T00:00:00"
+    );
+
+    const today = new Date();
+
+    if (
+        !Number.isFinite(birth.getTime()) ||
+        birth > today
+    ) {
+        return null;
+    }
+
+    let age =
+        today.getFullYear() - birth.getFullYear();
+
+    if (
+        today.getMonth() < birth.getMonth() ||
+        (
+            today.getMonth() === birth.getMonth() &&
+            today.getDate() < birth.getDate()
+        )
+    ) {
+        age--;
+    }
+
+    return age;
+}
+
+// ==================================================
+// ОБЧИСЛЕННЯ BMI
+// ==================================================
+
+function calculateMedicalBMI(height, mass) {
+
+    if (
+        !Number.isFinite(height) ||
+        !Number.isFinite(mass) ||
+        height <= 0 ||
+        mass <= 0
+    ) {
+        return null;
+    }
+
+    return Number(
+        (mass / (height / 100) ** 2).toFixed(2)
+    );
+}
+
+// ==================================================
+// ОТРИМАННЯ ДАНИХ МЕДИЧНОЇ КАРТКИ
+// ==================================================
+
+function getMedicalCardData() {
+
+    const saved = astronaut.medicalCard || {};
+
+    const baseline = astronaut.baseline || {};
+
+    return {
+
+        personal: {
+
+            birthDate: saved.birthDate ?? "",
+
+            bloodType: saved.bloodType ?? "",
+
+            ...saved.personal
         },
 
-        {
-            title: "Isolation & Confinement",
+        physical: {
 
-            description:
-                "Well-being Monitoring displays sleep and " +
-                "stress estimates. Daily Check-in records " +
-                "self-reported mood and notes."
+            height: saved.height ?? null,
+
+            mass: baseline.mass ?? null,
+
+            pulse: baseline.pulse ?? null,
+
+            oxygen: baseline.oxygen ?? null,
+
+            temperature: baseline.temperature ?? null,
+
+            ...saved.physical
         },
 
-        {
-            title: "Distance from Earth",
+        objective: {
 
-            description:
-                "PULSAR provides access to health data, " +
-                "medical records and emergency resources."
+            ...saved.objective
         },
 
-        {
-            title: "Gravity Fields",
+        assessment: {
 
-            description:
-                "Body mass, grip strength and movement " +
-                "help visualize physical changes."
+            ...saved.assessment
         },
 
-        {
-            title: "≋ Hostile / Closed Environments",
+        medicalHistory: {
 
-            description:
-                "Environmental monitoring displays air " +
-                "temperature, pressure and air quality."
+            allergies: saved.allergies ?? "",
+
+            conditions: saved.conditions ?? "",
+
+            medications: saved.medications ?? "",
+
+            notes: typeof saved.history === "string"
+
+                ? saved.history
+
+                : "",
+
+            ...saved.medicalHistory
         }
+    };
+}
 
-    ];
+// ==================================================
+// ОТРИМАННЯ ЗНАЧЕННЯ ПОЛЯ
+// ==================================================
 
+function getMedicalFieldValue(section, field, data) {
 
-    const hazardCards = hazards.map(hazard => `
+    const profile = {
 
-        <details class="hazard-item">
+        name: astronaut.name,
 
-            <summary>
+        id: `AST-${String(astronaut.id)
+            .padStart(3, "0")}`,
 
-                ${escapeHTML(hazard.title)}
+        role: astronaut.role,
 
-            </summary>
+        mission: astronaut.mission ||
+            "Lunar Exploration Mission"
+    };
 
-            <p>
+    // Дані профілю не редагуються
 
-                ${escapeHTML(hazard.description)}
+    if (field.type === "readonly") {
 
-            </p>
+        return profile[field.key];
+    }
 
-        </details>
+    // Автоматичне обчислення віку
 
-    `).join("");
+    if (field.key === "age") {
 
+        return calculateMedicalAge(
+            data.personal.birthDate
+        );
+    }
 
-    sectionContent.innerHTML = `
+    // Автоматичне обчислення BMI
 
-        <div class="information-panel">
+    if (field.key === "bmi") {
 
-            <h3>Measurement Instructions</h3>
+        return calculateMedicalBMI(
+            data.physical.height,
+            data.physical.mass
+        );
+    }
 
-            <p>
+    return data[section.key]?.[field.key] ?? null;
+}
 
-                Individual health indicator explanations
-                and measurement instructions
-                will be added here.
+// ==================================================
+// СТВОРЕННЯ ПОЛЯ МЕДИЧНОЇ КАРТКИ
+// ==================================================
 
-            </p>
+function createMedicalField(
+    section,
+    field,
+    data,
+    editing
+) {
 
-        </div>
+    const id =
+        `med-${section.key}-${field.key}`;
 
+    const value =
+        getMedicalFieldValue(section, field, data);
 
-        <div class="information-panel">
+    const hasValue =
+        value != null && value !== "";
 
-            <h3>Spaceflight Hazards</h3>
+    const label =
+        field.label +
+        (field.unit ? ` (${field.unit})` : "");
 
-            <div class="hazard-list">
+    // Режим перегляду
 
-                ${hazardCards}
+    if (
+        !editing ||
+        ["readonly", "calculated"].includes(field.type)
+    ) {
+
+        return `
+
+            <div class="med-field-view">
+
+                <span class="med-field-label">
+
+                    ${escapeHTML(label)}
+
+                </span>
+
+                <strong id="${id}"
+                        class="${hasValue ? "" : "med-empty"}">
+
+                    ${hasValue
+
+                        ? escapeHTML(value)
+
+                        : "Not recorded"}
+
+                </strong>
+
+                ${field.type === "calculated" ? `
+
+                    <small class="med-auto-label">
+
+                        Automatically calculated
+
+                    </small>
+
+                ` : ""}
+
+                ${field.type === "readonly" ? `
+
+                    <small class="med-auto-label">
+
+                        Profile information
+
+                    </small>
+
+                ` : ""}
 
             </div>
 
+        `;
+    }
+
+    // Режим редагування
+
+    let input;
+
+    // Випадаючий список
+
+    if (field.type === "select") {
+
+        input = `
+
+            <select id="${id}">
+
+                <option value="">
+
+                    Select an option
+
+                </option>
+
+                ${field.options.map(option => `
+
+                    <option
+                        value="${escapeHTML(option)}"
+                        ${value === option
+                            ? "selected"
+                            : ""}>
+
+                        ${escapeHTML(option)}
+
+                    </option>
+
+                `).join("")}
+
+            </select>
+
+        `;
+
+    } else if (field.type === "textarea") {
+
+        // Багаторядкове текстове поле
+
+        input = `
+
+            <textarea
+                id="${id}"
+                rows="3"
+                maxlength="2000"
+                placeholder="Enter medical information..."
+            >${escapeHTML(value ?? "")}</textarea>
+
+        `;
+
+    } else {
+
+        // Звичайне поле введення
+
+        const min = field.min != null
+
+            ? `min="${field.min}"`
+
+            : "";
+
+        const max = field.max != null
+
+            ? `max="${field.max}"`
+
+            : field.past
+
+                ? `max="${medicalToday()}"`
+
+                : "";
+
+        const step = field.type === "number"
+
+            ? 'step="any"'
+
+            : "";
+
+        input = `
+
+            <input
+                id="${id}"
+                type="${field.type}"
+                value="${escapeHTML(value ?? "")}"
+                placeholder="${escapeHTML(
+                    field.placeholder || "Enter value"
+                )}"
+                ${min}
+                ${max}
+                ${step}
+                ${field.type === "text"
+                    ? 'maxlength="500"'
+                    : ""}
+            >
+
+        `;
+    }
+
+    return `
+
+        <div class="med-field-edit">
+
+            <label for="${id}">
+
+                ${escapeHTML(label)}
+
+            </label>
+
+            ${input}
+
         </div>
 
+    `;
+}
 
-        <!-- Інструкції перенесені з Emergency -->
+// ==================================================
+// СТВОРЕННЯ РОЗДІЛУ МЕДИЧНОЇ КАРТКИ
+// ==================================================
 
-        <div class="information-panel">
+function createMedicalSection(
+    section,
+    data,
+    editing,
+    openSections
+) {
 
-            <h3>Emergency Instructions</h3>
+    return `
 
-            <p>
+        <details class="med-section"
+                 data-medical-section="${section.key}"
+                 ${openSections.includes(section.key)
+                     ? "open"
+                     : ""}>
 
-                Validated mission-specific emergency
-                protocols will be added here.
+            <!-- ЗАГОЛОВОК РОЗДІЛУ -->
+
+            <summary class="med-section-heading">
+
+                <span class="med-section-icon">
+
+                    ${section.icon}
+
+                </span>
+
+                <span>
+
+                    <strong>${section.title}</strong>
+
+                    <small>
+
+                        ${section.fields.length} fields
+
+                    </small>
+
+                </span>
+
+                <span class="med-chevron"
+                      aria-hidden="true">
+
+                    ⌄
+
+                </span>
+
+            </summary>
+
+
+            <!-- ВМІСТ РОЗДІЛУ -->
+
+            <div class="med-section-content">
+
+                ${section.description ? `
+
+                    <p class="med-description">
+
+                        ${escapeHTML(section.description)}
+
+                    </p>
+
+                ` : ""}
+
+                <div class="med-fields-grid">
+
+                    ${section.fields.map(field =>
+
+                        createMedicalField(
+                            section,
+                            field,
+                            data,
+                            editing
+                        )
+
+                    ).join("")}
+
+                </div>
+
+            </div>
+
+        </details>
+
+    `;
+}
+
+// ==================================================
+// ВІДОБРАЖЕННЯ МЕДИЧНОЇ КАРТКИ
+// ==================================================
+
+function renderMedicalCard(
+    container,
+    editing = false,
+    message = "",
+    openSections = ["personal"]
+) {
+
+    const data = getMedicalCardData();
+
+    container.innerHTML = `
+
+        <div class="med-card">
+
+            <!-- ЗАГОЛОВОК -->
+
+            <div class="med-card-heading">
+
+                <div>
+
+                    <h3>Medical Card</h3>
+
+                    <p>Medical examination records</p>
+
+                </div>
+
+                ${editing ? "" : `
+
+                    <button
+                        type="button"
+                        class="med-edit-button"
+                        id="edit-medical-card">
+
+                        Edit Medical Card
+
+                    </button>
+
+                `}
+
+            </div>
+
+
+            <!-- ДЖЕРЕЛО МЕДИЧНИХ ДАНИХ -->
+
+            <div class="med-notice">
+
+                Manual medical records.
+
+                Live sensor measurements never
+                overwrite these values.
+
+            </div>
+
+
+            <!-- УСІ РОЗДІЛИ -->
+
+            <form id="medical-card-form" novalidate>
+
+                ${medicalSections.map(section =>
+
+                    createMedicalSection(
+                        section,
+                        data,
+                        editing,
+                        openSections
+                    )
+
+                ).join("")}
+
+
+                <!-- КНОПКИ РЕДАГУВАННЯ -->
+
+                ${editing ? `
+
+                    <div class="med-form-actions">
+
+                        <button
+                            type="button"
+                            class="med-cancel-button"
+                            id="cancel-medical-card">
+
+                            Cancel
+
+                        </button>
+
+                        <button
+                            type="submit"
+                            class="add-button">
+
+                            Save Medical Card
+
+                        </button>
+
+                    </div>
+
+                ` : ""}
+
+
+                <!-- ПОВІДОМЛЕННЯ -->
+
+                <p class="med-save-message"
+                   id="medical-card-message"
+                   role="status">
+
+                    ${escapeHTML(message)}
+
+                </p>
+
+            </form>
+
+
+            <!-- DEMO MODE -->
+
+            <p class="med-demo-note">
+
+                Demo mode · Use fictional medical
+                information only.
 
             </p>
-
-        </div>
-
-
-        <div class="information-panel">
-
-            <h3>Scientific Resources</h3>
-
-
-            <a class="resource-link"
-
-               href="https://www.nasa.gov/hrp/"
-
-               target="_blank"
-
-               rel="noopener noreferrer">
-
-                NASA Human Research Program
-
-            </a>
-
-
-            <a class="resource-link"
-
-               href="https://www.nasa.gov/hrp/hazards/"
-
-               target="_blank"
-
-               rel="noopener noreferrer">
-
-                NASA Spaceflight Hazards
-
-            </a>
-
-
-            <a class="resource-link"
-
-               href="https://osdr.nasa.gov/"
-
-               target="_blank"
-
-               rel="noopener noreferrer">
-
-                NASA Open Science Data Repository
-
-            </a>
 
         </div>
 
     `;
 
+    // Отримання відкритих розділів
+
+    const getOpenSections = () => Array.from(
+
+        container.querySelectorAll(
+            ".med-section[open]"
+        ),
+
+        element => element.dataset.medicalSection
+    );
+
+    // Отримання поля
+
+    const getInput = (section, field) =>
+
+        container.querySelector(
+            `#med-${section}-${field}`
+        );
+
+    // Режим перегляду
+
+    if (!editing) {
+
+        container.querySelector("#edit-medical-card")
+
+            .addEventListener("click", () => {
+
+                renderMedicalCard(
+                    container,
+                    true,
+                    "",
+                    getOpenSections()
+                );
+            });
+
+        return;
+    }
+
+    // ==================================================
+    // РЕЖИМ РЕДАГУВАННЯ
+    // ==================================================
+
+    const form =
+        container.querySelector("#medical-card-form");
+
+    const status =
+        container.querySelector("#medical-card-message");
+
+    // Отримання числового значення
+
+    const readNumber = (section, field) => {
+
+        const input = getInput(section, field);
+
+        return input.value !== "" &&
+            Number.isFinite(input.valueAsNumber)
+
+            ? input.valueAsNumber
+
+            : null;
+    };
+
+    // Відображення автоматично обчисленого значення
+
+    const showCalculated = (section, field, value) => {
+
+        const element = getInput(section, field);
+
+        element.textContent =
+            value ?? "Not recorded";
+
+        element.classList.toggle(
+            "med-empty",
+            value == null
+        );
+    };
+
+    // Автоматичне обчислення віку та BMI
+
+    form.addEventListener("input", () => {
+
+        showCalculated(
+            "personal",
+            "age",
+            calculateMedicalAge(
+                getInput("personal", "birthDate").value
+            )
+        );
+
+        showCalculated(
+            "physical",
+            "bmi",
+            calculateMedicalBMI(
+                readNumber("physical", "height"),
+                readNumber("physical", "mass")
+            )
+        );
+    });
+
+    // Скасування редагування
+
+    container.querySelector("#cancel-medical-card")
+
+        .addEventListener("click", () => {
+
+            renderMedicalCard(
+                container,
+                false,
+                "",
+                getOpenSections()
+            );
+        });
+
+    // Відображення помилки
+
+    function showError(input, text) {
+
+        input.closest("details").open = true;
+
+        status.textContent = text;
+
+        input.focus();
+    }
+
+    // ==================================================
+    // ЗБЕРЕЖЕННЯ МЕДИЧНОЇ КАРТКИ
+    // ==================================================
+
+    form.addEventListener("submit", event => {
+
+        event.preventDefault();
+
+        status.textContent = "";
+
+        // Перевірка коректності полів
+
+        if (!form.checkValidity()) {
+
+            const invalid = form.querySelector(
+                "input:invalid, " +
+                "select:invalid, " +
+                "textarea:invalid"
+            );
+
+            if (invalid) {
+
+                showError(
+                    invalid,
+                    "Please correct the highlighted field."
+                );
+
+                invalid.reportValidity();
+            }
+
+            return;
+        }
+
+        // Формування оновлених даних
+
+        const updated = {};
+
+        medicalSections.forEach(section => {
+
+            updated[section.key] = {
+
+                ...data[section.key]
+            };
+
+            section.fields.forEach(field => {
+
+                if (
+                    ["readonly", "calculated"]
+                        .includes(field.type)
+                ) {
+                    return;
+                }
+
+                updated[section.key][field.key] =
+
+                    field.type === "number"
+
+                        ? readNumber(
+                            section.key,
+                            field.key
+                        )
+
+                        : getInput(
+                            section.key,
+                            field.key
+                        ).value.trim();
+            });
+        });
+
+        // Перевірка дат медичних обстежень
+
+        const assessment = updated.assessment;
+
+        if (
+            assessment.examDate &&
+            assessment.nextExam &&
+            assessment.nextExam < assessment.examDate
+        ) {
+
+            showError(
+                getInput("assessment", "nextExam"),
+                "Next examination cannot precede " +
+                "the examination date."
+            );
+
+            return;
+        }
+
+        // Перевірка дати народження
+
+        if (
+            updated.personal.birthDate &&
+            assessment.examDate &&
+            assessment.examDate <
+                updated.personal.birthDate
+        ) {
+
+            showError(
+                getInput("assessment", "examDate"),
+                "Examination cannot precede " +
+                "the date of birth."
+            );
+
+            return;
+        }
+
+        // Перевірка сили хвату
+
+        const physical = updated.physical;
+
+        const hand = physical.gripReferenceHand;
+
+        const gripKey = hand === "Right"
+
+            ? "rightGrip"
+
+            : "leftGrip";
+
+        if (hand && physical[gripKey] == null) {
+
+            showError(
+                getInput("physical", gripKey),
+                "Enter the measurement for the " +
+                "selected reference hand."
+            );
+
+            return;
+        }
+
+        // Попередні дані
+
+        const previousMedical = astronaut.medicalCard;
+
+        const previousBaseline = astronaut.baseline;
+
+        // Оновлення медичної картки
+
+        astronaut.medicalCard = {
+
+            ...previousMedical,
+
+            ...updated,
+
+            updatedAt: new Date().toISOString()
+        };
+
+        // Оновлення індивідуальних
+        // передпольотних показників
+
+        astronaut.baseline = {
+
+            ...previousBaseline,
+
+            pulse: physical.pulse,
+
+            oxygen: physical.oxygen,
+
+            temperature: physical.temperature,
+
+            mass: physical.mass,
+
+            gripStrength: hand
+
+                ? physical[gripKey]
+
+                : null,
+
+            gripReferenceHand: hand || ""
+        };
+
+        // Збереження
+
+        status.textContent = "Saving…";
+        (async () => {
+            try {
+                if (window.PulsarLive?.putMedical) {
+                    await window.PulsarLive.putMedical(astronaut.id, {
+                        medicalCard: astronaut.medicalCard,
+                        baseline: astronaut.baseline,
+                    });
+                }
+                saveCrew();
+                renderMedicalCard(
+                    container,
+                    false,
+                    "✓ Medical card saved.",
+                    getOpenSections()
+                );
+            } catch (err) {
+                astronaut.medicalCard = previousMedical;
+                astronaut.baseline = previousBaseline;
+                status.textContent = err.message || "Save failed.";
+            }
+        })();
+    });
 }
 
+// ==================================================
+// ADDITIONAL PREFERENCES
+// ==================================================
+
+function renderMedicalPreferences(container) {
+
+    const settings = astronaut.settings || {};
+
+    const reminders = settings.reminders || {};
+
+    const notifications = settings.notifications || {};
+
+    // Універсальний перемикач
+
+    const toggle = (id, title, checked) => `
+
+        <label class="med-preference-row">
+
+            <span>${escapeHTML(title)}</span>
+
+            <input
+                type="checkbox"
+                class="med-switch"
+                id="${id}"
+                ${checked ? "checked" : ""}>
+
+        </label>
+
+    `;
+
+    container.innerHTML = `
+
+        <details class="med-section med-preferences">
+
+            <!-- ЗАГОЛОВОК -->
+
+            <summary class="med-section-heading">
+
+                <span class="med-section-icon">
+
+                    ⚙
+
+                </span>
+
+                <strong>Additional Preferences</strong>
+
+                <span class="med-chevron">⌄</span>
+
+            </summary>
+
+
+            <!-- ВМІСТ НАЛАШТУВАНЬ -->
+
+            <div class="med-section-content">
+
+                <form id="medical-preferences-form">
+
+                    <div class="med-preferences-grid">
+
+                        <!-- ==========================
+                             REMINDERS
+                        =========================== -->
+
+                        <section class="med-preference-panel">
+
+                            <h4>Reminders</h4>
+
+                            <!-- ЩОДЕННЕ ОПИТУВАННЯ -->
+
+                            ${toggle(
+                                "reminder-checkin",
+                                "Daily Check-in",
+                                reminders.checkinEnabled ?? false
+                            )}
+
+                            <div class="med-field-edit">
+
+                                <label for="checkin-time">
+
+                                    Check-in Time
+
+                                </label>
+
+                                <input
+                                    type="time"
+                                    id="checkin-time"
+                                    value="${escapeHTML(
+                                        reminders.checkinTime ||
+                                        "20:00"
+                                    )}">
+
+                            </div>
+
+
+                            <!-- ВИМІРЮВАННЯ ПОКАЗНИКІВ -->
+
+                            ${toggle(
+                                "reminder-measurement",
+                                "Health Measurements",
+                                reminders.measurementEnabled ??
+                                false
+                            )}
+
+                            <div class="med-field-edit">
+
+                                <label for="measurement-time">
+
+                                    Measurement Time
+
+                                </label>
+
+                                <input
+                                    type="time"
+                                    id="measurement-time"
+                                    value="${escapeHTML(
+                                        reminders.measurementTime ||
+                                        "08:00"
+                                    )}">
+
+                            </div>
+
+                        </section>
+
+
+                        <!-- ==========================
+                             NOTIFICATIONS
+                        =========================== -->
+
+                        <section class="med-preference-panel">
+
+                            <h4>Notifications</h4>
+
+                            ${toggle(
+                                "notify-health",
+                                "Additional Health Warnings",
+                                notifications.health ?? true
+                            )}
+
+                            ${toggle(
+                                "notify-device",
+                                "Device Connection",
+                                notifications.device ?? true
+                            )}
+
+                            ${toggle(
+                                "notify-battery",
+                                "Battery Alerts",
+                                notifications.battery ?? true
+                            )}
+
+                            <p class="med-description">
+
+                                Critical alerts and SOS
+                                are not controlled by
+                                these preferences.
+
+                            </p>
+
+                        </section>
+
+
+                        <!-- ==========================
+                             INTERFACE
+                        =========================== -->
+
+                        <section class="med-preference-panel">
+
+                            <h4>Interface</h4>
+
+                            ${toggle(
+                                "enable-animations",
+                                "Section Animations",
+                                settings.animations ?? true
+                            )}
+
+                            <!-- МОВА -->
+
+                            <div class="med-preference-row">
+
+                                <span>Language</span>
+
+                                <strong>English</strong>
+
+                            </div>
+
+
+                            <!-- ТЕМА -->
+
+                            <div class="med-preference-row">
+
+                                <span>Appearance</span>
+
+                                <strong>Dark Mode</strong>
+
+                            </div>
+
+                        </section>
+
+                    </div>
+
+
+                    <!-- ІНФОРМАЦІЯ -->
+
+                    <p class="med-description">
+
+                        Reminder and notification preferences
+                        are stored in demo mode.
+
+                        Automatic delivery is not connected yet.
+
+                    </p>
+
+
+                    <!-- КНОПКА ЗБЕРЕЖЕННЯ -->
+
+                    <div class="med-form-actions">
+
+                        <button
+                            type="submit"
+                            class="add-button">
+
+                            Save Preferences
+
+                        </button>
+
+                    </div>
+
+
+                    <!-- ПОВІДОМЛЕННЯ -->
+
+                    <p class="med-save-message"
+                       id="medical-preferences-message"
+                       role="status"></p>
+
+                </form>
+
+            </div>
+
+        </details>
+
+    `;
+
+    const get = id =>
+        container.querySelector("#" + id);
+
+    // ==================================================
+    // ЗБЕРЕЖЕННЯ НАЛАШТУВАНЬ
+    // ==================================================
+
+    get("medical-preferences-form")
+
+        .addEventListener("submit", event => {
+
+            event.preventDefault();
+
+            const status =
+                get("medical-preferences-message");
+
+            const checkinEnabled =
+                get("reminder-checkin").checked;
+
+            const measurementEnabled =
+                get("reminder-measurement").checked;
+
+            const checkinTime =
+                get("checkin-time").value;
+
+            const measurementTime =
+                get("measurement-time").value;
+
+            // Перевірка часу нагадувань
+
+            if (
+                (checkinEnabled && !checkinTime) ||
+                (measurementEnabled && !measurementTime)
+            ) {
+
+                status.textContent =
+                    "Please select the reminder time.";
+
+                return;
+            }
+
+            // Попередні налаштування
+
+            const previous = astronaut.settings;
+
+            // Оновлення налаштувань
+
+            astronaut.settings = {
+
+                ...previous,
+
+                reminders: {
+
+                    ...previous?.reminders,
+
+                    checkinEnabled,
+
+                    checkinTime,
+
+                    measurementEnabled,
+
+                    measurementTime
+                },
+
+                notifications: {
+
+                    ...previous?.notifications,
+
+                    health:
+                        get("notify-health").checked,
+
+                    device:
+                        get("notify-device").checked,
+
+                    battery:
+                        get("notify-battery").checked
+                },
+
+                animations:
+                    get("enable-animations").checked
+            };
+
+            // Збереження
+
+            status.textContent = "Saving…";
+            (async () => {
+                try {
+                    if (window.PulsarLive?.putSettings) {
+                        await window.PulsarLive.putSettings(astronaut.id, {
+                            settings: astronaut.settings,
+                        });
+                    }
+                    saveCrew();
+                    status.textContent = "✓ Preferences saved.";
+                } catch (err) {
+                    astronaut.settings = previous;
+                    status.textContent = err.message || "Save failed.";
+                }
+            })();
+        });
+}
 
 // ==================================================
 // SETTINGS
@@ -2990,219 +4674,128 @@ function renderSettings() {
 
     sectionContent.innerHTML = `
 
-        <div class="information-panel">
+        <div class="medical-page">
 
-            <h3>Medical Card</h3>
+            <div id="medical-card-content"></div>
 
-            <p>
-
-                Full name:
-                ${escapeHTML(astronaut.name)}
-
-            </p>
-
-            <p>
-
-                Crew role:
-                ${escapeHTML(astronaut.role)}
-
-            </p>
-
-            <p>
-
-                Astronaut ID:
-                AST-${String(astronaut.id).padStart(3, "0")}
-
-            </p>
-
-            <p>
-
-                Additional personal information,
-                medical history and baseline indicators
-                will be included in this card.
-
-            </p>
-
-        </div>
-
-
-        <div class="information-panel">
-
-            <h3>Reminders</h3>
-
-            <p>
-
-                Measurement reminders and daily schedules.
-
-            </p>
-
-        </div>
-
-
-        <div class="information-panel">
-
-            <h3>Notifications</h3>
-
-            <p>Notification preferences.</p>
-
-        </div>
-
-
-        <div class="information-panel">
-
-            <h3>Preferences</h3>
-
-            <p>Interface language and appearance.</p>
+            <div id="medical-preferences-content"></div>
 
         </div>
 
     `;
 
+    renderMedicalCard(
+
+        document.getElementById(
+            "medical-card-content"
+        )
+    );
+
+    renderMedicalPreferences(
+
+        document.getElementById(
+            "medical-preferences-content"
+        )
+    );
 }
-
-
-// ==================================================
-// SOS — ОНОВЛЕННЯ БОКОВОЇ КНОПКИ
-// ==================================================
 
 function updateSidebarSos() {
 
     if (!astronaut) return;
 
-
-    const button =
-        document.getElementById("sidebar-sos");
-
+    const button = document.getElementById("sidebar-sos");
     if (!button) return;
 
-
-    const active = isSosActive(astronaut.id);
-
-
-    button.classList.toggle(
-
-        "is-active",
-
-        active
-
-    );
-
-
-    button.textContent = active
-        ? "SOS Active"
-        : "SOS / Emergency";
-
+    const sosOn = isSosActive(astronaut.id) || !!astronaut.sos;
+    button.classList.toggle("is-active", sosOn);
+    button.textContent = sosOn ? "SOS Active" : "SOS / Emergency";
 }
 
+function showAstronautMissing() {
+    sectionTitle.textContent = "Astronaut not found";
+    sectionDescription.textContent = "Return to the Crew Dashboard";
+    const nameEl = document.getElementById("profile-name");
+    if (nameEl) nameEl.textContent = "Unknown astronaut";
+    sectionContent.innerHTML = `
+        <div class="information-panel">
+            <h3>Profile unavailable</h3>
+            <p>Device not found on server. Open Crew Dashboard and pick a live device.</p>
+        </div>
+    `;
+    document.querySelectorAll(".nav-button, #sidebar-sos").forEach((button) => {
+        button.disabled = true;
+    });
+}
 
-// ==================================================
-// ПОЧАТКОВИЙ ЗАПУСК (live API)
-// ==================================================
-
-async function bootAstronautPage() {
-    try {
-        if (window.PulsarLive?.fetchDevice && astronautId) {
-            astronaut = await window.PulsarLive.fetchDevice(astronautId);
-            crew = [astronaut];
-        }
-    } catch (e) {
-        console.error(e);
-        astronaut = null;
-    }
-
+function bootAstronautPage() {
     if (!astronaut) {
-        if (sectionContent) {
-            sectionContent.innerHTML =
-                `<p class="empty-message">Device not found. Open from dashboard.</p>`;
-        }
+        showAstronautMissing();
         return;
     }
 
     renderProfile();
 
-
-    // Обробники пунктів меню
-
-    document.querySelectorAll(".nav-button")
-        .forEach(button => {
-
-            button.addEventListener("click", function () {
-
-                openSection(button.dataset.section);
-
-            });
-
+    document.querySelectorAll(".nav-button").forEach((button) => {
+        button.addEventListener("click", function () {
+            openSection(button.dataset.section);
         });
+    });
 
-
-    // ==============================
-    // КНОПКА SOS
-    // ==============================
-
-    document.getElementById("sidebar-sos")
-
-        .addEventListener("click", function () {
-
-            openSosDialog(astronaut);
-
-        });
-
-
-    // Початковий стан кнопки
+    document.getElementById("sidebar-sos")?.addEventListener("click", function () {
+        openSosDialog(astronaut);
+    });
 
     updateSidebarSos();
-
-
-    // Оновлення після активації SOS
-
-    document.addEventListener(
-
-        "pulsar:sos-change",
-
-        updateSidebarSos
-
-    );
-
-
-    window.addEventListener(
-
-        "pageshow",
-
-        updateSidebarSos
-
-    );
-
-
-    // Відкриття потрібного розділу
-
+    document.addEventListener("pulsar:sos-change", updateSidebarSos);
+    window.addEventListener("pageshow", updateSidebarSos);
     openSection(requestedSection || "health");
 }
 
-// Графіки Analytics малюються під реальну ширину — перемальовуємо після
-// зміни розміру вікна, щоб підписи лишались 1:1.
-let analyticsResizeTimer = null;
-
-window.addEventListener("resize", () => {
-    clearTimeout(analyticsResizeTimer);
-    analyticsResizeTimer = setTimeout(() => {
-        const active = document.querySelector(".nav-button.active");
-        if (astronaut && active?.dataset.section === "analytics") {
-            renderAnalytics();
+(async function initAstronautLive() {
+    try {
+        const live = await loadAstronautFromServer();
+        if (live) {
+            astronaut = live;
+            const i = crew.findIndex((p) => String(p.id) === String(live.id));
+            if (i >= 0) crew[i] = live;
+            else crew.push(live);
+            try {
+                sessionStorage.setItem(STORAGE_KEY, JSON.stringify(crew));
+            } catch (_) {}
         }
-    }, 200);
-});
+    } catch (err) {
+        console.error("Cannot load device from server:", err);
+    }
+    bootAstronautPage();
 
-bootAstronautPage().catch((e) => {
-    console.error(e);
-    if (sectionTitle) sectionTitle.textContent = "Astronaut not found";
-    if (sectionDescription) {
-        sectionDescription.textContent = "Return to the Crew Dashboard";
+    if (window.PulsarLive && astronautId) {
+        window.PulsarLive.connect({
+            linkEl: document.getElementById("link-chip"),
+            onDashboard(list) {
+                const next = (list || []).find(
+                    (p) => String(p.id) === String(astronautId)
+                );
+                if (!next) return;
+                astronaut = next;
+                const i = crew.findIndex((p) => String(p.id) === String(next.id));
+                if (i >= 0) crew[i] = next;
+                else crew.push(next);
+                try {
+                    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(crew));
+                } catch (_) {}
+                if (typeof renderProfile === "function") renderProfile();
+                updateSidebarSos();
+            },
+            onSample(person) {
+                if (String(person.id) !== String(astronautId)) return;
+                astronaut = { ...astronaut, ...person };
+                if (typeof renderProfile === "function") renderProfile();
+                updateSidebarSos();
+            },
+        });
     }
-    if (sectionContent) {
-        sectionContent.innerHTML = `
-        <div class="information-panel">
-            <h3>Profile unavailable</h3>
-            <p>Please return to the Crew Dashboard and select a device.</p>
-        </div>`;
-    }
-});
+})();
+
+// ==================================================
+// КІНЕЦЬ ASTRONAUT PROFILE
+// ==================================================

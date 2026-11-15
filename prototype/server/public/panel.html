@@ -185,6 +185,39 @@
       color: var(--muted);
       border: 1px dashed var(--line);
     }
+    details.block {
+      border: 1px solid var(--line);
+      padding: 10px 12px;
+      background: #101014;
+    }
+    details.block > summary {
+      cursor: pointer;
+      font: 11px/1 var(--mono);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      list-style: none;
+    }
+    details.block > summary::-webkit-details-marker { display: none; }
+    .fields {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .fields label {
+      display: grid;
+      gap: 4px;
+      color: var(--dim);
+      font: 10px/1 var(--mono);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .fields input, .fields select, .fields textarea {
+      width: 100%;
+      padding: 8px;
+    }
+    .fields textarea { min-height: 64px; resize: vertical; }
     @media (max-width: 720px) {
       .metrics { grid-template-columns: repeat(2, 1fr); }
     }
@@ -328,8 +361,74 @@
             <button class="danger" data-act="sos-off" ${d.sos ? "" : "disabled"}>Clear SOS</button>
           </div>
 
+          <details class="block" open>
+            <summary>Emulate site metrics (force values → crew UI)</summary>
+            <div class="fields">
+              ${metricField("hr", "HR bpm", d.overrides?.hr ?? d.hr)}
+              ${metricField("spo2", "SpO₂ %", d.overrides?.spo2 ?? d.spo2)}
+              ${metricField("temp", "Skin °C", d.overrides?.temp ?? d.temp)}
+              ${metricField("battery", "Battery %", d.overrides?.battery ?? d.battery)}
+              ${metricField("mass", "Mass kg", d.overrides?.mass ?? d.mass)}
+              ${metricField("gripStrength", "Grip N", d.overrides?.gripStrength ?? d.gripStrength)}
+              ${metricField("acceleration", "Accel", d.overrides?.acceleration ?? d.acceleration)}
+              ${metricField("movement", "Movement", d.overrides?.movement ?? d.movement, "text")}
+              ${metricField("activity", "Activity", d.overrides?.activity ?? d.activity, "text")}
+              ${metricField("pressure", "Pressure kPa", d.overrides?.pressure ?? d.pressure)}
+              ${metricField("airTemperature", "Air K", d.overrides?.airTemperature ?? d.airTemperature)}
+              ${metricField("airOxygen", "Air O₂ %", d.overrides?.airOxygen ?? d.airOxygen)}
+              ${metricField("airQuality", "Air quality", d.overrides?.airQuality ?? d.airQuality, "text")}
+              ${metricField("co2", "CO₂ ppm", d.overrides?.co2 ?? d.co2)}
+              ${metricField("radiation", "Rad µSv/h", d.overrides?.radiation ?? d.radiation)}
+              ${metricField("radiationDose", "Dose mSv", d.overrides?.radiationDose ?? d.radiationDose)}
+              ${metricField("sleepDuration", "Sleep h", d.overrides?.sleepDuration ?? d.sleepDuration)}
+              ${metricField("sleepQuality", "Sleep quality", d.overrides?.sleepQuality ?? d.sleepQuality, "text")}
+              ${metricField("stressLevel", "Stress 0–10", d.overrides?.stressLevel ?? d.stressLevel)}
+            </div>
+            <div class="row" style="margin-top:10px">
+              <button class="primary" data-act="emulate">Apply emulate</button>
+              <button class="danger" data-act="emulate-clear">Clear overrides</button>
+              <span class="hint">Empty field = leave auto. Apply keeps override until Clear.</span>
+            </div>
+          </details>
+
+          <details class="block">
+            <summary>Medical card (server-owned)</summary>
+            <div class="fields">
+              ${metricField("med-name", "Full name", d.medicalCard?.personal?.name || d.label, "text")}
+              ${metricField("med-birth", "Birth date", d.medicalCard?.personal?.birthDate || "", "date")}
+              ${metricField("med-sex", "Sex", d.medicalCard?.personal?.sex || "", "text")}
+              ${metricField("med-blood", "Blood type", d.medicalCard?.personal?.bloodType || "", "text")}
+              ${metricField("med-height", "Height cm", d.medicalCard?.physical?.height ?? "", "number")}
+              ${metricField("med-mass", "Mass kg", d.medicalCard?.physical?.mass ?? d.mass ?? "", "number")}
+              ${metricField("med-pulse", "Baseline HR", d.medicalCard?.physical?.pulse ?? d.baseline?.pulse ?? "", "number")}
+              ${metricField("med-spo2", "Baseline SpO₂", d.medicalCard?.physical?.oxygen ?? d.baseline?.oxygen ?? "", "number")}
+              ${metricField("med-allergies", "Allergies", d.medicalCard?.medicalHistory?.allergies || "", "text")}
+              ${metricField("med-meds", "Medications", d.medicalCard?.medicalHistory?.medications || "", "text")}
+              ${metricField("med-notes", "Assessment notes", d.medicalCard?.assessment?.notes || "", "text")}
+            </div>
+            <div class="row" style="margin-top:10px">
+              <button class="primary" data-act="medical">Save medical card</button>
+            </div>
+          </details>
+
+          <details class="block">
+            <summary>Force check-in</summary>
+            <div class="fields">
+              ${metricField("ci-mood", "Mood", "Neutral", "text")}
+              ${metricField("ci-symptoms", "Symptoms / notes", "", "text")}
+            </div>
+            <div class="row" style="margin-top:10px">
+              <button data-act="checkin">Post check-in</button>
+            </div>
+          </details>
+
           <p class="hint js-alert">${esc(d.alert || "")}</p>
         </article>`;
+    }
+
+    function metricField(key, label, value, type = "number") {
+      const v = value == null ? "" : value;
+      return `<label>${esc(label)}<input class="emu-${esc(key)}" type="${esc(type)}" value="${esc(v)}" step="any"></label>`;
     }
 
     /** Оновлення метрик/статусу без перезапису полів, які зараз редагують */
@@ -478,8 +577,74 @@
             method: "POST",
             body: JSON.stringify({ active: false }),
           });
+        } else if (act === "emulate") {
+          const keys = [
+            "hr","spo2","temp","battery","mass","gripStrength","acceleration",
+            "movement","activity","pressure","airTemperature","airOxygen","airQuality",
+            "co2","radiation","radiationDose","sleepDuration","sleepQuality","stressLevel"
+          ];
+          const metrics = {};
+          for (const k of keys) {
+            const el = cardEl.querySelector(`.emu-${k}`);
+            if (!el) continue;
+            const raw = el.value.trim();
+            if (raw === "") continue;
+            metrics[k] = raw;
+          }
+          await api(`/api/admin/devices/${encodeURIComponent(id)}/emulate`, {
+            method: "POST",
+            body: JSON.stringify({ metrics }),
+          });
+        } else if (act === "emulate-clear") {
+          await api(`/api/admin/devices/${encodeURIComponent(id)}/emulate-clear`, {
+            method: "POST",
+            body: "{}",
+          });
+        } else if (act === "medical") {
+          const g = (k) => cardEl.querySelector(`.emu-${k}`)?.value?.trim() || "";
+          const height = g("med-height");
+          const mass = g("med-mass");
+          const pulse = g("med-pulse");
+          const oxygen = g("med-spo2");
+          const medicalCard = {
+            personal: {
+              name: g("med-name"),
+              birthDate: g("med-birth"),
+              sex: g("med-sex"),
+              bloodType: g("med-blood"),
+            },
+            physical: {
+              height: height === "" ? null : Number(height),
+              mass: mass === "" ? null : Number(mass),
+              pulse: pulse === "" ? null : Number(pulse),
+              oxygen: oxygen === "" ? null : Number(oxygen),
+            },
+            medicalHistory: {
+              allergies: g("med-allergies"),
+              medications: g("med-meds"),
+            },
+            assessment: {
+              notes: g("med-notes"),
+            },
+          };
+          const baseline = {
+            pulse: medicalCard.physical.pulse,
+            oxygen: medicalCard.physical.oxygen,
+            mass: medicalCard.physical.mass,
+          };
+          await api(`/api/admin/devices/${encodeURIComponent(id)}/medical`, {
+            method: "POST",
+            body: JSON.stringify({ medicalCard, baseline }),
+          });
+        } else if (act === "checkin") {
+          const mood = cardEl.querySelector(".emu-ci-mood")?.value?.trim() || "Neutral";
+          const symptoms = cardEl.querySelector(".emu-ci-symptoms")?.value?.trim() || "";
+          await api(`/api/admin/devices/${encodeURIComponent(id)}/checkin`, {
+            method: "POST",
+            body: JSON.stringify({ mood, symptoms }),
+          });
         }
-        await load({ full: act === "sim-reset" });
+        await load({ full: act === "sim-reset" || act === "emulate" || act === "emulate-clear" || act === "medical" });
       } catch (e) {
         alert(e.message);
         btn.disabled = false;

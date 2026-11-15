@@ -1,8 +1,12 @@
 node_modules/
-site/prototype/.data/
+prototype/bridge/.data/
+prototype/**/__pycache__/
+prototype/archive/scan/models/
 *.FCBak
 .vscode/
 .env
 *.log
 .DS_Store
 Thumbs.db
+Хакатон.zip
+Хакатон (*).zip

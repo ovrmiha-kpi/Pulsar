@@ -1,45 +1,21 @@
-/* ==================================================
-   PULSAR — NASA-style theme
-   Carbon black, white type, red/blue accents,
-   Inter + DM Mono, square corners, mono eyebrows.
-   Назви змінних збережені (--cyan = акцент),
-   щоб astronaut.css і JS-розмітка працювали без змін.
-================================================== */
+
+/* ==============================
+   ЗАГАЛЬНІ НАЛАШТУВАННЯ
+================================ */
 
 :root {
-    --background: #0b0b0d;
-    --panel: #141417;
-    --panel-2: #1b1b1f;
-    --header: #000000;
-    --hover: #1f1f24;
+    --background: #0a1220;
+    --panel: #152338;
+    --header: #101c2e;
+    --border: #304258;
 
-    --border: #2e2e32;
-    --border-strong: #58585b;
+    --text: #eaf7ff;
+    --muted: #91a5bd;
 
-    --text: #ffffff;
-    --muted: #a3a3a8;
-    --dim: #6f6f75;
-
-    --blue: #288bff;
-    --cyan: var(--blue);
-    --green: #3ddc84;
-    --yellow: #ffbe2e;
-    --red: #f64137;
-    --red-hover: #ff5a50;
-
-    --accent-soft: rgba(40, 139, 255, 0.12);
-    --red-soft: rgba(246, 65, 55, 0.12);
-    --yellow-soft: rgba(255, 190, 46, 0.1);
-    --green-soft: rgba(61, 220, 132, 0.1);
-    --muted-soft: rgba(255, 255, 255, 0.04);
-
-    --font: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
-    --mono: "DM Mono", ui-monospace, "SF Mono", Consolas, monospace;
-
-    --radius: 2px;
-    --pill: 99rem;
-    --page: 1440px;
-    --gutter: 40px;
+    --cyan: #4dd9ec;
+    --green: #39d5a3;
+    --yellow: #f5b94c;
+    --red: #ff626f;
 }
 
 * {
@@ -48,29 +24,15 @@
     box-sizing: border-box;
 }
 
-html {
-    color-scheme: dark;
-}
-
 body {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-
-    font-family: var(--font);
-    font-size: 15px;
-    line-height: 1.5;
-    color: var(--text);
+    font-family: Arial, sans-serif;
     background: var(--background);
-
-    -webkit-font-smoothing: antialiased;
-    text-rendering: optimizeLegibility;
+    color: var(--text);
+    min-height: 100vh;
 }
 
 button,
-input,
-select,
-textarea {
+input {
     font: inherit;
 }
 
@@ -79,105 +41,80 @@ button {
 }
 
 button:focus-visible,
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible,
-a:focus-visible,
-summary:focus-visible {
-    outline: 2px solid var(--blue);
-    outline-offset: 2px;
-}
-
-::selection {
-    background: var(--red);
-    color: #fff;
+input:focus-visible {
+    outline: 2px solid var(--cyan);
+    outline-offset: 3px;
 }
 
 
 /* ==============================
-   ВЕРХНЯ ПАНЕЛЬ
+   ВЕРХНЯ ПАНЕЛЬ САЙТУ
 ================================ */
 
 .header {
-    position: sticky;
-    top: 0;
-    z-index: 20;
-
     display: flex;
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
-    gap: 12px 24px;
 
-    padding: 14px var(--gutter);
+    gap: 15px;
+    padding: 12px 30px;
 
-    background: rgba(0, 0, 0, 0.88);
-    backdrop-filter: blur(12px);
+    background: var(--header);
     border-bottom: 1px solid var(--border);
 }
 
 .brand {
     display: flex;
     align-items: center;
-    gap: 14px;
-
-    color: inherit;
-    text-decoration: none;
+    gap: 12px;
 }
 
 .logo {
-    width: 38px;
-    height: 38px;
-    color: var(--red);
+    width: 40px;
+    height: 40px;
+    color: var(--cyan);
 }
 
 .brand h1 {
-    font-size: 20px;
-    font-weight: 700;
-    letter-spacing: 0.32em;
-    line-height: 1;
+    color: var(--cyan);
+    letter-spacing: 6px;
+    font-size: 25px;
 }
 
 .brand p {
-    margin-top: 6px;
-
     color: var(--muted);
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
+    font-size: 11px;
+    margin-top: 4px;
 }
 
 .mission {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.header-live {
     display: flex;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 8px 20px;
-
-    color: var(--muted);
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
+    gap: 12px;
+    margin-left: auto;
 }
 
-.mission-clock {
-    color: var(--text);
+.utc-clock {
+    color: var(--muted);
+    font-size: 12px;
     font-variant-numeric: tabular-nums;
 }
-
-/* Індикатор зв'язку з сервером */
 
 .link-chip {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-
     padding: 5px 12px;
-
     color: var(--muted);
-    border: 1px solid var(--border-strong);
-    border-radius: var(--pill);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-size: 12px;
 }
 
 .link-chip::before {
@@ -190,125 +127,28 @@ summary:focus-visible {
 
 .link-chip[data-state="live"] {
     color: var(--green);
-    border-color: rgba(61, 220, 132, 0.45);
+    border-color: rgba(57, 213, 163, 0.45);
 }
 
 .link-chip[data-state="reconnect"] {
     color: var(--yellow);
-    border-color: rgba(255, 190, 46, 0.45);
+    border-color: rgba(245, 185, 76, 0.45);
 }
 
 .link-chip[data-state="offline"] {
     color: var(--red);
-    border-color: rgba(246, 65, 55, 0.5);
+    border-color: rgba(255, 98, 111, 0.5);
 }
 
 @media (prefers-reduced-motion: no-preference) {
-
     .link-chip[data-state="live"]::before {
         animation: link-pulse 2s ease-in-out infinite;
     }
-
 }
 
 @keyframes link-pulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(61, 220, 132, 0.55); }
-    50% { box-shadow: 0 0 0 5px rgba(61, 220, 132, 0); }
-}
-
-
-/* ==============================
-   HERO
-================================ */
-
-.hero {
-    position: relative;
-    overflow: hidden;
-
-    border-bottom: 1px solid var(--border);
-
-    background:
-        radial-gradient(1px 1px at 12% 22%, rgba(255, 255, 255, 0.9) 50%, transparent 51%),
-        radial-gradient(1px 1px at 27% 68%, rgba(255, 255, 255, 0.6) 50%, transparent 51%),
-        radial-gradient(1.5px 1.5px at 41% 31%, rgba(255, 255, 255, 0.8) 50%, transparent 51%),
-        radial-gradient(1px 1px at 56% 77%, rgba(255, 255, 255, 0.5) 50%, transparent 51%),
-        radial-gradient(1px 1px at 63% 18%, rgba(255, 255, 255, 0.7) 50%, transparent 51%),
-        radial-gradient(1.5px 1.5px at 74% 52%, rgba(255, 255, 255, 0.6) 50%, transparent 51%),
-        radial-gradient(1px 1px at 86% 12%, rgba(255, 255, 255, 0.8) 50%, transparent 51%),
-        radial-gradient(1px 1px at 93% 61%, rgba(255, 255, 255, 0.5) 50%, transparent 51%),
-        radial-gradient(1px 1px at 5% 84%, rgba(255, 255, 255, 0.5) 50%, transparent 51%),
-        radial-gradient(60% 120% at 100% 0%, rgba(40, 139, 255, 0.16), transparent 60%),
-        #000;
-}
-
-/* Лімб Місяця в правому нижньому куті */
-
-.hero::after {
-    content: "";
-    position: absolute;
-    right: -180px;
-    bottom: -520px;
-
-    width: 760px;
-    height: 760px;
-    border-radius: 50%;
-
-    background:
-        radial-gradient(circle at 32% 28%, #3a3a40 0%, #1c1c20 45%, #0b0b0d 72%);
-    box-shadow:
-        inset 24px 18px 60px rgba(255, 255, 255, 0.07),
-        0 0 120px rgba(40, 139, 255, 0.12);
-
-    pointer-events: none;
-}
-
-.hero-inner {
-    position: relative;
-    z-index: 1;
-
-    width: 100%;
-    max-width: var(--page);
-    margin: 0 auto;
-    padding: 72px var(--gutter) 64px;
-}
-
-.eyebrow {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-
-    margin-bottom: 20px;
-
-    color: var(--muted);
-    font-family: var(--mono);
-    font-size: 12px;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-}
-
-.eyebrow::before {
-    content: "";
-    width: 28px;
-    height: 2px;
-    background: var(--red);
-}
-
-.hero h2 {
-    max-width: 900px;
-
-    font-size: clamp(38px, 6vw, 76px);
-    font-weight: 700;
-    line-height: 1.02;
-    letter-spacing: -0.03em;
-}
-
-.hero p {
-    max-width: 620px;
-    margin-top: 20px;
-
-    color: #d1d1d1;
-    font-size: 17px;
-    line-height: 1.6;
+    0%, 100% { box-shadow: 0 0 0 0 rgba(57, 213, 163, 0.55); }
+    50% { box-shadow: 0 0 0 5px rgba(57, 213, 163, 0); }
 }
 
 
@@ -317,401 +157,583 @@ summary:focus-visible {
 ================================ */
 
 .dashboard {
-    flex: 1;
-
     width: 100%;
-    max-width: var(--page);
+    max-width: 1800px;
+
     margin: 0 auto;
-    padding: 40px var(--gutter) 64px;
+    padding: 18px 30px;
 }
 
-.section-label {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 12px;
-
-    margin: 48px 0 16px;
-    padding-bottom: 12px;
-
-    border-bottom: 1px solid var(--border);
-}
-
-.section-label h3 {
-    font-size: 24px;
-    font-weight: 700;
-    letter-spacing: -0.01em;
-}
-
-.section-label span {
-    color: var(--muted);
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-}
-
-
-/* ==============================
-   БЛОКИ СТАТИСТИКИ
-================================ */
-
-.statistics {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1px;
-
-    background: var(--border);
-    border: 1px solid var(--border);
-}
-
-.stat-card {
-    position: relative;
-
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-
-    padding: 24px 24px 22px;
-
-    text-align: left;
-    color: var(--text);
-    background: var(--panel);
-    border: none;
-
-    transition: background 0.15s;
-}
-
-.stat-card::before {
-    content: "";
-    position: absolute;
-    inset: 0 0 auto 0;
-    height: 2px;
-    background: var(--stat-color, var(--text));
-}
-
-.stat-card:hover {
-    background: var(--hover);
-}
-
-.stat-card span {
-    color: var(--muted);
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-}
-
-.stat-card strong {
-    color: var(--stat-color, var(--text));
-    font-family: var(--mono);
-    font-size: 56px;
-    font-weight: 400;
-    line-height: 1;
-    letter-spacing: -0.03em;
-    font-variant-numeric: tabular-nums;
-}
-
-.stat-card small {
-    color: var(--dim);
-    font-size: 12px;
-}
-
-.stat-card.total { --stat-color: var(--text); }
-.stat-card.critical { --stat-color: var(--red); }
-.stat-card.warning { --stat-color: var(--yellow); }
-.stat-card.normal { --stat-color: var(--green); }
-
-
-/* ==============================
-   ПОШУК, ФІЛЬТРИ, ДОДАВАННЯ
-================================ */
-
-.toolbar {
-    display: flex;
-    gap: 12px;
-    margin-bottom: 16px;
-}
-
-#search {
-    flex: 1;
-    min-width: 0;
-    padding: 13px 16px;
-
-    color: var(--text);
-    background: var(--panel);
-
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-
-    transition: border-color 0.15s;
-}
-
-#search:hover,
-#search:focus {
-    border-color: var(--border-strong);
-}
-
-#search::placeholder {
-    color: var(--dim);
-}
-
-/* Основна кнопка: біла на чорному */
-
-.add-button {
-    padding: 13px 22px;
-
-    color: #000;
-    background: #fff;
-
-    border: 1px solid #fff;
-    border-radius: var(--radius);
-
-    font-family: var(--mono);
-    font-size: 12px;
-    font-weight: 500;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    white-space: nowrap;
-
-    transition: background 0.15s, color 0.15s;
-}
-
-.add-button:hover {
-    color: #fff;
-    background: transparent;
-}
-
-.filters {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 24px;
-}
-
-.filter-button {
-    padding: 7px 16px;
-
-    color: var(--muted);
-    background: transparent;
-
-    border: 1px solid var(--border);
-    border-radius: var(--pill);
-
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-
-    transition: 0.15s;
-}
-
-.filter-button:hover {
-    color: var(--text);
-    border-color: var(--border-strong);
-}
-
-.filter-button.active {
-    color: #000;
-    background: #fff;
-    border-color: #fff;
-}
-
-.crew-heading {
-    display: flex;
-    justify-content: space-between;
-    gap: 10px;
-
-    margin-bottom: 12px;
-
-    color: var(--dim);
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-}
-
-
-/* ==============================
-   КАРТКИ ЕКІПАЖУ
-================================ */
-
-/* Плитки впритул: без зазорів, лише розділювальні лінії */
-
-.crew-grid {
-    flex: 1;
-
-    /* плитки ділять між собою весь вільний простір вікна */
-    display: grid;
-    /* --cols рахує script.js: сітка якомога ближча до квадрата */
-    grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr));
-    grid-auto-rows: 1fr;
-    gap: 0;
-
-    margin-right: -1px;
-}
-
-html,
-body {
-    overflow-x: clip;
-}
-
-.astronaut-card {
-    position: relative;
-
-    display: flex;
-    flex-direction: column;
-
-    padding: 28px;
-
-    background: var(--background);
-    /* лінії праворуч і знизу; крайню праву ховає від'ємний відступ сітки */
-    border-right: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
-
-    cursor: pointer;
-    transition: background 0.15s;
-}
-
-.astronaut-card:hover,
-.astronaut-card:focus-visible {
-    background: var(--panel);
-}
-
-.astronaut-card:focus-visible {
-    outline-offset: -2px;
-}
-
-/* Розгорнута плитка: росте з місця плитки на весь екран під шапкою */
-
-.tile-expanded {
-    position: fixed;
-    z-index: 15;
-
-    overflow: hidden;
-    background: var(--background);
-    box-shadow: 0 0 0 1px var(--border);
-
-    transition:
-        top 0.34s cubic-bezier(0.2, 0.8, 0.2, 1),
-        left 0.34s cubic-bezier(0.2, 0.8, 0.2, 1),
-        width 0.34s cubic-bezier(0.2, 0.8, 0.2, 1),
-        height 0.34s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-.tile-expanded iframe {
-    display: block;
-    width: 100%;
-    height: 100%;
-    border: 0;
-
-    opacity: 0;
-    transition: opacity 0.2s;
-}
-
-.tile-expanded.is-open iframe {
-    opacity: 1;
-    transition-delay: 0.18s;
-}
-
-body.tile-open {
-    overflow: hidden;
-}
-
-@media (prefers-reduced-motion: reduce) {
-
-    .tile-expanded,
-    .tile-expanded iframe {
-        transition: none;
-    }
-
-}
-
-.astronaut-header {
-    display: flex;
-    align-items: center;
-    gap: 14px;
+.dashboard-heading {
     margin-bottom: 20px;
 }
 
-.avatar {
+.dashboard-heading h2 {
+    font-size: 28px;
+    margin-bottom: 5px;
+}
+
+.dashboard-heading p {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+
+/* ==============================
+   КОМПАКТНА ВЕРХНЯ ПАНЕЛЬ
+================================ */
+
+.dashboard-top {
+    position: relative;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 20px;
+    margin-bottom: 16px;
+}
+
+.dashboard-top .dashboard-heading {
+    margin-bottom: 0;
+}
+
+
+/* ==============================
+   ПАНЕЛЬ ІКОНОК
+================================ */
+
+.dashboard-actions {
+    position: relative;
+
+    display: flex;
+    align-items: center;
+
+    gap: 14px;
+    flex-shrink: 0;
+}
+
+.dashboard-icon {
     display: flex;
     justify-content: center;
     align-items: center;
 
-    width: 44px;
-    height: 44px;
-    flex-shrink: 0;
+    width: 38px;
+    height: 38px;
 
-    color: var(--text);
-    background: var(--background);
+    padding: 6px;
 
-    border: 1px solid var(--border-strong);
-    border-radius: 50%;
+    color: var(--cyan);
+    background: transparent;
 
-    font-family: var(--mono);
-    font-size: 13px;
-    letter-spacing: 0.04em;
+    border: none;
+    border-radius: 7px;
+
+    cursor: pointer;
+
+    transition: 0.2s ease;
 }
 
-.astronaut-info {
+.dashboard-icon svg {
+    display: block;
+
+    width: 26px;
+    height: 26px;
+
+    pointer-events: none;
+}
+
+.dashboard-icon:hover,
+.dashboard-icon.active {
+    background: #1c394d;
+    color: var(--cyan);
+}
+
+
+/* ==============================
+   ПРИХОВАНІ ЕЛЕМЕНТИ
+================================ */
+
+.crew-menu[hidden],
+.crew-search-panel[hidden] {
+    display: none !important;
+}
+
+
+/* ==============================
+   ВИПАДАЮЧЕ МЕНЮ
+================================ */
+
+.crew-menu-wrapper,
+.crew-search-wrapper {
+    position: static;
+}
+
+.crew-menu {
+    position: absolute;
+
+    top: calc(100% + 12px);
+    right: 0;
+
+    width: min(260px, calc(100vw - 36px));
+
+    padding: 12px;
+
+    background: var(--panel);
+
+    border: 1px solid var(--border);
+    border-radius: 10px;
+
+    box-shadow:
+        0 12px 35px rgba(0, 0, 0, 0.4);
+
+    z-index: 100;
+
+    animation: crewMenuAppear 0.2s ease;
+}
+
+@keyframes crewMenuAppear {
+
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+}
+
+.crew-menu-title {
+    padding: 12px 10px 16px;
+
+    margin-bottom: 6px;
+
+    color: var(--text);
+
+    font-size: 16px;
+    font-weight: bold;
+
+    border-bottom: 1px solid var(--border);
+}
+
+
+/* ==============================
+   РЯДКИ СТАТИСТИКИ
+================================ */
+
+.crew-menu .crew-menu-item {
+    display: flex;
+    align-items: center;
+
+    gap: 12px;
+
+    width: 100%;
+
+    padding: 12px 10px;
+    margin: 3px 0;
+
+    background: transparent;
+    color: var(--text);
+
+    border: 1px solid transparent;
+    border-radius: 6px;
+
+    font-size: 14px;
+    text-align: left;
+
+    transition: 0.2s ease;
+}
+
+.crew-menu .crew-menu-item:hover {
+    background: #1c394d;
+    border-color: var(--border);
+}
+
+.crew-menu .crew-menu-item.active {
+    background: #1c394d;
+    color: var(--text);
+    border-color: #38677c;
+}
+
+
+/* ==============================
+   КОЛЬОРОВІ ПОЗНАЧКИ
+================================ */
+
+.crew-status-dot {
+    display: inline-block;
+
+    width: 8px;
+    height: 8px;
+
+    border-radius: 50%;
+
+    flex-shrink: 0;
+}
+
+.crew-status-dot.total {
+    background: var(--cyan);
+}
+
+.crew-status-dot.critical {
+    background: var(--red);
+}
+
+.crew-status-dot.warning {
+    background: var(--yellow);
+}
+
+.crew-status-dot.pending {
+    background: var(--muted);
+}
+
+.crew-status-dot.normal {
+    background: var(--green);
+}
+
+
+/* ==============================
+   КІЛЬКІСТЬ АСТРОНАВТІВ
+================================ */
+
+.crew-menu-count {
+    margin-left: auto;
+
+    font-size: 19px;
+    font-weight: bold;
+}
+
+.crew-menu-count.total {
+    color: var(--cyan);
+}
+
+.crew-menu-count.critical {
+    color: var(--red);
+}
+
+.crew-menu-count.warning {
+    color: var(--yellow);
+}
+
+.crew-menu-count.pending {
+    color: var(--muted);
+}
+
+.crew-menu-count.normal {
+    color: var(--green);
+}
+
+
+/* ==============================
+   КОМПАКТНИЙ ПОШУК
+================================ */
+
+.crew-search-panel {
+    position: absolute;
+
+    top: calc(100% + 12px);
+    right: 0;
+
+    display: flex;
+    align-items: center;
+
+    gap: 10px;
+
+    width: min(280px, calc(100vw - 36px));
+
+    padding: 8px 12px;
+
+    background: var(--panel);
+
+    border: 1px solid var(--border);
+    border-radius: 8px;
+
+    box-shadow:
+        0 12px 35px rgba(0, 0, 0, 0.4);
+
+    z-index: 100;
+
+    animation: crewMenuAppear 0.2s ease;
+}
+
+.crew-search-panel:focus-within {
+    border-color: var(--cyan);
+}
+
+.crew-search-panel #search {
+    flex: 1;
+
+    width: 100%;
+    min-width: 0;
+
+    padding: 9px 2px;
+
+    background: transparent;
+    color: var(--text);
+
+    border: none;
+    border-radius: 0;
+
+    outline: none;
+
+    font-size: 14px;
+}
+
+.crew-search-panel #search::placeholder {
+    color: var(--muted);
+}
+
+.crew-search-panel
+#search::-webkit-search-cancel-button {
+    display: none;
+}
+
+.crew-search-close {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    width: 25px;
+    height: 25px;
+
+    padding: 0;
+
+    color: var(--muted);
+    background: transparent;
+
+    border: none;
+
+    font-size: 25px;
+    line-height: 1;
+}
+
+.crew-search-close:hover {
+    color: var(--cyan);
+}
+
+
+/* ==============================
+   УНІВЕРСАЛЬНА КНОПКА
+   Використовується у Daily Check-in
+================================ */
+
+.add-button {
+    padding: 14px 22px;
+
+    background: var(--cyan);
+    color: #0a1220;
+
+    border: none;
+    border-radius: 8px;
+
+    font-weight: bold;
+}
+
+.add-button:hover {
+    background: #85e8f4;
+}
+
+
+/* ==============================
+   ЗАГОЛОВОК ПАНЕЛІ АСТРОНАВТІВ
+================================ */
+
+.crew-heading {
+    display: flex;
+    justify-content: space-between;
+
+    gap: 10px;
+
+    margin-bottom: 8px;
+
+    color: var(--muted);
+    font-size: 12px;
+}
+
+
+/* ==============================
+   АДАПТИВНА СІТКА АСТРОНАВТІВ
+================================ */
+
+.crew-grid {
+
+    /* Кількість стовпчиків
+       визначається через JavaScript */
+
+    --card-padding: 12px;
+    --avatar-size: 34px;
+    --name-size: 16px;
+    --metric-size: 22px;
+    --chart-height: 55px;
+    --element-gap: 8px;
+
+    display: grid;
+
+    grid-template-columns:
+
+        repeat(
+            var(--crew-columns, 2),
+            minmax(0, 1fr)
+        );
+
+    grid-auto-rows: auto;
+
+    gap: 0;
+
+    width: 100%;
+
+    background: var(--panel);
+
+    border: 1px solid var(--border);
+    border-radius: 12px;
+
+    overflow: hidden;
+}
+
+
+/* ==============================
+   КОМПАКТНИЙ РЕЖИМ
+   ВІД 5 АСТРОНАВТІВ
+================================ */
+
+.crew-grid.compact {
+
+    --card-padding: 10px;
+    --avatar-size: 30px;
+    --name-size: 15px;
+    --metric-size: 20px;
+    --chart-height: 48px;
+    --element-gap: 6px;
+
+}
+
+
+/* ==============================
+   МАКСИМАЛЬНО КОМПАКТНИЙ РЕЖИМ
+================================ */
+
+.crew-grid.extra-compact {
+
+    --card-padding: 9px;
+    --avatar-size: 28px;
+    --name-size: 14px;
+    --metric-size: 19px;
+    --chart-height: 44px;
+    --element-gap: 5px;
+
+}
+
+
+/* ==============================
+   КАРТКА АСТРОНАВТА
+================================ */
+
+.crew-grid .astronaut-card {
+    display: flex;
+    flex-direction: column;
+
+    min-width: 0;
+
+    padding: var(--card-padding);
+
+    border: 0.5px solid var(--border);
+
+    cursor: pointer;
+
+    transition: background 0.2s ease;
+}
+
+.astronaut-card:hover {
+    background: #192c43;
+}
+
+
+/* ==============================
+   ІНФОРМАЦІЯ ПРО АСТРОНАВТА
+================================ */
+
+.crew-grid .astronaut-header {
+    display: flex;
+    align-items: center;
+
+    gap: var(--element-gap);
+
+    margin-bottom: var(--element-gap);
+}
+
+
+/* Аватар */
+
+.crew-grid .avatar {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    width: var(--avatar-size);
+    height: var(--avatar-size);
+
+    flex-shrink: 0;
+
+    background: #263e56;
+    color: var(--cyan);
+
+    font-size: 12px;
+    font-weight: bold;
+
+    border-radius: 50%;
+}
+
+
+/* Ім'я та посада */
+
+.crew-grid .astronaut-info {
     flex: 1;
     min-width: 0;
 }
 
-.astronaut-info h3 {
-    font-size: 20px;
-    font-weight: 700;
-    letter-spacing: -0.01em;
-    line-height: 1.2;
+.crew-grid .astronaut-info h3 {
+    font-size: var(--name-size);
+
+    margin-bottom: 3px;
+
     overflow-wrap: anywhere;
 }
 
-.astronaut-info p {
-    margin-top: 4px;
-
+.crew-grid .astronaut-info p {
     color: var(--muted);
-    font-family: var(--mono);
     font-size: 11px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
+
+    overflow-wrap: anywhere;
 }
 
-/* Статус — пігулка */
+
+/* ==============================
+   СТАТУСИ АСТРОНАВТІВ
+================================ */
 
 .status {
-    display: inline-block;
-    padding: 4px 11px;
-
-    color: var(--muted);
-    border: 1px solid currentColor;
-    border-radius: var(--pill);
-
-    font-family: var(--mono);
-    font-size: 10px;
-    font-weight: 500;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    white-space: nowrap;
+    font-size: 13px;
+    font-weight: bold;
 }
 
-.status:empty {
-    display: none;
+.crew-grid .status {
+    font-size: 11px;
+    flex-shrink: 0;
 }
 
 .status.critical {
     color: var(--red);
-    background: var(--red-soft);
 }
 
 .status.warning {
     color: var(--yellow);
-    background: var(--yellow-soft);
 }
 
 .status.normal {
     color: var(--green);
-    background: var(--green-soft);
 }
 
 .status.pending {
@@ -723,55 +745,57 @@ body.tile-open {
    ПОКАЗНИКИ ЗДОРОВ'Я
 ================================ */
 
-.metrics {
+.crew-grid .metrics {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+
+    gap: var(--element-gap);
+
+    padding: 8px 0;
 
     border-top: 1px solid var(--border);
     border-bottom: 1px solid var(--border);
 }
 
-.metric {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    align-items: baseline;
-    gap: 8px 6px;
+.crew-grid .metric {
+    display: flex;
+    flex-direction: column;
 
-    padding: 18px 16px;
+    gap: 3px;
+
+    min-width: 0;
 }
 
-.metric:first-child {
-    padding-left: 0;
-}
 
-.metric + .metric {
-    border-left: 1px solid var(--border);
-}
+/* Назва показника */
 
-.metric-name {
-    grid-column: 1 / -1;
-
+.crew-grid .metric-name {
     color: var(--muted);
-    font-family: var(--mono);
+    font-size: 11px;
+
+    overflow-wrap: anywhere;
+}
+
+
+/* Значення показника */
+
+.crew-grid .metric-value {
+    color: var(--cyan);
+
+    font-size: var(--metric-size);
+    font-weight: bold;
+
+    line-height: 1.15;
+}
+
+
+/* Одиниці вимірювання */
+
+.crew-grid .metric-unit {
+    color: var(--muted);
     font-size: 10px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-}
-
-.metric-value {
-    color: var(--text);
-    font-family: var(--mono);
-    font-size: 36px;
-    font-weight: 400;
-    line-height: 1;
-    letter-spacing: -0.03em;
-    font-variant-numeric: tabular-nums;
-}
-
-.metric-unit {
-    color: var(--dim);
-    font-family: var(--mono);
-    font-size: 12px;
 }
 
 
@@ -779,131 +803,96 @@ body.tile-open {
    ГРАФІК ПУЛЬСУ
 ================================ */
 
-.pulse-chart-container {
-    --chart-color: var(--muted);
-
-    /* графік забирає всю вільну висоту плитки */
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-
-    padding: 18px 0 4px;
+.crew-grid .pulse-chart-container {
+    padding: 8px 0 2px;
 }
 
-.pulse-chart-container.normal { --chart-color: var(--green); }
-.pulse-chart-container.warning { --chart-color: var(--yellow); }
-.pulse-chart-container.critical { --chart-color: var(--red); }
-.pulse-chart-container.pending { --chart-color: var(--muted); }
-
-.pulse-chart-header {
+.crew-grid .pulse-chart-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 10px;
-    margin-bottom: 10px;
+
+    flex-wrap: wrap;
+
+    gap: 4px;
+
+    margin-bottom: 5px;
 }
 
-.pulse-chart-title,
-.pulse-chart-period,
-.pulse-chart-labels {
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-}
-
-.pulse-chart-title {
+.crew-grid .pulse-chart-title {
     color: var(--text);
+
+    font-size: 11px;
+    font-weight: bold;
 }
 
-.pulse-chart-period,
-.pulse-chart-labels {
-    color: var(--dim);
-}
-
-/* Вісь (HTML) + поле графіка. SVG розтягується, текст — ні. */
-
-.pulse-chart-body {
-    flex: 1 1 95px;
-    min-height: 95px;
-
-    display: grid;
-    grid-template-columns: 30px minmax(0, 1fr);
-    gap: 10px;
-
-    padding: 7px 6px 7px 0;
-}
-
-.pulse-chart-axis,
-.pulse-chart-plot {
-    position: relative;
-    min-height: 0;
-}
-
-.pulse-chart-axis span {
-    position: absolute;
-    right: 0;
-    transform: translateY(-50%);
-
-    color: var(--dim);
-    font-family: var(--mono);
+.crew-grid .pulse-chart-period {
+    color: var(--muted);
     font-size: 10px;
-    line-height: 1;
-    font-variant-numeric: tabular-nums;
 }
 
-.pulse-chart {
-    position: absolute;
-    inset: 0;
-
+.crew-grid .pulse-chart {
     display: block;
+
     width: 100%;
-    height: 100%;
-    overflow: visible;
+
+    height: var(--chart-height);
 }
 
-.pulse-chart-labels {
+.crew-grid .pulse-chart-labels {
     display: flex;
     justify-content: space-between;
-    margin-top: 6px;
+
+    margin-top: 3px;
+
+    color: var(--muted);
+    font-size: 10px;
 }
 
-.pulse-chart-empty {
+
+/* Якщо історія відсутня */
+
+.crew-grid .pulse-chart-empty {
     display: flex;
     justify-content: center;
     align-items: center;
 
-    flex: 1 1 95px;
-    min-height: 95px;
+    height: var(--chart-height);
 
-    color: var(--dim);
-    font-family: var(--mono);
+    color: var(--muted);
     font-size: 11px;
-    letter-spacing: 0.08em;
 
     border: 1px dashed var(--border);
+    border-radius: 7px;
+}
+
+
+/* ==============================
+   КОЛЬОРИ ГРАФІКІВ
+================================ */
+
+.pulse-chart-container.normal {
+    --chart-color: var(--green);
+}
+
+.pulse-chart-container.warning {
+    --chart-color: var(--yellow);
+}
+
+.pulse-chart-container.critical {
+    --chart-color: var(--red);
+}
+
+.pulse-chart-container.pending {
+    --chart-color: var(--muted);
 }
 
 .pulse-line {
     stroke: var(--chart-color);
 }
 
-.pulse-area {
-    fill: var(--chart-color);
-    opacity: 0.1;
-}
-
 .pulse-point {
-    position: absolute;
-    left: 100%;
-
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-
-    background: var(--chart-color);
-    transform: translate(-50%, -50%);
+    fill: var(--chart-color);
 }
 
 .pulse-chart-grid {
@@ -916,140 +905,148 @@ body.tile-open {
 ================================ */
 
 .alert-message {
-    padding: 11px 14px;
-    margin: 16px 0;
+    padding: 12px;
+    margin: 18px 0;
 
-    color: var(--muted);
-    background: var(--muted-soft);
-
-    border-left: 2px solid currentColor;
-
+    border-radius: 6px;
     font-size: 13px;
-    line-height: 1.5;
+}
+
+.crew-grid .alert-message {
+    padding: 6px 8px;
+
+    margin: 7px 0;
+
+    font-size: 11px;
+    line-height: 1.3;
 }
 
 .alert-message.critical {
     color: var(--red);
-    background: var(--red-soft);
+    background: #35202d;
 }
 
 .alert-message.warning {
     color: var(--yellow);
-    background: var(--yellow-soft);
+    background: #302b25;
 }
 
 .alert-message.normal {
     color: var(--green);
-    background: var(--green-soft);
+    background: #102e2c;
+}
+
+.alert-message.pending {
+    color: var(--muted);
+    background: #1e293b;
 }
 
 
 /* ==============================
-   СТАН ПРИСТРОЮ ТА КНОПКИ
+   СТАН ПРИСТРОЮ
 ================================ */
 
-.device-info {
+.crew-grid .device-info {
     display: flex;
     justify-content: space-between;
-    gap: 10px;
 
-    margin-top: auto;
-
-    color: var(--dim);
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-}
-
-.link-state {
-    display: inline-flex;
-    align-items: center;
     gap: 8px;
-}
 
-.link-state::before {
-    content: "";
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: currentColor;
+    color: var(--muted);
+    font-size: 11px;
+
+    margin-bottom: 7px;
 }
 
 .connected {
     color: var(--green);
 }
 
-.card-actions {
+
+/* ==============================
+   КНОПКИ АСТРОНАВТА
+================================ */
+
+.crew-grid .card-actions {
     display: flex;
-    gap: 10px;
+
+    gap: 7px;
+
+    /* Кнопки знаходяться внизу
+       незалежно від висоти картки */
+
+    margin-top: auto;
 }
 
 .details-button,
 .sos-button {
     flex: 1;
-    padding: 11px 12px;
 
-    border-radius: var(--radius);
+    padding: 10px;
 
-    font-family: var(--mono);
-    font-size: 11px;
-    font-weight: 500;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
+    border-radius: 7px;
 
-    transition: 0.15s;
+    font-weight: bold;
+    font-size: 13px;
+
+    transition: 0.2s ease;
 }
 
+.crew-grid .details-button,
+.crew-grid .sos-button {
+    min-width: 0;
+    min-height: 30px;
+
+    padding: 6px 5px;
+
+    font-size: 11px;
+}
+
+
+/* Детальна інформація */
+
 .details-button {
-    color: var(--text);
-    background: transparent;
-    border: 1px solid var(--border-strong);
+    background: #1c394d;
+    color: var(--cyan);
+
+    border: 1px solid #38677c;
 }
 
 .details-button:hover {
-    color: #000;
-    background: #fff;
-    border-color: #fff;
+    background: #264e66;
 }
 
+
+/* SOS */
+
 .sos-button {
-    color: var(--red);
     background: transparent;
+    color: var(--red);
+
     border: 1px solid var(--red);
 }
 
-.sos-button:hover:not(:disabled) {
-    color: #fff;
-    background: var(--red);
+.sos-button:hover {
+    background: #35202d;
 }
 
-.sos-button:disabled {
-    color: var(--dim);
-    border-color: var(--border);
-    cursor: not-allowed;
+.astronaut-card.critical .sos-button {
+    background: #bc3449;
+    color: white;
 }
 
-.astronaut-card.critical .sos-button:not(:disabled) {
-    color: #fff;
-    background: var(--red);
-}
 
-.astronaut-card.critical .sos-button:hover:not(:disabled) {
-    background: var(--red-hover);
-}
+/* ==============================
+   ЯКЩО АСТРОНАВТІВ НЕ ЗНАЙДЕНО
+================================ */
 
 .empty-message {
     grid-column: 1 / -1;
-    padding: 56px 24px;
+
+    padding: 40px;
 
     text-align: center;
     color: var(--muted);
-    font-family: var(--mono);
-    font-size: 12px;
-    letter-spacing: 0.06em;
-
-    border: 1px dashed var(--border);
 }
 
 
@@ -1058,41 +1055,28 @@ body.tile-open {
 ================================ */
 
 footer {
-    display: flex;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 8px 24px;
+    padding: 12px;
 
-    padding: 22px var(--gutter);
+    text-align: center;
 
-    color: var(--dim);
-    background: #000;
-    border-top: 1px solid var(--border);
-
-    font-family: var(--mono);
+    color: var(--muted);
     font-size: 11px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-}
-
-footer strong {
-    color: var(--text);
-    font-weight: 500;
-    letter-spacing: 0.3em;
 }
 
 
 /* ==============================
-   МОДАЛЬНЕ ВІКНО
+   УНІВЕРСАЛЬНЕ МОДАЛЬНЕ ВІКНО
 ================================ */
 
 .modal {
     position: fixed;
+
     top: 50%;
     left: 50%;
+
     transform: translate(-50%, -50%);
 
-    width: 100%;
+    width: calc(100% - 30px);
     max-width: 480px;
     max-height: 90vh;
 
@@ -1102,19 +1086,19 @@ footer strong {
     color: var(--text);
     background: var(--panel);
 
-    border: 1px solid var(--border-strong);
-    border-top: 2px solid #fff;
-    border-radius: 0;
+    border: 1px solid var(--border);
+    border-radius: 15px;
 
-    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.7);
+    box-shadow:
+        0 20px 80px rgba(0, 0, 0, 0.5);
 
     overflow-y: auto;
 }
 
-.modal::backdrop,
-.sos-modal::backdrop {
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(6px);
+.modal::backdrop {
+    background: rgba(0, 0, 0, 0.75);
+
+    backdrop-filter: blur(5px);
 }
 
 .modal-content {
@@ -1125,19 +1109,18 @@ footer strong {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
+
     gap: 15px;
 
     padding-bottom: 20px;
-    margin-bottom: 24px;
+    margin-bottom: 25px;
 
     border-bottom: 1px solid var(--border);
 }
 
 .modal-header h2 {
-    font-size: 24px;
-    font-weight: 700;
-    letter-spacing: -0.01em;
-    margin-bottom: 6px;
+    font-size: 23px;
+    margin-bottom: 7px;
 }
 
 .modal-header p {
@@ -1145,111 +1128,116 @@ footer strong {
     font-size: 14px;
 }
 
-.close-modal,
-.sos-modal-close {
-    color: var(--muted);
+.close-modal {
     background: transparent;
+    color: var(--muted);
+
     border: none;
 
-    font-size: 28px;
+    font-size: 30px;
     line-height: 1;
 }
 
-.close-modal:hover,
-.sos-modal-close:hover {
+.close-modal:hover {
     color: var(--text);
 }
+
+
+/* ==============================
+   УНІВЕРСАЛЬНІ ПОЛЯ ФОРМИ
+================================ */
 
 .form-group {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    margin-bottom: 20px;
+
+    gap: 10px;
+
+    margin-bottom: 22px;
 }
 
 .form-group label {
-    color: var(--muted);
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
+    color: var(--text);
+
+    font-size: 14px;
+    font-weight: bold;
 }
 
 .form-group input,
 .form-group select {
     width: 100%;
-    padding: 13px 14px;
+
+    padding: 13px 15px;
 
     color: var(--text);
     background: var(--background);
 
     border: 1px solid var(--border);
-    border-radius: var(--radius);
+    border-radius: 7px;
 
+    font-family: inherit;
     font-size: 14px;
 }
 
 .form-group input::placeholder {
-    color: var(--dim);
+    color: var(--muted);
 }
 
 .form-group input:focus,
 .form-group select:focus {
     outline: none;
-    border-color: var(--blue);
+    border-color: var(--cyan);
 }
 
 .form-notice {
-    padding: 13px 14px;
-    margin-bottom: 24px;
+    padding: 14px;
 
+    background: #102b40;
     color: var(--muted);
-    background: var(--accent-soft);
 
-    border-left: 2px solid var(--blue);
+    border-left: 3px solid var(--cyan);
+    border-radius: 5px;
 
     font-size: 13px;
     line-height: 1.6;
+
+    margin-bottom: 24px;
 }
 
 .modal-actions {
     display: flex;
     justify-content: flex-end;
+
     gap: 12px;
 
     padding-top: 20px;
+
     border-top: 1px solid var(--border);
 }
 
 .cancel-button {
-    padding: 13px 20px;
+    padding: 12px 20px;
 
-    color: var(--text);
+    color: var(--muted);
     background: transparent;
 
-    border: 1px solid var(--border-strong);
-    border-radius: var(--radius);
-
-    font-family: var(--mono);
-    font-size: 12px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-
-    transition: 0.15s;
+    border: 1px solid var(--border);
+    border-radius: 8px;
 }
 
 .cancel-button:hover {
-    background: var(--hover);
-    border-color: #fff;
+    background: #263e56;
+    color: var(--text);
 }
 
 
 /* ==============================
-   SOS MODAL
+   PULSAR — SOS MODAL
 ================================ */
 
 .sos-modal {
     position: fixed;
+
     inset: 0;
 
     width: calc(100% - 30px);
@@ -1263,51 +1251,83 @@ footer strong {
     background: var(--panel);
 
     border: 1px solid var(--red);
-    border-top-width: 3px;
-    border-radius: 0;
+    border-radius: 14px;
 
     overflow-y: auto;
 
-    box-shadow: 0 24px 80px rgba(246, 65, 55, 0.18);
+    box-shadow:
+        0 20px 80px rgba(0, 0, 0, 0.5);
+}
+
+.sos-modal::backdrop {
+    background: rgba(0, 0, 0, 0.75);
+
+    backdrop-filter: blur(5px);
 }
 
 .sos-modal-content {
     padding: 28px;
 }
 
+
+/* ==============================
+   ЗАГОЛОВОК SOS
+================================ */
+
 .sos-modal-header {
     display: flex;
     align-items: center;
+
     gap: 12px;
-    margin-bottom: 22px;
+
+    margin-bottom: 24px;
 }
 
 .sos-modal-header h2 {
     color: var(--red);
-    font-size: 26px;
-    font-weight: 700;
-    letter-spacing: -0.01em;
+    font-size: 23px;
 }
 
 .sos-modal-icon {
     color: var(--red);
-    font-size: 26px;
+    font-size: 30px;
 }
 
 .sos-modal-close {
     margin-left: auto;
+
+    color: var(--muted);
+    background: transparent;
+
+    border: none;
+
+    font-size: 30px;
 }
+
+.sos-modal-close:hover {
+    color: white;
+}
+
+
+/* ==============================
+   ІНФОРМАЦІЯ ПРО АСТРОНАВТА
+   У ВІКНІ SOS
+================================ */
 
 .sos-person {
     display: flex;
     flex-direction: column;
-    gap: 6px;
 
-    padding: 16px 18px;
-    margin-bottom: 18px;
+    gap: 8px;
+
+    padding: 18px;
 
     background: var(--background);
+
     border: 1px solid var(--border);
+    border-radius: 9px;
+
+    margin-bottom: 20px;
 }
 
 .sos-person strong {
@@ -1316,136 +1336,154 @@ footer strong {
 
 .sos-person span {
     color: var(--muted);
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
+    font-size: 13px;
 }
 
 .sos-modal-description {
-    margin-bottom: 18px;
+    color: var(--text);
 
-    color: #d1d1d1;
     font-size: 14px;
     line-height: 1.7;
+
+    margin-bottom: 20px;
 }
+
+
+/* ==============================
+   ОДЕРЖУВАЧІ СИГНАЛУ SOS
+================================ */
 
 .sos-recipient-info {
     display: flex;
     align-items: flex-start;
+
     gap: 14px;
 
-    padding: 14px 16px;
-    margin-bottom: 16px;
+    padding: 16px;
 
-    background: var(--accent-soft);
-    border-left: 2px solid var(--blue);
+    background: #1c394d;
+
+    border: 1px solid #38677c;
+    border-radius: 8px;
+
+    margin-bottom: 18px;
 }
 
 .sos-recipient-info > span {
-    color: var(--blue);
-    font-size: 22px;
-    line-height: 1.1;
+    color: var(--cyan);
+    font-size: 26px;
 }
 
 .sos-recipient-info strong {
-    color: var(--text);
+    color: var(--cyan);
     font-size: 14px;
 }
 
 .sos-recipient-info p {
-    margin-top: 5px;
-
     color: var(--muted);
+
     font-size: 12px;
     line-height: 1.6;
+
+    margin-top: 7px;
 }
 
+
+/* ==============================
+   DEMO MODE
+================================ */
+
 .sos-demo-notice {
-    padding: 13px 14px;
+    padding: 14px;
 
     color: var(--yellow);
-    background: var(--yellow-soft);
+    background: rgba(245, 185, 76, 0.08);
 
-    border-left: 2px solid var(--yellow);
+    border-left: 3px solid var(--yellow);
+    border-radius: 6px;
 
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
+    font-size: 12px;
+    font-weight: bold;
 }
 
 .sos-demo-notice p {
-    margin-top: 6px;
-
     color: var(--muted);
-    font-family: var(--font);
-    font-size: 12px;
-    letter-spacing: 0;
-    text-transform: none;
+
+    font-weight: normal;
     line-height: 1.6;
+
+    margin-top: 6px;
 }
+
+
+/* ==============================
+   КНОПКИ МОДАЛЬНОГО ВІКНА SOS
+================================ */
 
 .sos-modal-actions {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
-    margin-top: 22px;
-}
 
-.sos-modal-actions > :only-child {
-    grid-column: 1 / -1;
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 12px;
+
+    margin-top: 24px;
 }
 
 .sos-modal-actions button {
     padding: 14px;
 
-    border-radius: var(--radius);
+    border-radius: 8px;
 
-    font-family: var(--mono);
-    font-size: 12px;
-    font-weight: 500;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
+    font-size: 14px;
+    font-weight: bold;
 
-    transition: 0.15s;
+    transition: 0.2s;
 }
 
 .sos-cancel-button {
     color: var(--text);
     background: transparent;
-    border: 1px solid var(--border-strong);
+
+    border: 1px solid var(--border);
 }
 
 .sos-cancel-button:hover {
-    background: var(--hover);
-    border-color: #fff;
+    background: #263e56;
 }
 
 .sos-confirm-button {
-    color: #fff;
-    background: var(--red);
+    color: white;
+    background: #bc3449;
+
     border: 1px solid var(--red);
 }
 
 .sos-confirm-button:hover {
-    background: var(--red-hover);
+    background: #d34457;
 }
 
 .sos-reset-button {
-    color: var(--text);
-    background: transparent;
-    border: 1px solid var(--border-strong);
+    color: var(--cyan);
+    background: #1c394d;
+
+    border: 1px solid #38677c;
 }
 
 .sos-reset-button:hover {
-    background: var(--hover);
+    background: #26566b;
 }
 
 .sos-modal button:disabled {
-    opacity: 0.55;
+    opacity: 0.6;
     cursor: not-allowed;
 }
+
+
+/* ==============================
+   РЕЗУЛЬТАТ АКТИВАЦІЇ SOS
+================================ */
 
 .sos-result {
     font-size: 13px;
@@ -1453,174 +1491,2756 @@ footer strong {
 }
 
 .sos-result:not(:empty) {
-    padding: 11px 14px;
+    padding: 12px;
+
     margin-top: 16px;
 
-    color: var(--muted);
-    background: var(--muted-soft);
-    border-left: 2px solid currentColor;
+    border-radius: 6px;
 }
 
 .sos-result.success {
     color: var(--green);
-    background: var(--green-soft);
+
+    background: rgba(57, 213, 163, 0.08);
 }
 
 .sos-result.error {
     color: var(--red);
-    background: var(--red-soft);
+
+    background: rgba(255, 98, 111, 0.08);
 }
 
-/* Активний SOS на картці */
+
+/* ==============================
+   АКТИВНИЙ SOS НА КАРТЦІ
+================================ */
 
 .astronaut-card.sos-active {
-    box-shadow: inset 0 0 0 2px var(--red);
+    box-shadow:
+        inset 0 0 0 2px var(--red);
 }
 
 .sos-active-banner {
-    padding: 11px 14px;
-    margin-bottom: 16px;
+    padding: 8px;
 
-    color: #fff;
-    background: var(--red);
+    background: #35202d;
+    color: var(--red);
 
-    font-family: var(--mono);
-    font-size: 11px;
-    font-weight: 500;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
+    border: 1px solid var(--red);
+    border-radius: 7px;
+
+    font-size: 12px;
+    font-weight: bold;
+
+    margin: 5px 0 8px;
 }
 
 .sos-button.is-active,
 .sidebar-sos.is-active {
-    color: #fff;
-    background: #8f1f18;
+    background: #702638;
     border-color: var(--red);
 }
 
 
 /* ==============================
-   АДАПТИВНІСТЬ
+   АДАПТАЦІЯ ДО ВИСОТИ ЕКРАНА
 ================================ */
 
-@media (max-width: 1000px) {
+/* Ноутбуки та невисокі монітори */
 
-    :root {
-        --gutter: 24px;
+@media (min-width: 701px)
+       and (max-height: 850px) {
+
+    .dashboard {
+        padding-top: 12px;
+        padding-bottom: 10px;
     }
 
-    .statistics {
-        grid-template-columns: repeat(2, 1fr);
+    .dashboard-top {
+        margin-bottom: 10px;
     }
 
-    .hero-inner {
-        padding-top: 52px;
-        padding-bottom: 48px;
+    .crew-grid {
+
+        --card-padding: 10px;
+        --chart-height: 46px;
+        --element-gap: 6px;
+
+    }
+
+    .crew-grid.compact {
+
+        --card-padding: 9px;
+        --chart-height: 42px;
+        --element-gap: 5px;
+
+    }
+
+    .crew-grid.extra-compact {
+
+        --card-padding: 8px;
+        --chart-height: 40px;
+        --element-gap: 5px;
+
+    }
+
+    .crew-grid .metrics {
+        padding: 6px 0;
+    }
+
+    .crew-grid .pulse-chart-container {
+        padding-top: 6px;
+    }
+
+    .crew-grid .alert-message {
+        margin: 5px 0;
+        padding: 5px 7px;
+    }
+
+    .crew-grid .device-info {
+        margin-bottom: 5px;
     }
 
 }
+
+
+/* ==============================
+   НЕВЕЛИКІ МОНІТОРИ
+================================ */
+
+@media (max-width: 1200px) {
+
+    .dashboard {
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+
+    .crew-grid.extra-compact {
+
+        grid-template-columns:
+            repeat(
+                min(var(--crew-columns, 4), 3),
+                minmax(0, 1fr)
+            );
+
+    }
+
+}
+
+
+/* ==============================
+   ПЛАНШЕТИ
+================================ */
+
+@media (max-width: 950px) {
+
+    .crew-grid.compact,
+    .crew-grid.extra-compact {
+
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+
+    }
+
+    .dashboard {
+        padding-left: 18px;
+        padding-right: 18px;
+    }
+
+}
+
+
+/* ==============================
+   МОБІЛЬНІ ПРИСТРОЇ
+================================ */
 
 @media (max-width: 700px) {
 
-    :root {
-        --gutter: 16px;
+    .header {
+        padding: 12px 18px;
     }
 
-    .toolbar {
-        flex-direction: column;
+    .dashboard {
+        padding: 15px;
     }
 
-    .stat-card {
-        padding: 18px 16px;
+    .dashboard-top {
+        gap: 12px;
     }
 
-    .stat-card strong {
-        font-size: 40px;
+    .dashboard-heading h2 {
+        font-size: 24px;
     }
 
-    .astronaut-card {
-        padding: 18px;
+    .dashboard-heading p {
+        font-size: 12px;
+        line-height: 1.5;
     }
 
-    .metric {
-        padding: 14px 10px;
+    .dashboard-actions {
+        gap: 8px;
     }
 
-    .metric-value {
-        font-size: 28px;
+    .dashboard-icon {
+        width: 36px;
+        height: 36px;
     }
 
-    .hero::after {
-        opacity: 0.5;
+    .dashboard-icon svg {
+        width: 23px;
+        height: 23px;
     }
 
-}
+    .crew-grid,
+    .crew-grid.compact,
+    .crew-grid.extra-compact {
 
-/* Низьке вікно (ноутбук): плитки компактніші, щоб два ряди
-   вміщались без прокрутки */
+        grid-template-columns: 1fr;
 
-@media (max-height: 900px) {
+        --card-padding: 14px;
+        --avatar-size: 36px;
+        --name-size: 17px;
+        --metric-size: 24px;
+        --chart-height: 70px;
+        --element-gap: 9px;
 
-    .astronaut-card {
-        padding: 18px 22px;
     }
 
-    .astronaut-header {
-        margin-bottom: 12px;
+    .crew-grid .metric-name {
+        font-size: 12px;
     }
 
-    .avatar {
-        width: 38px;
-        height: 38px;
-    }
+    .crew-grid .details-button,
+    .crew-grid .sos-button {
 
-    .astronaut-info h3 {
-        font-size: 18px;
-    }
+        min-height: 38px;
+        font-size: 12px;
 
-    .metric {
-        padding: 12px 14px;
-        row-gap: 6px;
-    }
-
-    .metric-value {
-        font-size: 30px;
-    }
-
-    .pulse-chart-container {
-        padding-top: 12px;
-    }
-
-    .pulse-chart-body,
-    .pulse-chart-empty {
-        flex-basis: 48px;
-        min-height: 48px;
-    }
-
-    .alert-message {
-        margin: 10px 0;
-        padding: 8px 12px;
     }
 
 }
+
+
+/* ==============================
+   МОДАЛЬНІ ВІКНА
+================================ */
 
 @media (max-width: 550px) {
 
-    .modal {
-        width: calc(100% - 30px);
+    .modal-content {
+        padding: 20px;
     }
 
-    .modal-content,
-    .sos-modal-content {
-        padding: 20px;
+    .modal-header h2 {
+        font-size: 20px;
     }
 
     .modal-actions {
         flex-wrap: wrap;
     }
 
+}
+
+
+/* ==============================
+   МАЛЕНЬКІ ЕКРАНИ
+================================ */
+
+@media (max-width: 450px) {
+
+    .dashboard-top {
+        flex-wrap: wrap;
+    }
+
+    .dashboard-top .dashboard-heading {
+        width: 100%;
+    }
+
+    .dashboard-actions {
+        margin-left: auto;
+    }
+
+    .sos-modal-content {
+        padding: 18px;
+    }
+
+    .sos-modal-header h2 {
+        font-size: 20px;
+    }
+
     .sos-modal-actions {
         grid-template-columns: 1fr;
     }
+
+}
+
+
+/* ==============================
+   PULSAR — АНІМАЦІЯ ПЕРЕХОДІВ
+================================ */
+
+@view-transition {
+    navigation: auto;
+}
+
+
+/* Попередня сторінка */
+
+::view-transition-old(root) {
+    animation: pulsarPageOut 180ms ease-in both;
+}
+
+
+/* Нова сторінка */
+
+::view-transition-new(root) {
+    animation: pulsarPageIn 250ms ease-out both;
+}
+
+
+/* Зникнення попередньої сторінки */
+
+@keyframes pulsarPageOut {
+
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    to {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+
+}
+
+
+/* Поява нової сторінки */
+
+@keyframes pulsarPageIn {
+
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+}
+
+
+/* Анімація внутрішніх розділів */
+
+@keyframes pulsarSectionIn {
+
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+}
+
+.pulsar-section-enter {
+    animation: pulsarSectionIn 250ms ease-out both;
+}
+
+
+/* ==============================
+   СИСТЕМНІ НАЛАШТУВАННЯ АНІМАЦІЙ
+================================ */
+
+@media (prefers-reduced-motion: reduce) {
+
+    @view-transition {
+        navigation: none;
+    }
+
+    ::view-transition-old(root),
+    ::view-transition-new(root),
+
+    .dashboard-icon,
+    .crew-menu,
+    .crew-menu-item,
+    .crew-search-panel,
+    .astronaut-card,
+    .pulsar-section-enter {
+
+        animation: none;
+        transition: none;
+
+    }
+
+}
+
+
+/* ==================================================
+   MEDICAL CARD — ЗАГАЛЬНЕ ОФОРМЛЕННЯ
+================================================== */
+
+.medical-page {
+    display: flex;
+    flex-direction: column;
+
+    gap: 18px;
+
+    min-width: 0;
+}
+
+.med-card {
+    padding: 22px;
+
+    background: var(--panel);
+
+    border: 1px solid var(--border);
+    border-radius: 12px;
+}
+
+
+/* ==================================================
+   ЗАГОЛОВОК МЕДИЧНОЇ КАРТКИ
+================================================== */
+
+.med-card-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 15px;
+
+    margin-bottom: 20px;
+}
+
+.med-card-heading h3 {
+    color: var(--text);
+    font-size: 22px;
+
+    margin-bottom: 5px;
+}
+
+.med-card-heading p {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+
+/* ==================================================
+   КНОПКА РЕДАГУВАННЯ
+================================================== */
+
+.med-edit-button {
+    padding: 11px 16px;
+
+    color: var(--cyan);
+    background: #1c394d;
+
+    border: 1px solid #38677c;
+    border-radius: 7px;
+
+    font-size: 13px;
+
+    cursor: pointer;
+
+    transition: background 0.2s ease;
+}
+
+.med-edit-button:hover {
+    background: #264e66;
+}
+
+
+/* ==================================================
+   ПРОФІЛЬ АСТРОНАВТА
+================================================== */
+
+.med-profile {
+    display: flex;
+    align-items: center;
+
+    gap: 16px;
+
+    padding: 18px;
+
+    background: var(--background);
+
+    border: 1px solid var(--border);
+    border-radius: 10px;
+
+    margin-bottom: 14px;
+}
+
+
+/* Аватар */
+
+.med-avatar {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    width: 58px;
+    height: 58px;
+
+    flex-shrink: 0;
+
+    background: #263e56;
+    color: var(--cyan);
+
+    border-radius: 50%;
+
+    font-size: 20px;
+    font-weight: bold;
+}
+
+
+/* Інформація про астронавта */
+
+.med-profile-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.med-profile-info h3 {
+    color: var(--text);
+
+    font-size: 20px;
+
+    margin-bottom: 5px;
+
+    overflow-wrap: anywhere;
+}
+
+.med-profile-info p {
+    color: var(--muted);
+
+    font-size: 13px;
+
+    margin-bottom: 5px;
+}
+
+.med-profile-info small {
+    color: var(--muted);
+
+    font-size: 12px;
+}
+
+
+/* Позначка медичної картки */
+
+.med-record-label {
+    padding: 7px 10px;
+
+    background: #1c394d;
+    color: var(--cyan);
+
+    border: 1px solid #38677c;
+    border-radius: 6px;
+
+    font-size: 11px;
+}
+
+
+/* ==================================================
+   ІНФОРМАЦІЯ ПРО ОБСТЕЖЕННЯ
+================================================== */
+
+.med-record-info {
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 12px;
+
+    margin-bottom: 16px;
+}
+
+.med-record-info > div {
+    display: flex;
+    flex-direction: column;
+
+    gap: 7px;
+
+    padding: 14px;
+
+    background: var(--background);
+
+    border: 1px solid var(--border);
+    border-radius: 8px;
+}
+
+.med-record-info span {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.med-record-info strong {
+    color: var(--text);
+
+    font-size: 14px;
+    font-weight: 500;
+
+    overflow-wrap: anywhere;
+}
+
+
+/* ==================================================
+   ІНФОРМАЦІЙНЕ ПОВІДОМЛЕННЯ
+================================================== */
+
+.med-notice {
+    padding: 12px 14px;
+
+    background: #102b40;
+    color: var(--muted);
+
+    border-left: 3px solid var(--cyan);
+    border-radius: 6px;
+
+    font-size: 12px;
+    line-height: 1.6;
+
+    margin-bottom: 20px;
+}
+
+
+/* ==================================================
+   РОЗДІЛИ МЕДИЧНОЇ КАРТКИ
+================================================== */
+
+.med-section {
+    background: var(--panel);
+
+    border: 1px solid var(--border);
+    border-radius: 9px;
+
+    margin-bottom: 12px;
+
+    overflow: hidden;
+}
+
+
+/* Заголовок розділу */
+
+.med-section-heading {
+    display: flex;
+    align-items: center;
+
+    gap: 13px;
+
+    min-height: 64px;
+
+    padding: 15px;
+
+    cursor: pointer;
+
+    list-style: none;
+
+    transition: background 0.2s ease;
+}
+
+
+/* Прибираємо стандартну стрілочку */
+
+.med-section-heading::-webkit-details-marker {
+    display: none;
+}
+
+.med-section-heading::marker {
+    content: "";
+}
+
+
+/* Наведення */
+
+.med-section-heading:hover {
+    background: #1c394d;
+}
+
+
+/* Відкритий розділ */
+
+.med-section[open] > .med-section-heading {
+    background: #1b3045;
+
+    border-bottom: 1px solid var(--border);
+}
+
+
+/* Назва розділу */
+
+.med-section-heading strong {
+    color: var(--text);
+
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.med-section-heading small {
+    display: block;
+
+    color: var(--muted);
+
+    font-size: 11px;
+
+    margin-top: 5px;
+}
+
+
+/* Іконка розділу */
+
+.med-section-icon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    width: 36px;
+    height: 36px;
+
+    flex-shrink: 0;
+
+    color: var(--cyan);
+    background: #1c394d;
+
+    border-radius: 7px;
+
+    font-size: 23px;
+}
+
+
+/* Стрілочка */
+
+.med-chevron {
+    margin-left: auto;
+
+    color: var(--muted);
+
+    font-size: 24px;
+
+    transition: transform 0.2s ease;
+}
+
+.med-section[open]
+> .med-section-heading
+> .med-chevron {
+
+    transform: rotate(180deg);
+
+}
+
+
+/* ==================================================
+   ВМІСТ РОЗДІЛУ
+================================================== */
+
+.med-section-content {
+    padding: 16px;
+
+    background: var(--panel);
+}
+
+.med-description {
+    color: var(--muted);
+
+    font-size: 12px;
+    line-height: 1.6;
+
+    margin-bottom: 15px;
+}
+
+
+/* ==================================================
+   СІТКА МЕДИЧНИХ ПОКАЗНИКІВ
+================================================== */
+
+.med-fields-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+
+    gap: 12px;
+}
+
+
+/* ==================================================
+   ПОЛЯ У РЕЖИМІ ПЕРЕГЛЯДУ
+================================================== */
+
+.med-field-view {
+    display: flex;
+    flex-direction: column;
+
+    gap: 9px;
+
+    min-width: 0;
+    min-height: 83px;
+
+    padding: 13px;
+
+    background: var(--background);
+
+    border: 1px solid var(--border);
+    border-radius: 7px;
+}
+
+
+/* Назва показника */
+
+.med-field-label {
+    color: var(--muted);
+
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+
+/* Значення показника */
+
+.med-field-view strong {
+    color: var(--text);
+
+    font-size: 14px;
+    font-weight: 500;
+
+    line-height: 1.5;
+
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+}
+
+
+/* Якщо показник ще не введено */
+
+.med-field-view .med-empty {
+    color: var(--muted);
+
+    font-weight: normal;
+}
+
+
+/* Автоматично обчислювані показники */
+
+.med-auto-label {
+    color: var(--cyan);
+
+    font-size: 10px;
+}
+
+
+/* ==================================================
+   ПОЛЯ РЕДАГУВАННЯ
+================================================== */
+
+.med-field-edit {
+    display: flex;
+    flex-direction: column;
+
+    gap: 8px;
+
+    min-width: 0;
+}
+
+.med-field-edit label {
+    color: var(--muted);
+
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+
+/* Загальний стиль полів */
+
+.med-field-edit input,
+.med-field-edit select,
+.med-field-edit textarea {
+    width: 100%;
+    min-width: 0;
+
+    padding: 11px 12px;
+
+    color: var(--text);
+    background: var(--background);
+
+    border: 1px solid var(--border);
+    border-radius: 7px;
+
+    font-family: inherit;
+    font-size: 13px;
+
+    color-scheme: dark;
+}
+
+
+/* Активне поле */
+
+.med-field-edit input:focus,
+.med-field-edit select:focus,
+.med-field-edit textarea:focus {
+    outline: 1px solid var(--cyan);
+
+    border-color: var(--cyan);
+}
+
+
+/* Підказки */
+
+.med-field-edit input::placeholder,
+.med-field-edit textarea::placeholder {
+    color: var(--muted);
+
+    opacity: 0.7;
+}
+
+
+/* Багаторядкові поля */
+
+.med-field-edit textarea {
+    min-height: 85px;
+
+    resize: vertical;
+
+    line-height: 1.5;
+}
+
+
+/* ==================================================
+   КНОПКИ ЗБЕРЕЖЕННЯ ТА СКАСУВАННЯ
+================================================== */
+
+.med-form-actions {
+    display: flex;
+    justify-content: flex-end;
+
+    gap: 12px;
+
+    margin-top: 20px;
+}
+
+.med-cancel-button {
+    padding: 12px 20px;
+
+    color: var(--muted);
+    background: transparent;
+
+    border: 1px solid var(--border);
+    border-radius: 7px;
+
+    cursor: pointer;
+
+    transition: background 0.2s ease;
+}
+
+.med-cancel-button:hover {
+    background: #263e56;
+    color: var(--text);
+}
+
+
+/* Повідомлення після збереження */
+
+.med-save-message {
+    color: var(--cyan);
+
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.med-save-message:not(:empty) {
+    margin-top: 15px;
+}
+
+
+/* ==================================================
+   ДЕМОНСТРАЦІЙНИЙ РЕЖИМ
+================================================== */
+
+.med-demo-note {
+    color: var(--muted);
+
+    text-align: center;
+
+    font-size: 11px;
+
+    margin-top: 18px;
+}
+
+
+/* ==================================================
+   ДОДАТКОВІ НАЛАШТУВАННЯ
+================================================== */
+
+.med-preferences {
+    margin-bottom: 0;
+}
+
+.med-preferences-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+
+    gap: 14px;
+
+    margin-bottom: 16px;
+}
+
+.med-preference-panel {
+    padding: 15px;
+
+    min-width: 0;
+
+    background: var(--background);
+
+    border: 1px solid var(--border);
+    border-radius: 8px;
+}
+
+.med-preference-panel h4 {
+    color: var(--text);
+
+    font-size: 15px;
+
+    margin-bottom: 12px;
+}
+
+.med-preference-panel .med-description {
+    margin-top: 14px;
+    margin-bottom: 0;
+}
+
+
+/* Рядок налаштування */
+
+.med-preference-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 12px;
+
+    padding: 13px 0;
+
+    color: var(--text);
+
+    border-bottom: 1px solid var(--border);
+
+    font-size: 13px;
+}
+
+.med-preference-row strong {
+    color: var(--cyan);
+
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.med-preference-panel .med-field-edit {
+    margin: 12px 0;
+}
+
+
+/* ==================================================
+   ПЕРЕМИКАЧІ
+================================================== */
+
+.med-switch {
+    appearance: none;
+
+    position: relative;
+
+    width: 42px;
+    height: 23px;
+
+    flex-shrink: 0;
+
+    background: #304258;
+
+    border: 1px solid #465c73;
+    border-radius: 20px;
+
+    cursor: pointer;
+
+    transition: background 0.2s ease;
+}
+
+.med-switch::before {
+    content: "";
+
+    position: absolute;
+
+    top: 3px;
+    left: 3px;
+
+    width: 15px;
+    height: 15px;
+
+    background: var(--muted);
+
+    border-radius: 50%;
+
+    transition: transform 0.2s ease;
+}
+
+.med-switch:checked {
+    background: #226c7c;
+
+    border-color: var(--cyan);
+}
+
+.med-switch:checked::before {
+    background: var(--cyan);
+
+    transform: translateX(19px);
+}
+
+
+/* ==================================================
+   АНІМАЦІЯ ВІДКРИТТЯ РОЗДІЛІВ
+================================================== */
+
+.med-section[open] > .med-section-content {
+
+    animation: medicalSectionAppear 0.2s ease-out;
+
+}
+
+@keyframes medicalSectionAppear {
+
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+}
+
+
+/* ==================================================
+   АДАПТИВНІСТЬ МЕДИЧНОЇ КАРТКИ
+================================================== */
+
+
+/* Невеликі монітори */
+
+@media (max-width: 1200px) {
+
+    .med-fields-grid {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+
+    .med-preferences-grid {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+
+}
+
+
+/* Планшети */
+
+@media (max-width: 850px) {
+
+    .med-card {
+        padding: 16px;
+    }
+
+    .med-preferences-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .med-section-content {
+        padding: 12px;
+    }
+
+}
+
+
+/* Мобільні пристрої */
+
+@media (max-width: 550px) {
+
+    .med-fields-grid,
+    .med-record-info {
+        grid-template-columns: 1fr;
+    }
+
+    .med-card-heading {
+        flex-wrap: wrap;
+    }
+
+    .med-card-heading h3 {
+        font-size: 19px;
+    }
+
+    .med-profile {
+        flex-wrap: wrap;
+    }
+
+    .med-section-heading {
+        padding: 12px;
+    }
+
+    .med-section-heading strong {
+        font-size: 13px;
+    }
+
+    .med-form-actions {
+        flex-wrap: wrap;
+    }
+
+}
+
+
+/* Системні налаштування анімацій */
+
+@media (prefers-reduced-motion: reduce) {
+
+    .med-section[open] > .med-section-content {
+
+        animation: none;
+
+    }
+
+    .med-chevron,
+    .med-switch,
+    .med-switch::before,
+    .med-edit-button {
+
+        transition: none;
+
+    }
+
+}
+
+
+/* ==================================================
+   PULSAR — NOTIFICATION CENTER
+   ЄДИНИЙ ЦЕНТР СПОВІЩЕНЬ
+================================================== */
+
+
+/* ==================================================
+   КОНТЕЙНЕР ЦЕНТРУ СПОВІЩЕНЬ
+================================================== */
+
+.notification-wrapper {
+
+    position: static;
+
+    flex-shrink: 0;
+
+}
+
+
+/* ==================================================
+   КНОПКА ДЗВІНОЧКА
+================================================== */
+
+.notification-toggle {
+
+    position: relative;
+
+}
+
+
+.notification-toggle.active {
+
+    background: #1c394d;
+
+    color: var(--cyan);
+
+}
+
+
+.notification-toggle svg {
+
+    pointer-events: none;
+
+}
+
+
+/* ==================================================
+   ЛІЧИЛЬНИК НЕПРОЧИТАНИХ СПОВІЩЕНЬ
+================================================== */
+
+.notification-badge {
+
+    position: absolute;
+
+    top: -4px;
+    right: -5px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    min-width: 19px;
+    height: 19px;
+
+    padding: 0 5px;
+
+    background: var(--red);
+
+    color: #0a1220;
+
+    border: 2px solid var(--background);
+
+    border-radius: 12px;
+
+    font-size: 10px;
+    font-weight: bold;
+
+    line-height: 1;
+
+    pointer-events: none;
+
+}
+
+
+/* Приховані елементи */
+
+.notification-badge[hidden],
+.notification-panel[hidden] {
+
+    display: none !important;
+
+}
+
+
+/* ==================================================
+   ВИПАДАЮЧА ПАНЕЛЬ СПОВІЩЕНЬ
+================================================== */
+
+.notification-panel {
+
+    position: absolute;
+
+    top: calc(100% + 12px);
+    right: 0;
+
+    display: flex;
+    flex-direction: column;
+
+    width: min(440px, calc(100vw - 60px));
+
+    max-height: min(720px, calc(100vh - 160px));
+
+    padding: 18px;
+
+    color: var(--text);
+
+    background: var(--panel);
+
+    border: 1px solid #38677c;
+    border-radius: 12px;
+
+    box-shadow:
+        0 16px 45px rgba(0, 0, 0, 0.5);
+
+    overflow-y: auto;
+
+    z-index: 150;
+
+    animation: notificationPanelAppear 0.2s ease-out;
+
+}
+
+
+/* Анімація відкриття */
+
+@keyframes notificationPanelAppear {
+
+    from {
+
+        opacity: 0;
+
+        transform: translateY(-8px);
+
+    }
+
+    to {
+
+        opacity: 1;
+
+        transform: translateY(0);
+
+    }
+
+}
+
+
+/* ==================================================
+   ЗАГОЛОВОК ЦЕНТРУ СПОВІЩЕНЬ
+================================================== */
+
+.notification-header {
+
+    display: flex;
+
+    justify-content: space-between;
+    align-items: flex-start;
+
+    gap: 15px;
+
+    padding-bottom: 16px;
+
+    border-bottom: 1px solid var(--border);
+
+    flex-shrink: 0;
+
+}
+
+
+.notification-heading {
+
+    flex: 1;
+
+    min-width: 0;
+
+}
+
+
+.notification-heading h3 {
+
+    color: var(--text);
+
+    font-size: 21px;
+
+    margin-bottom: 7px;
+
+}
+
+
+.notification-heading p {
+
+    color: var(--muted);
+
+    font-size: 12px;
+
+    line-height: 1.5;
+
+}
+
+
+/* ==================================================
+   КНОПКА ЗАКРИТТЯ
+================================================== */
+
+.notification-close {
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 32px;
+    height: 32px;
+
+    flex-shrink: 0;
+
+    color: var(--muted);
+
+    background: transparent;
+
+    border: none;
+    border-radius: 6px;
+
+    font-size: 29px;
+
+    line-height: 1;
+
+    cursor: pointer;
+
+    transition: 0.2s ease;
+
+}
+
+
+.notification-close:hover {
+
+    color: var(--text);
+
+    background: #263e56;
+
+}
+
+
+/* ==================================================
+   КОРОТКА СТАТИСТИКА СПОВІЩЕНЬ
+================================================== */
+
+.notification-summary {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+
+    gap: 10px;
+
+    margin: 16px 0;
+
+    flex-shrink: 0;
+
+}
+
+
+.notification-summary-item {
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 8px;
+
+    min-width: 0;
+
+    padding: 12px;
+
+    background: var(--background);
+
+    border: 1px solid var(--border);
+    border-radius: 8px;
+
+}
+
+
+.notification-summary-item span {
+
+    color: var(--muted);
+
+    font-size: 11px;
+
+}
+
+
+.notification-summary-item strong {
+
+    color: var(--cyan);
+
+    font-size: 24px;
+
+    line-height: 1.2;
+
+    overflow-wrap: anywhere;
+
+}
+
+
+/* Кількість критичних повідомлень */
+
+.notification-summary-item
+.notification-critical-count {
+
+    color: var(--red);
+
+}
+
+
+/* ==================================================
+   ФІЛЬТРИ СПОВІЩЕНЬ
+================================================== */
+
+.notification-filters {
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 7px;
+
+    padding-bottom: 15px;
+
+    border-bottom: 1px solid var(--border);
+
+    flex-shrink: 0;
+
+}
+
+
+.notification-filter {
+
+    padding: 7px 11px;
+
+    color: var(--muted);
+
+    background: var(--background);
+
+    border: 1px solid var(--border);
+    border-radius: 6px;
+
+    font: inherit;
+
+    font-size: 11px;
+
+    cursor: pointer;
+
+    transition:
+        color 0.2s ease,
+        background 0.2s ease,
+        border-color 0.2s ease;
+
+}
+
+
+.notification-filter:hover {
+
+    color: var(--text);
+
+    background: #192c43;
+
+    border-color: #38677c;
+
+}
+
+
+.notification-filter.active {
+
+    color: var(--cyan);
+
+    background: #1c394d;
+
+    border-color: #38677c;
+
+}
+
+
+/* ==================================================
+   ДОДАТКОВІ ДІЇ
+================================================== */
+
+.notification-actions {
+
+    display: flex;
+
+    justify-content: flex-end;
+    align-items: center;
+
+    padding: 12px 0;
+
+    flex-shrink: 0;
+
+}
+
+
+/* Позначити всі повідомлення як прочитані */
+
+.notification-mark-all {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 6px;
+
+    padding: 7px 9px;
+
+    color: var(--cyan);
+
+    background: transparent;
+
+    border: 1px solid transparent;
+    border-radius: 5px;
+
+    font-size: 12px;
+
+    cursor: pointer;
+
+    transition: 0.2s ease;
+
+}
+
+
+.notification-mark-all:hover {
+
+    background: #1c394d;
+
+    border-color: #38677c;
+
+}
+
+
+.notification-mark-all:disabled {
+
+    color: var(--muted);
+
+    opacity: 0.5;
+
+    cursor: not-allowed;
+
+    background: transparent;
+
+    border-color: transparent;
+
+}
+
+
+/* ==================================================
+   СПИСОК СПОВІЩЕНЬ
+================================================== */
+
+.notification-list {
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 10px;
+
+    flex: 1 1 auto;
+
+    min-height: 100px;
+
+    overflow-y: auto;
+
+    overscroll-behavior: contain;
+
+    padding-right: 5px;
+
+    scrollbar-width: thin;
+
+    scrollbar-color:
+        #38677c
+        var(--background);
+
+}
+
+
+/* ==================================================
+   СМУГА ПРОКРУЧУВАННЯ
+================================================== */
+
+.notification-list::-webkit-scrollbar {
+
+    width: 6px;
+
+}
+
+
+.notification-list::-webkit-scrollbar-track {
+
+    background: var(--background);
+
+    border-radius: 8px;
+
+}
+
+
+.notification-list::-webkit-scrollbar-thumb {
+
+    background: #38677c;
+
+    border-radius: 8px;
+
+}
+
+
+.notification-list::-webkit-scrollbar-thumb:hover {
+
+    background: var(--cyan);
+
+}
+
+
+/* ==================================================
+   КАРТКА СПОВІЩЕННЯ
+================================================== */
+
+.notification-item {
+
+    --notification-color: var(--muted);
+
+    --notification-tint: rgba(145, 165, 189, 0.08);
+
+    display: flex;
+
+    align-items: flex-start;
+
+    gap: 12px;
+
+    flex-shrink: 0;
+
+    min-width: 0;
+
+    padding: 14px;
+
+    background: var(--background);
+
+    border: 1px solid var(--border);
+
+    border-left: 3px solid var(--notification-color);
+
+    border-radius: 8px;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease;
+
+}
+
+
+/* ==================================================
+   КАТЕГОРІЇ СПОВІЩЕНЬ
+================================================== */
+
+
+/* Критичні повідомлення */
+
+.notification-item.critical {
+
+    --notification-color: var(--red);
+
+    --notification-tint: rgba(255, 98, 111, 0.09);
+
+}
+
+
+/* Попередження та ранні тенденції */
+
+.notification-item.warning {
+
+    --notification-color: var(--yellow);
+
+    --notification-tint: rgba(245, 185, 76, 0.08);
+
+}
+
+
+/* Стан пристроїв */
+
+.notification-item.device {
+
+    --notification-color: var(--cyan);
+
+    --notification-tint: rgba(77, 217, 236, 0.08);
+
+}
+
+
+/* Нагадування */
+
+.notification-item.reminder {
+
+    --notification-color: var(--muted);
+
+    --notification-tint: rgba(145, 165, 189, 0.08);
+
+}
+
+
+/* Інформаційні повідомлення */
+
+.notification-item.info {
+
+    --notification-color: var(--cyan);
+
+    --notification-tint: rgba(77, 217, 236, 0.08);
+
+}
+
+
+/* ==================================================
+   ПРОЧИТАНІ ТА НЕПРОЧИТАНІ СПОВІЩЕННЯ
+================================================== */
+
+.notification-item.is-unread {
+
+    background: #1b3045;
+
+}
+
+
+.notification-item.is-read {
+
+    background: var(--background);
+
+}
+
+
+.notification-item.is-read:not(.critical) {
+
+    border-left-color: var(--border);
+
+}
+
+
+.notification-item:hover {
+
+    background: #192c43;
+
+    border-top-color: #38677c;
+    border-right-color: #38677c;
+    border-bottom-color: #38677c;
+
+}
+
+
+/* ==================================================
+   ІКОНКА СПОВІЩЕННЯ
+================================================== */
+
+.notification-item-icon {
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    width: 40px;
+    height: 40px;
+
+    flex-shrink: 0;
+
+    color: var(--notification-color);
+
+    background: var(--notification-tint);
+
+    border: 1px solid var(--border);
+    border-radius: 8px;
+
+    font-size: 22px;
+
+    font-weight: bold;
+
+}
+
+
+/* Іконка SOS та критичних повідомлень */
+
+.notification-item.critical
+.notification-item-icon {
+
+    font-size: 16px;
+
+}
+
+
+/* ==================================================
+   ОСНОВНА ІНФОРМАЦІЯ СПОВІЩЕННЯ
+================================================== */
+
+.notification-item-content {
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 7px;
+
+    flex: 1;
+
+    min-width: 0;
+
+}
+
+
+/* Верхній рядок */
+
+.notification-item-top {
+
+    display: flex;
+
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 10px;
+
+}
+
+
+/* Категорія повідомлення */
+
+.notification-category {
+
+    color: var(--notification-color);
+
+    font-size: 10px;
+
+    font-weight: bold;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.7px;
+
+}
+
+
+/* Позначка непрочитаного повідомлення */
+
+.notification-unread-dot {
+
+    display: inline-block;
+
+    width: 8px;
+    height: 8px;
+
+    flex-shrink: 0;
+
+    background: var(--cyan);
+
+    border-radius: 50%;
+
+}
+
+
+/* ==================================================
+   ЗАГОЛОВОК СПОВІЩЕННЯ
+================================================== */
+
+.notification-item-content h4 {
+
+    color: var(--notification-color);
+
+    font-size: 15px;
+
+    line-height: 1.4;
+
+    overflow-wrap: anywhere;
+
+}
+
+
+/* ==================================================
+   ІМ'Я АСТРОНАВТА
+================================================== */
+
+.notification-person {
+
+    color: var(--text);
+
+    font-size: 13px;
+
+    font-weight: bold;
+
+    line-height: 1.4;
+
+    overflow-wrap: anywhere;
+
+}
+
+
+/* ==================================================
+   ТЕКСТ ПОВІДОМЛЕННЯ
+================================================== */
+
+.notification-message {
+
+    color: var(--muted);
+
+    font-size: 12px;
+
+    line-height: 1.7;
+
+    overflow-wrap: anywhere;
+
+}
+
+
+/* ==================================================
+   ДАТА ТА ЧАС СПОВІЩЕННЯ
+================================================== */
+
+.notification-time {
+
+    color: var(--muted);
+
+    font-size: 10px;
+
+    line-height: 1.5;
+
+}
+
+
+/* ==================================================
+   КНОПКИ ВСЕРЕДИНІ СПОВІЩЕННЯ
+================================================== */
+
+.notification-item-actions {
+
+    display: flex;
+
+    align-items: center;
+
+    flex-wrap: wrap;
+
+    gap: 9px;
+
+    padding-top: 10px;
+
+    margin-top: 3px;
+
+    border-top: 1px solid var(--border);
+
+}
+
+
+/* Перехід до профілю астронавта */
+
+.notification-view-button {
+
+    padding: 7px 10px;
+
+    color: var(--cyan);
+
+    background: #1c394d;
+
+    border: 1px solid #38677c;
+    border-radius: 5px;
+
+    font-size: 11px;
+
+    cursor: pointer;
+
+    transition: 0.2s ease;
+
+}
+
+
+.notification-view-button:hover {
+
+    background: #264e66;
+
+    border-color: var(--cyan);
+
+}
+
+
+/* Позначення повідомлення як прочитаного */
+
+.notification-read-button {
+
+    padding: 7px 9px;
+
+    color: var(--muted);
+
+    background: transparent;
+
+    border: 1px solid var(--border);
+    border-radius: 5px;
+
+    font-size: 11px;
+
+    cursor: pointer;
+
+    transition: 0.2s ease;
+
+}
+
+
+.notification-read-button:hover {
+
+    color: var(--cyan);
+
+    background: #1c394d;
+
+    border-color: #38677c;
+
+}
+
+
+/* Позначка прочитаного повідомлення */
+
+.notification-read-label {
+
+    color: var(--muted);
+
+    font-size: 11px;
+
+}
+
+
+/* ==================================================
+   ВІДСУТНІСТЬ СПОВІЩЕНЬ
+================================================== */
+
+.notification-empty {
+
+    display: flex;
+    flex-direction: column;
+
+    align-items: center;
+    justify-content: center;
+
+    gap: 12px;
+
+    min-height: 170px;
+
+    padding: 25px 15px;
+
+    text-align: center;
+
+    background: var(--background);
+
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+
+}
+
+
+.notification-empty > span {
+
+    color: var(--cyan);
+
+    font-size: 32px;
+
+}
+
+
+.notification-empty h4 {
+
+    color: var(--text);
+
+    font-size: 15px;
+
+}
+
+
+.notification-empty p {
+
+    color: var(--muted);
+
+    font-size: 12px;
+
+    line-height: 1.6;
+
+}
+
+
+/* ==================================================
+   НИЖНЯ ЧАСТИНА ЦЕНТРУ СПОВІЩЕНЬ
+================================================== */
+
+.notification-footer {
+
+    display: flex;
+
+    justify-content: space-between;
+    align-items: center;
+
+    flex-wrap: wrap;
+
+    gap: 10px;
+
+    padding-top: 14px;
+
+    margin-top: 14px;
+
+    color: var(--muted);
+
+    border-top: 1px solid var(--border);
+
+    font-size: 10px;
+
+    line-height: 1.5;
+
+    flex-shrink: 0;
+
+}
+
+
+/* Позначка демонстраційного режиму */
+
+.notification-demo-label {
+
+    padding: 5px 7px;
+
+    color: var(--muted);
+
+    background: var(--background);
+
+    border: 1px solid var(--border);
+    border-radius: 4px;
+
+    font-size: 9px;
+
+    letter-spacing: 0.6px;
+
+}
+
+
+/* ==================================================
+   НАВІГАЦІЯ КЛАВІАТУРОЮ
+================================================== */
+
+.notification-panel button:focus-visible,
+
+.notification-toggle:focus-visible {
+
+    outline: 2px solid var(--cyan);
+
+    outline-offset: 3px;
+
+}
+
+
+/* ==================================================
+   АДАПТИВНІСТЬ — НИЗЬКІ ЕКРАНИ
+================================================== */
+
+@media (max-height: 850px) {
+
+    .notification-panel {
+
+        max-height: calc(100vh - 145px);
+
+    }
+
+}
+
+
+/* ==================================================
+   АДАПТИВНІСТЬ — НЕВЕЛИКІ МОНІТОРИ
+================================================== */
+
+@media (max-width: 1200px) {
+
+    .notification-panel {
+
+        width: min(440px, calc(100vw - 40px));
+
+    }
+
+}
+
+
+/* ==================================================
+   АДАПТИВНІСТЬ — ПЛАНШЕТИ
+================================================== */
+
+@media (max-width: 950px) {
+
+    .notification-panel {
+
+        width: min(420px, calc(100vw - 36px));
+
+    }
+
+}
+
+
+/* ==================================================
+   АДАПТИВНІСТЬ — МОБІЛЬНІ ПРИСТРОЇ
+================================================== */
+
+@media (max-width: 700px) {
+
+    .notification-panel {
+
+        width: min(420px, calc(100vw - 30px));
+
+        max-height: min(650px, calc(100dvh - 165px));
+
+        padding: 14px;
+
+    }
+
+
+    .notification-heading h3 {
+
+        font-size: 19px;
+
+    }
+
+
+    .notification-summary {
+
+        gap: 7px;
+
+        margin: 13px 0;
+
+    }
+
+
+    .notification-summary-item {
+
+        padding: 10px;
+
+    }
+
+
+    .notification-summary-item strong {
+
+        font-size: 21px;
+
+    }
+
+
+    .notification-item {
+
+        padding: 12px;
+
+        gap: 10px;
+
+    }
+
+
+    .notification-item-icon {
+
+        width: 35px;
+        height: 35px;
+
+        font-size: 19px;
+
+    }
+
+
+    .notification-item-content h4 {
+
+        font-size: 14px;
+
+    }
+
+
+    .notification-badge {
+
+        min-width: 18px;
+
+        height: 18px;
+
+        font-size: 9px;
+
+    }
+
+}
+
+
+/* ==================================================
+   АДАПТИВНІСТЬ — МАЛЕНЬКІ ЕКРАНИ
+================================================== */
+
+@media (max-width: 450px) {
+
+    .notification-panel {
+
+        position: fixed;
+
+        top: 12px;
+
+        right: 12px;
+        left: 12px;
+
+        width: auto;
+
+        max-height: calc(100dvh - 24px);
+
+    }
+
+
+    .notification-filters {
+
+        gap: 6px;
+
+    }
+
+
+    .notification-filter {
+
+        padding: 6px 9px;
+
+        font-size: 10px;
+
+    }
+
+
+    .notification-item-icon {
+
+        width: 32px;
+        height: 32px;
+
+        font-size: 17px;
+
+    }
+
+
+    .notification-message {
+
+        font-size: 11px;
+
+    }
+
+
+    .notification-item-actions {
+
+        gap: 7px;
+
+    }
+
+
+    .notification-view-button,
+    .notification-read-button {
+
+        font-size: 10px;
+
+    }
+
+
+    .notification-footer {
+
+        font-size: 9px;
+
+    }
+
+}
+
+
+/* ==================================================
+   СИСТЕМНІ НАЛАШТУВАННЯ АНІМАЦІЙ
+================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+
+    .notification-panel,
+
+    .notification-panel *,
+
+    .notification-toggle,
+
+    .notification-badge {
+
+        animation: none !important;
+
+        transition: none !important;
+
+    }
+
+}
+
+
+/* ==================================================
+   АДАПТИВНЕ МАСШТАБУВАННЯ ГРАФІКІВ
+================================================== */
+
+
+/* Контейнер графіка */
+
+.crew-grid .pulse-chart-container {
+
+    width: 100%;
+
+    min-width: 0;
+
+    padding: 10px 0 4px;
+
+}
+
+
+/* Заголовок графіка */
+
+.crew-grid .pulse-chart-header {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    flex-wrap: wrap;
+
+    gap: 6px;
+
+    margin-bottom: 7px;
+
+}
+
+
+/* Назва графіка */
+
+.crew-grid .pulse-chart-title {
+
+    font-size: 13px;
+
+    font-weight: 600;
+
+}
+
+
+/* Інформація про період */
+
+.crew-grid .pulse-chart-period {
+
+    font-size: 11px;
+
+}
+
+
+/* Основний SVG-графік */
+
+.crew-grid .pulse-chart {
+
+    display: block;
+
+    width: 100%;
+
+    height: 110px;
+
+    min-width: 0;
+
+    overflow: hidden;
+
+}
+
+
+/* Цифри на осі Y */
+
+.crew-grid .pulse-chart text {
+
+    font-family: Arial, sans-serif;
+
+    font-size: 12px;
+
+    font-weight: 400;
+
+}
+
+
+/* Лінії сітки */
+
+.crew-grid .pulse-chart-grid {
+
+    stroke-width: 1;
+
+}
+
+
+/* Лінія пульсу */
+
+.crew-grid .pulse-line {
+
+    stroke-width: 2.5;
+
+    stroke-linecap: round;
+
+    stroke-linejoin: round;
+
+}
+
+
+/* Підписи осі X */
+
+.crew-grid .pulse-chart-labels {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    padding-left: 42px;
+
+    padding-right: 12px;
+
+    margin-top: 5px;
+
+    font-size: 11px;
+
+}
+
+
+/* Відсутність історії вимірювань */
+
+.crew-grid .pulse-chart-empty {
+
+    height: 110px;
+
+}
+
+
+/* ==================================================
+   КОМПАКТНИЙ РЕЖИМ — 5–6 АСТРОНАВТІВ
+================================================== */
+
+.crew-grid.compact .pulse-chart,
+
+.crew-grid.compact .pulse-chart-empty {
+
+    height: 100px;
+
+}
+
+
+/* ==================================================
+   КОМПАКТНИЙ РЕЖИМ — 7 І БІЛЬШЕ АСТРОНАВТІВ
+================================================== */
+
+.crew-grid.extra-compact .pulse-chart,
+
+.crew-grid.extra-compact .pulse-chart-empty {
+
+    height: 90px;
+
+}
+
+
+/* ==================================================
+   МОБІЛЬНА ВЕРСІЯ
+================================================== */
+
+@media (max-width: 700px) {
+
+    .crew-grid .pulse-chart,
+
+    .crew-grid.compact .pulse-chart,
+
+    .crew-grid.extra-compact .pulse-chart {
+
+        height: 120px;
+
+    }
+
+    .crew-grid .pulse-chart-title {
+
+        font-size: 12px;
+
+    }
+
+}
+
+
+/* ==================================================
+   CREW ENVIRONMENTAL ANALYSIS
+   КНОПКА ПЕРЕХОДУ НА ГОЛОВНІЙ СТОРІНЦІ
+================================================== */
+
+.dashboard-icon.crew-analysis-toggle {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    flex-shrink: 0;
+
+    box-sizing: border-box;
+
+    text-decoration: none;
+
+    cursor: pointer;
+
+}
+
+
+.crew-analysis-toggle svg {
+
+    width: 22px;
+
+    height: 22px;
+
+    flex-shrink: 0;
+
+}
+
+
+.dashboard-icon.crew-analysis-toggle:focus-visible {
+
+    outline: 2px solid var(--cyan, #4dd9ec);
+
+    outline-offset: 3px;
 
 }

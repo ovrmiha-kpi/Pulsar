@@ -83,9 +83,15 @@ POST /api/admin/devices/dev001/seed-days
 | HTTP ingest | `POST :4100/ingest` | запас / міст |
 | WebSocket | `ws://host:4100/ws` | push у site |
 | API | `GET :4100/api/dashboard` | snapshot з RAM |
+| Device | `GET :4100/api/devices/:id` | vitals + env/wellbeing/analytics |
+| Analytics | `GET :4100/api/devices/:id/analytics` | baseline, histories, series |
+| Check-in | `POST :4100/api/devices/:id/checkin` | `{ mood, symptoms }` |
+| Admin | `GET/POST :4100/api/admin/*` | панель |
 
 JSON пакет:
 
 ```json
 {"device_id":"dev001","hr":78,"spo2":97,"temp":21.5,"battery":80}
 ```
+
+**Extended (детальна сторінка site):** на кожному ingest сервер додає cabin env (pressure, air O₂/CO₂, radiation), mass/grip/activity, sleep/stress (вивід із HR/SpO₂ + sim profile), baseline і measurement/wellbeing/alert history. Симуляція з `/panel` крутить і ці поля.

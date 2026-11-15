@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PULSAR — Pitch Deck</title>
+  <link rel="stylesheet" href="pitch.css" />
+</head>
+<body>
+  <div class="progress"><i id="bar"></i></div>
+  <div class="counter"><span id="cur">01</span> / <span id="total">12</span></div>
+
+  <main class="deck" id="deck">
+
+    <!-- 1 -->
+    <section class="slide is-active" data-title="Title">
+      <div class="grid-2">
+        <div>
+          <p class="kicker">NASA Space Apps 2026 · Health Monitoring Software</p>
+          <h1>PULSAR</h1>
+          <p class="lead">Щоб екіпаж сам бачив зміни здоров’я вчасно — і міг діяти, коли Земля далеко.</p>
+          <p class="meta">Годинник на зап’ясті + станція для всієї команди</p>
+        </div>
+        <div class="hero-media" style="background-image:url('https://images.unsplash.com/photo-1446776877081-d282a6fcf4b9?auto=format&fit=crop&w=1400&q=80')"></div>
+      </div>
+      <p class="credit">Photo: Unsplash · Earth from space (stock)</p>
+    </section>
+
+    <!-- 2 -->
+    <section class="slide" data-title="Challenge">
+      <p class="kicker">The challenge</p>
+      <h2>Довгі місії — і відповідальність на самому екіпажі</h2>
+      <p class="lead">
+        NASA формулює задачу прямо: на довгих польотах астронавти
+        <strong style="color:var(--text)">самі</strong> мають помічати зміни в собі.
+        Потрібне ПЗ, яке збирає показники здоров’я й допомагає
+        <strong style="color:var(--text)">оцінити стан і діяти</strong>.
+      </p>
+      <p class="meta" style="margin-top:28px;max-width:52ch;line-height:1.5">
+        Challenge: Create Health Monitoring Software for Astronauts on Space Missions
+      </p>
+    </section>
+
+    <!-- 3 -->
+    <section class="slide" data-title="Hazards">
+      <p class="kicker">Why it matters</p>
+      <h2>П’ять небезпек польоту б’ють по тілу й психіці</h2>
+      <div class="grid-3">
+        <article class="card">
+          <h3>Радіація</h3>
+          <p>Накопичений ризик і потреба бачити експозицію поруч із самопочуттям.</p>
+        </article>
+        <article class="card">
+          <h3>Ізоляція</h3>
+          <p>Стрес, сон, настрій — поведінкове здоров’я так само критичне, як пульс.</p>
+        </article>
+        <article class="card">
+          <h3>Закрите середовище</h3>
+          <p>Повітря, CO₂, тиск кабіни впливають на стан не менше за навантаження.</p>
+        </article>
+      </div>
+      <div class="grid-3" style="margin-top:18px">
+        <article class="card">
+          <h3>Змінена гравітація</h3>
+          <p>Серце, м’язи, кістки, хват і маса — треба бачити дрейф від «своєї норми».</p>
+        </article>
+        <article class="card">
+          <h3>Відстань від Землі</h3>
+          <p>Затримка зв’язку: чекати відповіді центру вже запізно — рішення на борту.</p>
+        </article>
+        <article class="card">
+          <h3>Наслідок</h3>
+          <p>Імунітет, серце, кістки, поведінка — зміни тихі, поки не стануть кризою.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- 4 -->
+    <section class="slide" data-title="Gap">
+      <p class="kicker">The gap today</p>
+      <h2>Дані є. Картини для екіпажу — немає</h2>
+      <div class="grid-3">
+        <article class="card">
+          <h3>Розкидано</h3>
+          <p>Показники в різних системах. Команді важко зібрати «як ми зараз?» в одну мить.</p>
+        </article>
+        <article class="card">
+          <h3>Без тренду</h3>
+          <p>Одне число на екрані не показує, що стан погіршується третій день поспіль.</p>
+        </article>
+        <article class="card">
+          <h3>Без дії</h3>
+          <p>Побачити червоний статус мало — треба зрозуміти, що перевірити далі й кого попередити.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- 5 -->
+    <section class="slide" data-title="Answer">
+      <div class="grid-2">
+        <div>
+          <p class="kicker">Our answer</p>
+          <h2>Годинник на зап’ясті і Станція.</h2>
+          <p class="lead">
+            Особистий сенсор завжди з астронавтом.
+            Спільна станція дає команді одну живу картину здоров’я —
+            щоб оцінити ризик і діяти разом.
+          </p>
+          <div class="flow">
+            <span>Відчути на собі</span><span class="arrow">→</span>
+            <span>Побачити всім</span><span class="arrow">→</span>
+            <span>Діяти вчасно</span>
+          </div>
+        </div>
+        <img class="shot contain" src="media/top_esp32.jpg" alt="Wrist device hardware" />
+      </div>
+    </section>
+
+    <!-- 6 -->
+    <section class="slide" data-title="Watch">
+      <p class="kicker">The watch</p>
+      <h2>Що дає годинник астронавту</h2>
+      <div class="grid-3">
+        <article class="card">
+          <h3>Постійний пульс тіла</h3>
+          <p>Серце, кисень у крові, температура шкіри, рух і навантаження — без «зайди в медблок».</p>
+        </article>
+        <article class="card">
+          <h3>Локальна ясність</h3>
+          <p>На екрані — свій стан тут і зараз. Навіть коли лінк зі станцією тимчасово мовчить.</p>
+        </article>
+        <article class="card">
+          <h3>Нічого не губиться</h3>
+          <p>Якщо зв’язок падає, записи лишаються на пристрої й пізніше потрапляють у спільну картину.</p>
+        </article>
+      </div>
+      <div class="photo-grid" style="margin-top:28px;grid-template-columns:repeat(4,1fr)">
+        <img src="media/top_max30102.jpg" alt="Pulse / SpO2 sensor" />
+        <img src="media/top_mpu6050.jpg" alt="Motion sensor" />
+        <img src="media/top_hx711.jpg" alt="Grip / mass" />
+        <img src="media/top_tft.jpg" alt="Wrist display" />
+      </div>
+    </section>
+
+    <!-- 7 -->
+    <section class="slide" data-title="Device photos">
+      <p class="kicker">On the wrist</p>
+      <h2>Пристрій, який живе з екіпажем</h2>
+      <p class="lead">Місце для ваших фото зібраного годинника — на столі, на руці, з екраном у роботі.</p>
+      <div class="grid-3" style="margin-top:28px">
+        <div class="slot"><strong>На столі</strong>Збірка поруч із місією</div>
+        <div class="slot"><strong>На зап’ясті</strong>Так носять під час зміни</div>
+        <div class="slot"><strong>Екран</strong>Свій статус без станції</div>
+      </div>
+    </section>
+
+    <!-- 8 -->
+    <section class="slide" data-title="Station">
+      <p class="kicker">The station</p>
+      <h2>Що дає станція всій команді</h2>
+      <div class="grid-3">
+        <article class="card">
+          <h3>Одна картина екіпажу</h3>
+          <p>Хто в нормі, хто в попередженні, хто потребує уваги — без збирання файлів вручну.</p>
+        </article>
+        <article class="card">
+          <h3>Оцінка, не лише число</h3>
+          <p>Тренди, траєкторія за дні, підказки «що перевірити» — щоб зрозуміти зміну, а не злякатись спалаху.</p>
+        </article>
+        <article class="card">
+          <h3>Дія на борту</h3>
+          <p>SOS, глибока перевірка, check-in самопочуття, контекст середовища кабіни — рішення лишаються з екіпажем.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- 9 -->
+    <section class="slide" data-title="See">
+      <div class="grid-2">
+        <div>
+          <p class="kicker">Evaluate</p>
+          <h2>Побачити проблему до кризи</h2>
+          <p class="lead">
+            Станція підсвічує, у кого росте пульс, падає кисень, накопичується стрес.
+            Командир і медичний офіцер ділять одну живу панель.
+          </p>
+        </div>
+        <img class="shot" src="media/ui-dashboard.png" alt="Crew health dashboard" />
+      </div>
+    </section>
+
+    <!-- 10 -->
+    <section class="slide" data-title="Act">
+      <div class="grid-2">
+        <img class="shot" src="media/ui-details-health.png" alt="Personal health detail" />
+        <div>
+          <p class="kicker">Act</p>
+          <h2>Зрозуміти людину — і зробити крок</h2>
+          <ul class="list">
+            <li><span class="n">01</span><span>Тіло: пульс, кисень, температура, хват, маса, активність</span></li>
+            <li><span class="n">02</span><span>Психіка: сон, стрес, щоденний check-in настрою</span></li>
+            <li><span class="n">03</span><span>Середовище: повітря, CO₂, тиск, радіаційний фон поруч із станом</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 11 -->
+    <section class="slide" data-title="Loop">
+      <p class="kicker">How PULSAR closes the loop</p>
+      <h2>Зібрати → оцінити → діяти</h2>
+      <div class="grid-3">
+        <article class="card">
+          <h3>Зібрати</h3>
+          <p>Годинник безперервно знімає показники з тіла; станція додає картину екіпажу й кабіни.</p>
+        </article>
+        <article class="card">
+          <h3>Оцінити</h3>
+          <p>Статуси, тренди за дні, відхилення від власної бази, зрозумілі попередження мовою місії.</p>
+        </article>
+        <article class="card">
+          <h3>Діяти</h3>
+          <p>Рекомендації наступного кроку, SOS, персональна картка — без очікування Землі.</p>
+        </article>
+      </div>
+      <p class="lead" style="margin-top:28px;max-width:48ch">
+        Саме це просить NASA у challenge: не ще один лог сенсорів,
+        а інструмент, з яким екіпаж керує своїм здоров’ям на борту.
+      </p>
+    </section>
+
+    <!-- 12 -->
+    <section class="slide" data-title="Close">
+      <p class="kicker">Thank you</p>
+      <h1 style="font-size:clamp(48px,7vw,88px)">PULSAR</h1>
+      <p class="lead">Годинник на зап’ясті і Станція — щоб зміни здоров’я було видно вчасно.</p>
+      <p class="meta" style="margin-top:36px">
+        <span class="tag">Q &amp; A</span>
+        &nbsp;&nbsp; NASA Space Apps Challenge 2026
+      </p>
+    </section>
+
+  </main>
+
+  <div class="nav">
+    <button type="button" id="prev" aria-label="Previous">←</button>
+    <button type="button" id="next" aria-label="Next">→</button>
+  </div>
+
+  <script src="pitch.js"></script>
+</body>
+</html>

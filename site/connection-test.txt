@@ -1,1 +1,0 @@
-site folder OK — connection test (merged with latest master).
