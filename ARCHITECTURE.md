@@ -1,70 +1,66 @@
-# Архітектура Pulsar / ASTROVITAL
+# Архітектура Pulsar (3 шари)
 
-## Хто є хто (важливо)
+## Хто є хто
 
-| Що | Де | Роль |
-|----|-----|------|
-| **Станція** | **ПК** (`site/prototype/`) | сайт екіпажу + бек сайту + сервер збору/аналізу/БД |
-| **Годинник (КПК)** | **ESP32** (`Physik/watch/`) | датчики + TFT: первинний стан людини, відправка сирих даних на ПК |
+| Шар | Де | Роль |
+|-----|-----|------|
+| **1. Device** | ESP32 [`Physik/watch/`](Physik/watch/) | сенсори + TFT; JSON телеметрія; офлайн → SD |
+| **2. Server** | [`prototype/server/`](prototype/server/) | UDP/HTTP ingest, RAM + тренди, MySQL async, WS/API |
+| **3. Site** | [`prototype/site/`](prototype/site/) | панель PULSAR (з Хакатон.zip), live з server |
 
-**ESP32 — це не станція і не «сервер».**  
-Станція — ноутбук/ПК. ESP — наручний збірник.
+**ESP — не станція.** Станція = ПК (server + site).
 
 ```
-┌─────────────────────────────────────────────┐
-│  ПК = СТАНЦІЯ                               │
-│  ┌──────────┐  ┌──────────┐  ┌───────────┐  │
-│  │ web      │←→│ api      │←→│ compute   │  │
-│  │ сайт     │  │ бек сайту│  │ збір+БД+  │  │
-│  │ :3847    │  │ :3848    │  │ аналіз    │  │
-│  └──────────┘  └──────────┘  │ :3850     │  │
-│                              │ UDP :3849 │  │
-│                              └─────▲─────┘  │
-└────────────────────────────────────┼────────┘
-                                     │ Wi‑Fi JSON /ingest
-                          ┌──────────┴──────────┐
-                          │  ESP32 = ГОДИННИК   │
-                          │  датчики + TFT UI   │
-                          │  Physik/watch/…     │
-                          └─────────────────────┘
+┌──────────────────────────────────────────────┐
+│  ПК                                          │
+│  ┌─────────────────┐     ┌────────────────┐  │
+│  │ prototype/site  │ WS  │ prototype/     │  │
+│  │ :4200 static    │◄────│ server :4100   │  │
+│  │ PULSAR UI       │ REST│ UDP :4101      │  │
+│  └─────────────────┘     │ MySQL async    │  │
+│                          └────────▲───────┘  │
+└───────────────────────────────────┼──────────┘
+                                    │ USB bridge або UDP
+                         ┌──────────┴──────────┐
+                         │ ESP32 = годинник    │
+                         │ Physik/watch/…      │
+                         └─────────────────────┘
 ```
 
-## ПК — три процеси
+## Запуск
 
 ```bash
-cd site/prototype
-npm run compute   # збір з годинників, MySQL/файл, тенденції, рекомендації
-npm run api       # бек для сайту (читає БД, віддає плитки)
-npm run web       # фронт панелі екіпажу
+# 1) MySQL (опційно; без нього server працює в RAM)
+cd prototype/server
+npm install
+npm run db:up
+npm start
+
+# 2) Сайт
+cd ../site
+npm start          # http://localhost:4200
+
+# 3) Тест без заліза
+cd ../server
+npm run demo       # UDP → :4101
+
+# 4) Реальний годинник (USB)
+cd ../../site/prototype
+npm run bt -- COM11   # → POST http://127.0.0.1:4100/ingest
 ```
 
-- Сайт: http://localhost:3847  
-- Ingest з годинника: `POST http://<IP_ПК>:3850/ingest`
+## Канали
 
-## ESP32 — годинник
+| Канал | Адреса |
+|-------|--------|
+| UDP ingest | `:4101` |
+| HTTP ingest | `POST :4100/ingest` |
+| API dashboard | `GET :4100/api/dashboard` |
+| SOS | `POST :4100/api/sos` `{ "id": "dev001" }` |
+| WebSocket | `ws://host:4100/ws` |
+| Site | `http://localhost:4200` |
 
-Прошивка для компіляції в Arduino IDE:
+## Legacy
 
-**`Physik/watch/pulsar_watch/pulsar_watch.ino`**
-
-На дисплеї (128×160), екрани кнопками BTN2/BTN3:
-
-| Екран | Що показує |
-|-------|------------|
-| Home | Pulsar + первинний стан (обличчя / статус) |
-| Heart | SpO₂ + HR (MAX30102) |
-| Air | якість повітря (MQ-135) |
-| Climate | °C + hPa (BMP280) |
-| Motion | \|g\| / xyz (MPU-6500) |
-| Force | хват (HX711) |
-
-Перед прошивкою в `.ino` постав свої `WIFI_SSID`, `WIFI_PASS`, `SERVER_HOST` (= IP ПК), `DEVICE_ID` (`dev001`…).
-
-Розводка датчиків: `Physik/station/WIRING_ALL.md` (піни ті самі; папка `station` історична для wiring).
-
-## Потік даних
-
-1. Годинник міряє сенсори → показує первинний стан на TFT.  
-2. Годинник шле JSON на **compute** ПК.  
-3. Compute зберігає й аналізує тенденції → рекомендації/тривоги.  
-4. **api** віддає це сайту; командир бачить плитки DEV-xxx на панелі.
+Старий split `site/prototype` (web:3847 / api:3848 / compute:3850) — архів/референс. Новий канон: `prototype/server` + `prototype/site`.  
+`bt-bridge` тепер за замовчуванням шле на `:4100/ingest`.

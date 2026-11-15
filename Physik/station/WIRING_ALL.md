@@ -5,7 +5,8 @@
 Прошивку **не лий**, поки не скажеш — спочатку збері дроти за цією таблицею.
 
 **Спільні шини**
-- **SPI:** TFT + microSD → SCK=D18, MOSI=D23, MISO=D19; різні CS
+- **SPI TFT (сторона 1):** SCK=D18, MOSI=D23, CS=D5, DC=D15, RST=D4
+- **SPI microSD (сторона 2, окрема шина):** SCK=D14, MOSI=D13, MISO=D32, CS=D33
 - **I²C:** BMP280 + MAX30102 + MPU-6500 → SDA=D21, SCL=D22 (паралельно)
 
 Усі **GND** — у спільну землю ESP32.  
@@ -28,17 +29,20 @@
 
 ---
 
-## 2) microSD (SPI)
+## 2) microSD (SPI) — **уся на стороні 2** (ряд VIN, USB знизу)
 
-| SD | ESP32 |
-|----|-------|
-| VCC / 3V3 | **3V3** |
-| GND | **GND** |
-| CS | **D13** (лівий ряд) |
-| MOSI / DI | **D23** |
-| MISO / DO | **D19** |
-| SCK / CLK | **D18** |
+Окрема шина, **не** ділити з TFT. Орієнтир: USB знизу → **права** сторона плати (VIN / D13 / D14…).
 
+| SD | ESP32 (сторона 2) |
+|----|-------------------|
+| VCC / 3V3 | **3V3** (якщо на цій стороні немає — протягни з лівого 3V3) |
+| GND | **GND** (поруч із VIN на цій же стороні) |
+| CS | **D33** |
+| MOSI / DI | **D13** |
+| MISO / DO | **D32** |
+| SCK / CLK | **D14** |
+
+Не чіпай D18/D19/D23 — вони лишаються тільки для TFT.  
 Картку встав після проводки.
 
 ---
@@ -179,18 +183,21 @@ ESP32 D27 ── (ліва сторона BTN3) ── (права сторон�
 | **D2** | MQ A0 |
 | **D4** | TFT RESET |
 | **D5** | TFT CS |
-| **D13** | SD CS |
+| **D13** | SD MOSI (сторона 2) |
+| **D14** | SD SCK (сторона 2) |
 | **D15** | TFT A0/DC |
 | **RX2 (D16)** | HX711 DT |
 | **TX2 (D17)** | HX711 SCK |
-| **D18** | SPI SCK (TFT+SD) |
-| **D19** | SPI MISO (SD) |
+| **D18** | TFT SCK |
+| **D19** | вільний (був SD MISO) |
 | **D21** | I²C SDA (BMP+MAX+MPU) |
 | **D22** | I²C SCL |
-| **D23** | SPI MOSI (TFT+SD) |
+| **D23** | TFT MOSI |
 | **D25** | BTN1 Select |
 | **D26** | BTN2 Next |
 | **D27** | BTN3 Back |
+| **D32** | SD MISO (сторона 2) |
+| **D33** | SD CS (сторона 2) |
 | **D34** | аналог. пульс (опц.) |
 | RX0/TX0 | USB — не чіпати |
 
@@ -206,8 +213,9 @@ ESP32 D27 ── (ліва сторона BTN3) ── (права сторон�
 6. Кнопки BTN1–3 (D25/D26/D27 → GND)  
 7. Аналог. пульс — за бажанням  
 
-## Прошивка DEBUG (без SD)
+## Прошивка годинника + SD
 
-`station_debug/station_debug.ino` — мульти-екран UI: Home / Heart / Air / Climate / Motion / Force.  
-**BTN2** = наступний екран · **BTN3** = попередній · **BTN1** = Home (на Force = tare).  
-microSD поки не використовується.
+`Physik/watch/pulsar_watch/pulsar_watch.ino`  
+- **немає LINK** (ні BT-клієнта, ні `LINK` від `npm run bt`) → JSON пишеться в `/pulsar.jsonl` на SD  
+- **з’явився LINK** → дамп файлу в USB/BT і **очищення** SD  
+Піни SD: CS33 SCK14 MOSI13 MISO32 (сторона 2).

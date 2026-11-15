@@ -1,0 +1,207 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>PULSAR | Astronaut Monitoring</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;700&display=swap">
+
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/astronaut.css">
+
+    <!-- embed=1: сторінка відкрита всередині розгорнутої плитки -->
+    <script>
+      if (new URLSearchParams(location.search).has("embed")) {
+        document.documentElement.classList.add("embed");
+      }
+    </script>
+</head>
+
+<body>
+
+    <!-- Верхня панель -->
+
+    <header class="header">
+
+        <a class="brand" href="../index.html">
+
+            <svg class="logo" viewBox="0 0 48 48">
+
+                <circle cx="24" cy="24" r="19"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.5"/>
+
+                <path d="M2 24 H13 L18 15 L24 35
+                         L30 9 L35 24 H46"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.5"
+                      stroke-linejoin="round"/>
+
+            </svg>
+
+            <div>
+                <h1>PULSAR</h1>
+                <p>Space Crew Health Monitoring</p>
+            </div>
+
+        </a>
+
+        <div class="mission">
+            <span>Lunar Exploration Mission</span>
+            <span class="mission-clock" id="utc-clock">--:--:-- UTC</span>
+        </div>
+
+    </header>
+
+
+    <!-- Індивідуальна панель астронавта -->
+
+    <div class="astronaut-layout">
+
+        <!-- Бокове меню -->
+
+        <aside class="sidebar">
+
+            <a href="../index.html" class="back-button">
+                Back to crew
+            </a>
+
+
+            <!-- Коротка інформація про астронавта -->
+
+            <div class="sidebar-profile">
+
+                <div class="profile-avatar"
+                     id="profile-avatar">
+                    —
+                </div>
+
+                <h2 id="profile-name">Loading...</h2>
+
+                <p id="profile-role"></p>
+
+                <span id="profile-id"></span>
+
+                <span id="profile-status"
+                      class="status">
+                </span>
+
+            </div>
+
+
+            <!-- Навігація між розділами -->
+
+            <nav class="sidebar-navigation"
+                 aria-label="Astronaut monitoring">
+
+                <button class="nav-button active"
+                        data-section="health">
+                    Health Monitoring
+                </button>
+
+                <button class="nav-button"
+                        data-section="environment">
+                    Environment
+                </button>
+
+                <button class="nav-button"
+                        data-section="analytics">
+                    Analytics
+                </button>
+
+                <button class="nav-button"
+                        data-section="guide">
+                    Health Guide
+                </button>
+
+                <button class="nav-button"
+                        data-section="settings">
+                    Settings
+                </button>
+
+            </nav>
+
+
+            <!-- Кнопка швидкого доступу до SOS -->
+
+            <button class="sidebar-sos" id="sidebar-sos">
+                SOS / Emergency
+            </button>
+
+        </aside>
+
+
+        <!-- Основна частина -->
+
+        <main class="astronaut-main">
+
+            <div class="section-heading">
+
+                <div>
+
+                    <h2 id="section-title">
+                        Health Monitoring
+                    </h2>
+
+                    <p id="section-description">
+                        Physical health and daily well-being
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <!-- Динамічний вміст розділу -->
+
+            <div id="section-content"></div>
+
+        </main>
+
+    </div>
+
+
+    <footer>
+        <span><strong>PULSAR</strong> &nbsp;© 2026</span>
+        <span>Individual Monitoring</span>
+        <span>Server :4100</span>
+    </footer>
+
+
+    <script>
+      window.PULSAR_API = window.PULSAR_API || "http://127.0.0.1:4100";
+    </script>
+    <script src="../js/live.js"></script>
+    <script src="../js/sos.js"></script>
+    <script src="../js/astronaut.js"></script>
+    <script>
+      // У розгорнутій плитці «Back to crew» та Esc згортають її назад
+      if (document.documentElement.classList.contains("embed") && window.parent !== window) {
+        const tell = (type) => window.parent.postMessage({ type }, location.origin);
+        document.querySelector(".back-button").addEventListener("click", (event) => {
+          event.preventDefault();
+          tell("pulsar:close");
+        });
+        document.addEventListener("keydown", (event) => {
+          if (event.key === "Escape" && !document.querySelector("dialog[open]")) {
+            tell("pulsar:close");
+          }
+        });
+        document.addEventListener("pulsar:sos-change", () => tell("pulsar:sos-change"));
+      }
+    </script>
+
+</body>
+
+</html>
