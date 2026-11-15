@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PULSAR · Server Control</title>
+  <style>
+    :root {
+      --bg: #0b0b0d;
+      --panel: #141417;
+      --line: #2e2e32;
+      --text: #fff;
+      --muted: #a3a3a8;
+      --dim: #6f6f75;
+      --red: #f64137;
+      --blue: #288bff;
+      --green: #3ddc84;
+      --yellow: #ffbe2e;
+      --mono: ui-monospace, "DM Mono", Consolas, monospace;
+      --sans: Inter, "Helvetica Neue", Arial, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      font: 14px/1.45 var(--sans);
+      color: var(--text);
+      background: var(--bg);
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--line);
+      background: #000;
+    }
+    header h1 {
+      font-size: 15px;
+      letter-spacing: 0.28em;
+      font-weight: 700;
+    }
+    header p {
+      margin-top: 4px;
+      color: var(--muted);
+      font: 11px/1.4 var(--mono);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .meta {
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+      color: var(--dim);
+      font: 11px/1 var(--mono);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .meta strong { color: var(--text); font-weight: 500; }
+    .ok { color: var(--green); }
+    .bad { color: var(--red); }
+    main { padding: 24px; max-width: 1200px; margin: 0 auto; }
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+    button, select, input {
+      font: inherit;
+      color: var(--text);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 2px;
+      padding: 9px 12px;
+    }
+    button {
+      cursor: pointer;
+      font: 11px/1 var(--mono);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    button:hover { border-color: #fff; }
+    button.primary {
+      background: #fff;
+      color: #000;
+      border-color: #fff;
+    }
+    button.danger { color: var(--red); border-color: var(--red); }
+    button.on {
+      background: var(--blue);
+      border-color: var(--blue);
+      color: #fff;
+    }
+    .grid {
+      display: grid;
+      gap: 1px;
+      background: var(--line);
+      border: 1px solid var(--line);
+    }
+    .card {
+      background: var(--panel);
+      padding: 18px;
+      display: grid;
+      gap: 14px;
+    }
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .card-head h2 {
+      font-size: 20px;
+      letter-spacing: -0.01em;
+    }
+    .card-head .id {
+      color: var(--dim);
+      font: 11px/1.4 var(--mono);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+    .pill {
+      display: inline-block;
+      padding: 4px 10px;
+      border: 1px solid currentColor;
+      border-radius: 99rem;
+      font: 10px/1 var(--mono);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .pill.online { color: var(--green); }
+    .pill.offline { color: var(--dim); }
+    .pill.sim { color: var(--blue); }
+    .pill.critical { color: var(--red); }
+    .pill.warning { color: var(--yellow); }
+    .pill.normal { color: var(--green); }
+    .pill.pending { color: var(--dim); }
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      padding: 12px 0;
+    }
+    .metrics span {
+      display: block;
+      color: var(--dim);
+      font: 10px/1 var(--mono);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .metrics strong {
+      font: 22px/1 var(--mono);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+    }
+    .row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .row label {
+      color: var(--muted);
+      font: 10px/1 var(--mono);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      width: 100%;
+    }
+    .row input { flex: 1; min-width: 140px; }
+    .hint {
+      color: var(--dim);
+      font-size: 12px;
+    }
+    .empty {
+      padding: 40px;
+      text-align: center;
+      color: var(--muted);
+      border: 1px dashed var(--line);
+    }
+    @media (max-width: 720px) {
+      .metrics { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>PULSAR</h1>
+      <p>Server control panel · not the crew site</p>
+    </div>
+    <div class="meta" id="meta">
+      <span>loading…</span>
+    </div>
+  </header>
+
+  <main>
+    <div class="toolbar">
+      <button class="primary" id="btn-refresh">Refresh</button>
+      <button class="danger" id="btn-stop-all">Stop all sims</button>
+      <span class="hint">Crew UI: http://127.0.0.1:4200 · this panel does not replace it</span>
+    </div>
+    <div class="grid" id="devices"></div>
+  </main>
+
+  <script>
+    const API = location.origin;
+
+    async function api(path, opts) {
+      const res = await fetch(API + path, {
+        cache: "no-store",
+        headers: { "Content-Type": "application/json" },
+        ...opts,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || res.statusText);
+      return data;
+    }
+
+    function esc(v) {
+      return String(v ?? "—")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+    }
+
+    function statusPill(d) {
+      if (d.simulating) return `<span class="pill sim">Sim · ${esc(d.sim?.profile || "on")}</span>`;
+      if (!d.connected) return `<span class="pill offline">Offline</span>`;
+      return `<span class="pill ${esc(d.status || "pending")}">${esc(d.status || "pending")}</span>`;
+    }
+
+    function card(d) {
+      const profiles = ["normal", "rest", "warning", "critical"];
+      const profileOpts = profiles
+        .map((p) => `<option value="${p}" ${d.sim?.profile === p ? "selected" : ""}>${p}</option>`)
+        .join("");
+      return `
+        <article class="card" data-id="${esc(d.id)}">
+          <div class="card-head">
+            <div>
+              <h2>${esc(d.label || d.device_no)}</h2>
+              <div class="id">${esc(d.id)} · ${esc(d.device_no)} · ${esc(d.role)}</div>
+            </div>
+            <div class="row" style="justify-content:flex-end">
+              ${statusPill(d)}
+              <span class="pill ${d.connected ? "online" : "offline"}">${d.connected ? "Link" : "No link"}</span>
+            </div>
+          </div>
+
+          <div class="metrics">
+            <div><span>HR</span><strong>${d.hr == null ? "—" : esc(d.hr)}</strong></div>
+            <div><span>SpO₂</span><strong>${d.spo2 == null ? "—" : esc(d.spo2)}</strong></div>
+            <div><span>Temp</span><strong>${d.temp == null ? "—" : esc(d.temp)}</strong></div>
+            <div><span>Battery</span><strong>${d.battery == null ? "—" : esc(d.battery) + "%"}</strong></div>
+          </div>
+
+          <div class="row">
+            <label>Rename (display name)</label>
+            <input type="text" class="inp-label" value="${esc(d.label || d.device_no)}" maxlength="64">
+            <button data-act="rename">Save name</button>
+          </div>
+
+          <div class="row">
+            <label>Role</label>
+            <input type="text" class="inp-role" value="${esc(d.role)}" maxlength="64">
+            <button data-act="role">Save role</button>
+          </div>
+
+          <div class="row">
+            <label>Simulation</label>
+            <select class="inp-profile">${profileOpts}</select>
+            <input class="inp-hz" type="number" min="0.2" max="5" step="0.2" value="${esc(d.sim?.hz || 1)}" title="Hz" style="width:72px">
+            <button class="${d.simulating ? "on" : ""}" data-act="sim-toggle">
+              ${d.simulating ? "Stop sim" : "Start sim"}
+            </button>
+            <button data-act="clear">Clear ring</button>
+            <button class="danger" data-act="sos-off" ${d.sos ? "" : "disabled"}>Clear SOS</button>
+          </div>
+
+          <p class="hint">${esc(d.alert || "")}</p>
+        </article>`;
+    }
+
+    async function load() {
+      const data = await api("/api/admin/status");
+      const dash = data.dashboard;
+      document.getElementById("meta").innerHTML = `
+        <span>HTTP <strong>:${esc(data.http)}</strong></span>
+        <span>UDP <strong>:${esc(data.udp)}</strong></span>
+        <span>Ingest <strong>${esc(data.ingestCount)}</strong></span>
+        <span>Online <strong>${esc(dash.summary.online)}/${esc(dash.summary.total)}</strong></span>
+        <span>Sim <strong>${esc(dash.summary.simulating)}</strong></span>
+        <span class="${data.mysql ? "ok" : "bad"}">MySQL <strong>${data.mysql ? "on" : "off"}</strong></span>
+      `;
+      const root = document.getElementById("devices");
+      const list = dash.devices || [];
+      root.innerHTML = list.length
+        ? list.map(card).join("")
+        : `<div class="empty">No devices seeded</div>`;
+    }
+
+    document.getElementById("devices").addEventListener("click", async (ev) => {
+      const btn = ev.target.closest("button[data-act]");
+      if (!btn) return;
+      const cardEl = btn.closest(".card");
+      const id = cardEl.dataset.id;
+      const act = btn.dataset.act;
+      btn.disabled = true;
+      try {
+        if (act === "rename") {
+          const label = cardEl.querySelector(".inp-label").value.trim();
+          await api(`/api/admin/devices/${encodeURIComponent(id)}/rename`, {
+            method: "POST",
+            body: JSON.stringify({ label }),
+          });
+        } else if (act === "role") {
+          const role = cardEl.querySelector(".inp-role").value.trim();
+          await api(`/api/admin/devices/${encodeURIComponent(id)}/role`, {
+            method: "POST",
+            body: JSON.stringify({ role }),
+          });
+        } else if (act === "sim-toggle") {
+          const on = !btn.classList.contains("on");
+          await api(`/api/admin/devices/${encodeURIComponent(id)}/sim`, {
+            method: "POST",
+            body: JSON.stringify({
+              on,
+              profile: cardEl.querySelector(".inp-profile").value,
+              hz: Number(cardEl.querySelector(".inp-hz").value) || 1,
+            }),
+          });
+        } else if (act === "clear") {
+          await api(`/api/admin/devices/${encodeURIComponent(id)}/clear`, {
+            method: "POST",
+            body: "{}",
+          });
+        } else if (act === "sos-off") {
+          await api(`/api/admin/devices/${encodeURIComponent(id)}/sos`, {
+            method: "POST",
+            body: JSON.stringify({ active: false }),
+          });
+        }
+        await load();
+      } catch (e) {
+        alert(e.message);
+        btn.disabled = false;
+      }
+    });
+
+    document.getElementById("btn-refresh").onclick = () => load().catch((e) => alert(e.message));
+    document.getElementById("btn-stop-all").onclick = async () => {
+      await api("/api/admin/sim/stop-all", { method: "POST", body: "{}" });
+      await load();
+    };
+
+    load().catch((e) => {
+      document.getElementById("devices").innerHTML =
+        `<div class="empty">Cannot reach server: ${esc(e.message)}</div>`;
+    });
+    setInterval(() => load().catch(() => {}), 3000);
+  </script>
+</body>
+</html>

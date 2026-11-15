@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>PULSAR | Crew Health Monitoring</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;700&display=swap">
+
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+    <!-- Верхня панель сайту -->
+    <header class="header">
+
+        <div class="brand">
+
+            <svg class="logo" viewBox="0 0 48 48">
+                <circle cx="24" cy="24" r="19"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.5"/>
+
+                <path d="M2 24 H13 L18 15 L24 35 L30 9
+                         L35 24 H46"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.5"
+                      stroke-linejoin="round"/>
+            </svg>
+
+            <div>
+                <h1>PULSAR</h1>
+                <p>Space Crew Health Monitoring</p>
+            </div>
+
+        </div>
+
+        <div class="mission">
+            <span class="mission-clock" id="utc-clock">--:--:-- UTC</span>
+            <span class="link-chip" id="live-link" data-state="reconnect">Connecting</span>
+        </div>
+
+    </header>
+
+
+    <!-- Плитки екіпажу: впритул, клік розгортає плитку на весь екран -->
+    <main class="crew-grid" id="crew-grid"></main>
+
+
+    <script>
+      window.PULSAR_API = window.PULSAR_API || "http://127.0.0.1:4100";
+    </script>
+    <script src="js/live.js"></script>
+    <script src="js/sos.js"></script>
+    <script src="js/script.js"></script>
+
+</body>
+</html>

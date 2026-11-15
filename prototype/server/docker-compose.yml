@@ -1,0 +1,23 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: pulsar-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: pulsar
+      MYSQL_DATABASE: pulsar
+      MYSQL_USER: pulsar
+      MYSQL_PASSWORD: pulsar
+    ports:
+      - "3306:3306"
+    volumes:
+      - pulsar_mysql_data:/var/lib/mysql
+      - ./sql/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --innodb_flush_log_at_trx_commit=2
+      - --sync_binlog=0
+
+volumes:
+  pulsar_mysql_data:

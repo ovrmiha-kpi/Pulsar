@@ -10,7 +10,10 @@ const path = require("path");
 const { SerialPort } = require("serialport");
 const { ReadlineParser } = require("@serialport/parser-readline");
 
-const COMPUTE = process.env.COMPUTE_URL || "http://127.0.0.1:3850/ingest";
+const COMPUTE =
+  process.env.COMPUTE_URL ||
+  process.env.PULSAR_INGEST ||
+  "http://127.0.0.1:4100/ingest";
 const BAUD = Number(process.env.BT_BAUD || 115200);
 const DEFAULT_ID = process.env.DEVICE_ID || "dev001";
 const RETRY_MS = Number(process.env.BT_RETRY_MS || 2000);
@@ -121,7 +124,10 @@ async function openSession(portPath) {
     });
 
     port.on("open", () => {
-      console.log(`[bt] linked ${portPath} — FILO + auto-reconnect`);
+      console.log(`[bt] linked ${portPath} — FILO + LINK keepalive → ESP`);
+      try {
+        port.write("LINK\n");
+      } catch (_) {}
       resolve({
         port,
         close: () =>
@@ -179,9 +185,18 @@ async function main() {
         session = null;
       }
       session = await openSession(portPath);
+      let lastLink = 0;
 
       while (session) {
         await sleep(500);
+        const now = Date.now();
+        // ESP: без LINK → offline → SD; з LINK → live + flush SD
+        if (session.port.isOpen && now - lastLink >= 2000) {
+          lastLink = now;
+          try {
+            session.port.write("LINK\n");
+          } catch (_) {}
+        }
         const k = kickMtime();
         if (k > lastKick) {
           lastKick = k;

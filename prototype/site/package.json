@@ -1,0 +1,11 @@
+{
+  "name": "pulsar-site",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "PULSAR crew panel (static) — talks to prototype/server :4100",
+  "scripts": {
+    "start": "node serve.js",
+    "serve": "node serve.js"
+  }
+}

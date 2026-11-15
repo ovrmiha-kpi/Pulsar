@@ -1,0 +1,21 @@
+{
+  "name": "pulsar-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Low-latency Pulsar server: RAM hot-path + MySQL persist + UDP/WS",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "demo": "node src/demo-feed.js",
+    "bridge": "node ../../site/prototype/bt-bridge/index.js",
+    "db:up": "docker compose up -d"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "mysql2": "^3.11.5",
+    "ws": "^8.18.0"
+  }
+}

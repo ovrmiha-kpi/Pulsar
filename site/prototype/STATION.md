@@ -17,3 +17,6 @@ npm run bt -- COM11
 Сайт: http://localhost:3847  
 
 **Закрий Arduino Serial Monitor** — інакше COM11 зайнятий і плитка лишається «очікування».
+
+> **Новий канон:** ingest за замовчуванням іде на `http://127.0.0.1:4100/ingest` (`prototype/server`).  
+> Сайт: `prototype/site` → `npm start` (:4200). Див. кореневий `ARCHITECTURE.md`.

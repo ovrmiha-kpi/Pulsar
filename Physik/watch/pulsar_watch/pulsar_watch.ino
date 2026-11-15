@@ -9,11 +9,14 @@
  *
  * Person (body): MAX30105 only → HR + SpO2.
  * Environment: BMP280 room temp/pressure, MQ air, MPU motion, HX711 force.
+ * Offline: no station link → append JSONL to microSD; on link → dump + clear.
+ * SD SPI (side 2): CS=33 SCK=14 MOSI=13 MISO=32 (HSPI, not TFT).
  * Serial USB = English only.
  */
 
 #include <Wire.h>
 #include <SPI.h>
+#include <SD.h>
 #include "BluetoothSerial.h"
 #include <Adafruit_GFX.h>
 #include <Adafruit_ST7735.h>
@@ -44,10 +47,18 @@ static const int PIN_BTN1    = 25;
 static const int PIN_BTN2    = 26;
 static const int PIN_BTN3    = 27;
 
+// microSD — сторона 2 (окрема HSPI, не TFT)
+static const int PIN_SD_CS   = 33;
+static const int PIN_SD_SCK  = 14;
+static const int PIN_SD_MOSI = 13;
+static const int PIN_SD_MISO = 32;
+static const char *SD_LOG_PATH = "/pulsar.jsonl";
+
 Adafruit_ST7735 tft(PIN_TFT_CS, PIN_TFT_DC, PIN_TFT_RST);
 Adafruit_BMP280 bmp;
 MAX30105 particle;
 HX711 scale;
+SPIClass sdSpi(HSPI);
 
 enum Screen : uint8_t {
   SCR_HOME = 0,
@@ -109,6 +120,9 @@ static bool btnWiringBad = false;
 
 static bool btOk = false;   // BT stack up
 static bool btPeer = false; // phone/PC connected
+static bool sdOk = false;
+static uint32_t usbLinkUntil = 0;  // PC bridge sends LINK keepalive
+static bool wasStationLinked = false;
 static uint8_t batteryPct = 80;
 
 enum HealthLevel : uint8_t { HL_OK = 0, HL_WARN = 1, HL_CRIT = 2 };
@@ -483,11 +497,103 @@ static bool initBluetoothSpp() {
   return btOk;
 }
 
-/** JSON line → USB Serial (COM) and optional BT SPP. PC: npm run bt -- COM11 */
-static bool sendTelemetry() {
-  btPeer = SerialBT.hasClient();
+static bool initSdCard() {
+  sdSpi.begin(PIN_SD_SCK, PIN_SD_MISO, PIN_SD_MOSI, PIN_SD_CS);
+  if (!SD.begin(PIN_SD_CS, sdSpi, 16000000)) {
+    Serial.println(F("SD FAIL — side2 CS=33 SCK=14 MOSI=13 MISO=32"));
+    return false;
+  }
+  uint8_t card = SD.cardType();
+  if (card == CARD_NONE) {
+    Serial.println(F("SD FAIL — no card"));
+    return false;
+  }
+  Serial.printf("SD OK type=%u size=%lluMB\n", card, (unsigned long long)(SD.cardSize() / (1024 * 1024)));
+  return true;
+}
 
-  // Person vitals = MAX only. temp = room air (BMP280), not skin.
+/** PC bridge: "LINK\\n" every few s → USB вважається online */
+static void pollStationLinkBytes() {
+  while (Serial.available() > 0) {
+    static char buf[24];
+    static uint8_t n = 0;
+    char c = (char)Serial.read();
+    if (c == '\r') continue;
+    if (c == '\n') {
+      buf[n < sizeof(buf) ? n : sizeof(buf) - 1] = 0;
+      if (n >= 4 && buf[0] == 'L' && buf[1] == 'I' && buf[2] == 'N' && buf[3] == 'K') {
+        usbLinkUntil = millis() + 10000UL;
+      }
+      n = 0;
+    } else if (n < sizeof(buf) - 1) {
+      buf[n++] = c;
+    } else {
+      n = 0;
+    }
+  }
+}
+
+static bool stationLinked() {
+  btPeer = btOk && SerialBT.hasClient();
+  bool usbLive = (int32_t)(usbLinkUntil - millis()) > 0;
+  return btPeer || usbLive;
+}
+
+static void sdAppendJson(const char *line) {
+  if (!sdOk) return;
+  File f = SD.open(SD_LOG_PATH, FILE_APPEND);
+  if (!f) {
+    Serial.println(F("# SD append fail"));
+    return;
+  }
+  f.print(line);
+  f.close();
+}
+
+/** Передати накопичене зі SD → USB/BT, потім видалити файл */
+static void sdFlushAndClear() {
+  if (!sdOk || !SD.exists(SD_LOG_PATH)) return;
+  File f = SD.open(SD_LOG_PATH, FILE_READ);
+  if (!f) return;
+  unsigned sent = 0;
+  char line[220];
+  uint16_t li = 0;
+  while (f.available()) {
+    char c = (char)f.read();
+    if (c == '\r') continue;
+    if (c == '\n' || li >= sizeof(line) - 2) {
+      if (li > 0) {
+        line[li] = '\n';
+        line[li + 1] = 0;
+        if (line[0] == '{') {
+          Serial.print(line);
+          if (btOk && SerialBT.hasClient()) SerialBT.print(line);
+          sent++;
+          delay(12);
+        }
+        li = 0;
+      }
+    } else {
+      line[li++] = c;
+    }
+  }
+  if (li > 0 && line[0] == '{') {
+    line[li] = '\n';
+    line[li + 1] = 0;
+    Serial.print(line);
+    if (btOk && SerialBT.hasClient()) SerialBT.print(line);
+    sent++;
+  }
+  f.close();
+  SD.remove(SD_LOG_PATH);
+  Serial.printf("# SD flush %u lines → cleared\n", sent);
+}
+
+/** JSON: online → USB/BT (+ flush SD); offline → тільки SD */
+static bool sendTelemetry() {
+  pollStationLinkBytes();
+  bool linked = stationLinked();
+
   float sendHr = (finger && bpm > 0) ? (float)bpm : 0.0f;
   float sendSp = (finger && spo2 > 1) ? spo2 : 0.0f;
   float sendT = bmpOk ? tC : 0.0f;
@@ -497,16 +603,24 @@ static bool sendTelemetry() {
            "{\"device_id\":\"%s\",\"hr\":%.1f,\"spo2\":%.1f,\"temp\":%.2f,\"battery\":%u}\n",
            DEVICE_ID, sendHr, sendSp, sendT, (unsigned)batteryPct);
 
-  // USB path (always when cable plugged + bridge listening)
-  Serial.print(body);
-
-  size_t nBt = 0;
-  if (btOk && btPeer) nBt = SerialBT.print(body);
+  if (linked) {
+    if (!wasStationLinked) {
+      sdFlushAndClear();
+      wasStationLinked = true;
+    }
+    Serial.print(body);
+    if (btOk && btPeer) SerialBT.print(body);
+  } else {
+    wasStationLinked = false;
+    sdAppendJson(body);
+  }
 
   static uint32_t lastHint = 0;
   if (millis() - lastHint > 5000) {
     lastHint = millis();
-    Serial.printf("# link usb=1 bt_peer=%d\n", btPeer ? 1 : 0);
+    Serial.printf("# link=%d bt=%d usb=%d sd=%d\n",
+                  linked ? 1 : 0, btPeer ? 1 : 0,
+                  ((int32_t)(usbLinkUntil - millis()) > 0) ? 1 : 0, sdOk ? 1 : 0);
   }
   return true;
 }
@@ -530,8 +644,10 @@ static void drawHome(uint16_t bg) {
   else snprintf(bit, sizeof(bit), "AIR%.0f Rm%.1f", airQ, tC);
   printCentered(64, 86, bit, 1, mute, bg);
 
-  const char *net = btPeer ? "USB+BT" : "USB link";
-  printCentered(64, 100, net, 1, C(80, 180, 120), bg);
+  const char *net = stationLinked() ? (btPeer ? "LINK BT" : "LINK USB")
+                                    : (sdOk ? "OFFLINE>SD" : "NO LINK");
+  printCentered(64, 100, net, 1,
+                stationLinked() ? C(80, 180, 120) : C(200, 140, 60), bg);
 
   printCentered(64, 114, DEVICE_ID, 1, mute, bg);
   drawDots(SCR_HOME, accent, C(40, 50, 55));
@@ -834,11 +950,12 @@ void setup() {
   hxOk = hxTry(PIN_HX_DT, PIN_HX_SCK);
   if (!hxOk) hxOk = hxTry(PIN_HX_SCK, PIN_HX_DT);
 
-  Serial.printf("BMP=%d MPU=%d MAX=%d HX=%d\n", bmpOk, mpuOk, maxOk, hxOk);
+  sdOk = initSdCard();
+  Serial.printf("BMP=%d MPU=%d MAX=%d HX=%d SD=%d\n", bmpOk, mpuOk, maxOk, hxOk, sdOk ? 1 : 0);
 
   printCentered(64, 118, "BT...", 1, C(180, 180, 100), C(6, 10, 14));
   initBluetoothSpp();
-  if (btOk && SerialBT.hasClient()) sendTelemetry();
+  if (stationLinked()) sendTelemetry();
 
   dirty = true;
 }
