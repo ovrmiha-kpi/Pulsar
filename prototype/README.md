@@ -13,7 +13,10 @@
 | [`bridge/`](bridge/) | USB/BT Serial → ingest + outbound | COM |
 | [`hardware/`](hardware/) | Прошивка ESP32, BOM, wiring, CAD, схеми | — |
 | [`pitch/`](pitch/) | Pitch deck | — |
+| [`3d-models/`](3d-models/) | 3D моделі та скріни | — |
 | [`archive/scan/`](archive/scan/) | Optional CSI map (не канон демо) | COM |
+
+Презентація / відео: [`../media/`](../media/) (корінь репо).
 
 ```
 Годинник ESP32  ──USB──►  bridge  ──POST /ingest──►  server :4100

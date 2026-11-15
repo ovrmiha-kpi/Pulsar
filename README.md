@@ -14,6 +14,8 @@ NASA Space Apps Hackathon 2026.
 | USB/BT міст | [`prototype/bridge/`](prototype/bridge/) |
 | Сервер + UI | [`prototype/server/`](prototype/server/) · [`prototype/site/`](prototype/site/) |
 | Pitch | [`prototype/pitch/`](prototype/pitch/) |
+| Presentation / video | [`media/`](media/) |
+| 3D models / screens | [`prototype/3d-models/`](prototype/3d-models/) |
 
 ```powershell
 cd prototype
