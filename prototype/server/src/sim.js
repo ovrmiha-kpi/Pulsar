@@ -1,12 +1,20 @@
 /**
  * Per-device simulation — локальний генератор телеметрії для демо/тестів.
  * Кожен пристрій вмикається окремо з панелі керування.
+ *
+ * Налаштування (profile / hz) зберігаються після Stop і не скидаються,
+ * поки адмін явно не зробить resetSimConfig / resetAllConfigs.
  */
 
-/** @typedef {{ hz: number, profile: string, timer: ReturnType<typeof setInterval>|null, tick: number }} SimState */
+/** @typedef {{ hz: number, profile: string, timer: ReturnType<typeof setInterval>|null, tick: number, emit: (sample: object) => void }} SimState */
+/** @typedef {{ hz: number, profile: string }} SimConfig */
 
 /** @type {Map<string, SimState>} */
 const sims = new Map();
+
+/** Останні вибрані параметри симуляції (живуть і після Stop). */
+/** @type {Map<string, SimConfig>} */
+const lastConfig = new Map();
 
 const PROFILES = {
   normal: {
@@ -35,6 +43,12 @@ const PROFILES = {
   },
 };
 
+function normalizeConfig(opts = {}) {
+  const profile = PROFILES[opts.profile] ? opts.profile : "normal";
+  const hz = Math.min(5, Math.max(0.2, Number(opts.hz) || 1));
+  return { profile, hz };
+}
+
 export function listProfiles() {
   return Object.keys(PROFILES);
 }
@@ -43,9 +57,13 @@ export function isSimulating(id) {
   return sims.has(id);
 }
 
+/** Повертає стан симуляції; profile/hz пам'ятаються навіть коли active=false. */
 export function getSimState(id) {
+  const cfg = lastConfig.get(id) || { profile: "normal", hz: 1 };
   const s = sims.get(id);
-  if (!s) return null;
+  if (!s) {
+    return { active: false, hz: cfg.hz, profile: cfg.profile, tick: 0 };
+  }
   return { active: true, hz: s.hz, profile: s.profile, tick: s.tick };
 }
 
@@ -59,6 +77,19 @@ export function listSims() {
 }
 
 /**
+ * Зберегти профіль/Hz без обов'язкового старту таймера.
+ * Якщо симуляція вже біжить — перезапускає з новими параметрами (стан «увімкнено» лишається).
+ */
+export function setSimConfig(id, opts, emit) {
+  const cfg = normalizeConfig(opts);
+  lastConfig.set(id, cfg);
+  if (sims.has(id) && typeof emit === "function") {
+    return startSim(id, { ...cfg, emit });
+  }
+  return getSimState(id);
+}
+
+/**
  * @param {string} id
  * @param {{
  *   hz?: number,
@@ -67,18 +98,23 @@ export function listSims() {
  * }} opts
  */
 export function startSim(id, opts) {
-  stopSim(id);
-  const profile = PROFILES[opts.profile] ? opts.profile : "normal";
-  const hz = Math.min(5, Math.max(0.2, Number(opts.hz) || 1));
-  const period = Math.round(1000 / hz);
+  const cfg = normalizeConfig(opts);
+  lastConfig.set(id, cfg);
+
+  const prev = sims.get(id);
+  const keepTick = prev && prev.profile === cfg.profile && prev.hz === cfg.hz ? prev.tick : 0;
+  if (prev?.timer) clearInterval(prev.timer);
+
+  const period = Math.round(1000 / cfg.hz);
   const state = /** @type {SimState} */ ({
-    hz,
-    profile,
-    tick: 0,
+    hz: cfg.hz,
+    profile: cfg.profile,
+    tick: keepTick,
     timer: null,
+    emit: opts.emit,
   });
 
-  const gen = PROFILES[profile];
+  const gen = PROFILES[cfg.profile];
   state.timer = setInterval(() => {
     state.tick++;
     opts.emit({
@@ -95,6 +131,7 @@ export function startSim(id, opts) {
   return getSimState(id);
 }
 
+/** Зупиняє таймер, але лишає profile/hz у пам'яті. */
 export function stopSim(id) {
   const s = sims.get(id);
   if (!s) return false;
@@ -105,4 +142,16 @@ export function stopSim(id) {
 
 export function stopAll() {
   for (const id of [...sims.keys()]) stopSim(id);
+}
+
+/** Повне скидання налаштувань симуляції (лише за явною командою адміна). */
+export function resetSimConfig(id) {
+  stopSim(id);
+  lastConfig.delete(id);
+  return true;
+}
+
+export function resetAllConfigs() {
+  stopAll();
+  lastConfig.clear();
 }

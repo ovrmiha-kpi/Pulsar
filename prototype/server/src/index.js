@@ -38,6 +38,9 @@ import {
   getSimState,
   listSims,
   listProfiles,
+  setSimConfig,
+  resetSimConfig,
+  resetAllConfigs,
 } from "./sim.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -139,7 +142,7 @@ function devicePayload(d) {
     connected,
     last_seen_at: d.last_seen_at,
     sos,
-    simulating: !!sim,
+    simulating: isSimulating(d.id),
     sim,
     ...(connected
       ? a
@@ -266,9 +269,18 @@ async function handleAdmin(url, req, res) {
   }
 
   if (url.pathname === "/api/admin/sim/stop-all" && req.method === "POST") {
+    // Stop timers only — keep last profile/hz until explicit reset
     stopAll();
-    console.log("[admin] stop all sims");
+    console.log("[admin] stop all sims (config kept)");
     broadcastWs({ type: "admin", action: "sim_stop_all", dashboard: dashboard() });
+    sendJson(res, 200, { ok: true, sims: [], configsKept: true });
+    return true;
+  }
+
+  if (url.pathname === "/api/admin/sim/reset-all" && req.method === "POST") {
+    resetAllConfigs();
+    console.log("[admin] reset all sim configs");
+    broadcastWs({ type: "admin", action: "sim_reset_all", dashboard: dashboard() });
     sendJson(res, 200, { ok: true, sims: [] });
     return true;
   }
@@ -306,26 +318,49 @@ async function handleAdmin(url, req, res) {
     }
 
     if (action === "sim" && req.method === "POST") {
+      const emit = (sample) => {
+        try {
+          ingestFast(sample, `sim:${d.id}`);
+        } catch (e) {
+          console.warn("[sim]", e.message);
+        }
+      };
+
+      // Лише зберегти профіль/Hz (без старту/стопу) — стан форми не губиться
+      if (body.saveOnly) {
+        setSimConfig(d.id, { hz: body.hz, profile: body.profile }, emit);
+        console.log(
+          `[admin] sim CONFIG ${d.device_no} profile=${body.profile || "normal"} hz=${body.hz || 1}`
+        );
+        broadcastMeta(d);
+        sendJson(res, 200, { ok: true, device: devicePayload(d) });
+        return true;
+      }
+
       const on = body.on !== false && body.on !== 0 && body.on !== "0";
       if (!on) {
+        // Stop timer, keep last profile/hz in memory
+        setSimConfig(d.id, { hz: body.hz, profile: body.profile });
         stopSim(d.id);
-        console.log(`[admin] sim OFF ${d.device_no}`);
+        console.log(`[admin] sim OFF ${d.device_no} (config kept)`);
       } else {
         startSim(d.id, {
           hz: body.hz,
           profile: body.profile || "normal",
-          emit: (sample) => {
-            try {
-              ingestFast(sample, `sim:${d.id}`);
-            } catch (e) {
-              console.warn("[sim]", e.message);
-            }
-          },
+          emit,
         });
         console.log(
           `[admin] sim ON ${d.device_no} profile=${body.profile || "normal"} hz=${body.hz || 1}`
         );
       }
+      broadcastMeta(d);
+      sendJson(res, 200, { ok: true, device: devicePayload(d) });
+      return true;
+    }
+
+    if (action === "sim-reset" && req.method === "POST") {
+      resetSimConfig(d.id);
+      console.log(`[admin] sim RESET ${d.device_no}`);
       broadcastMeta(d);
       sendJson(res, 200, { ok: true, device: devicePayload(d) });
       return true;

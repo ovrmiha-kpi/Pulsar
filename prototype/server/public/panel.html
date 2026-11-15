@@ -205,13 +205,16 @@
     <div class="toolbar">
       <button class="primary" id="btn-refresh">Refresh</button>
       <button class="danger" id="btn-stop-all">Stop all sims</button>
-      <span class="hint">Crew UI: http://127.0.0.1:4200 · this panel does not replace it</span>
+      <button class="danger" id="btn-reset-all" title="Stop sims and clear saved profile/Hz">Reset sim settings</button>
+      <span class="hint">Profile/Hz stay until you Reset · Crew UI: http://127.0.0.1:4200</span>
     </div>
     <div class="grid" id="devices"></div>
   </main>
 
   <script>
     const API = location.origin;
+    /** Локальні чернетки полів — не затираються автооновленням */
+    const drafts = new Map();
 
     async function api(path, opts) {
       const res = await fetch(API + path, {
@@ -238,59 +241,146 @@
       return `<span class="pill ${esc(d.status || "pending")}">${esc(d.status || "pending")}</span>`;
     }
 
+    function captureDraft(cardEl) {
+      if (!cardEl?.dataset?.id) return;
+      const active = document.activeElement;
+      const editing = cardEl.contains(active) &&
+        (active.matches("input, select, textarea") || active.isContentEditable);
+      drafts.set(cardEl.dataset.id, {
+        profile: cardEl.querySelector(".inp-profile")?.value,
+        hz: cardEl.querySelector(".inp-hz")?.value,
+        label: cardEl.querySelector(".inp-label")?.value,
+        role: cardEl.querySelector(".inp-role")?.value,
+        editing,
+      });
+    }
+
+    function captureAllDrafts() {
+      document.querySelectorAll("#devices .card[data-id]").forEach(captureDraft);
+    }
+
+    function fieldValues(d) {
+      const draft = drafts.get(d.id);
+      // Поки користувач редагує — тримаємо його значення; інакше беремо збережені з сервера
+      if (draft?.editing) {
+        return {
+          profile: draft.profile || d.sim?.profile || "normal",
+          hz: draft.hz || d.sim?.hz || 1,
+          label: draft.label ?? (d.label || d.device_no),
+          role: draft.role ?? d.role,
+        };
+      }
+      return {
+        profile: d.sim?.profile || draft?.profile || "normal",
+        hz: d.sim?.hz || draft?.hz || 1,
+        label: d.label || d.device_no,
+        role: d.role,
+      };
+    }
+
     function card(d) {
       const profiles = ["normal", "rest", "warning", "critical"];
+      const f = fieldValues(d);
       const profileOpts = profiles
-        .map((p) => `<option value="${p}" ${d.sim?.profile === p ? "selected" : ""}>${p}</option>`)
+        .map((p) => `<option value="${p}" ${f.profile === p ? "selected" : ""}>${p}</option>`)
         .join("");
       return `
         <article class="card" data-id="${esc(d.id)}">
           <div class="card-head">
             <div>
-              <h2>${esc(d.label || d.device_no)}</h2>
-              <div class="id">${esc(d.id)} · ${esc(d.device_no)} · ${esc(d.role)}</div>
+              <h2 class="js-title">${esc(d.label || d.device_no)}</h2>
+              <div class="id js-idline">${esc(d.id)} · ${esc(d.device_no)} · ${esc(d.role)}</div>
             </div>
-            <div class="row" style="justify-content:flex-end">
+            <div class="row js-pills" style="justify-content:flex-end">
               ${statusPill(d)}
               <span class="pill ${d.connected ? "online" : "offline"}">${d.connected ? "Link" : "No link"}</span>
             </div>
           </div>
 
           <div class="metrics">
-            <div><span>HR</span><strong>${d.hr == null ? "—" : esc(d.hr)}</strong></div>
-            <div><span>SpO₂</span><strong>${d.spo2 == null ? "—" : esc(d.spo2)}</strong></div>
-            <div><span>Temp</span><strong>${d.temp == null ? "—" : esc(d.temp)}</strong></div>
-            <div><span>Battery</span><strong>${d.battery == null ? "—" : esc(d.battery) + "%"}</strong></div>
+            <div><span>HR</span><strong class="js-hr">${d.hr == null ? "—" : esc(d.hr)}</strong></div>
+            <div><span>SpO₂</span><strong class="js-spo2">${d.spo2 == null ? "—" : esc(d.spo2)}</strong></div>
+            <div><span>Temp</span><strong class="js-temp">${d.temp == null ? "—" : esc(d.temp)}</strong></div>
+            <div><span>Battery</span><strong class="js-bat">${d.battery == null ? "—" : esc(d.battery) + "%"}</strong></div>
           </div>
 
           <div class="row">
             <label>Rename (display name)</label>
-            <input type="text" class="inp-label" value="${esc(d.label || d.device_no)}" maxlength="64">
+            <input type="text" class="inp-label" value="${esc(f.label)}" maxlength="64">
             <button data-act="rename">Save name</button>
           </div>
 
           <div class="row">
             <label>Role</label>
-            <input type="text" class="inp-role" value="${esc(d.role)}" maxlength="64">
+            <input type="text" class="inp-role" value="${esc(f.role)}" maxlength="64">
             <button data-act="role">Save role</button>
           </div>
 
           <div class="row">
-            <label>Simulation</label>
+            <label>Simulation (saved until Reset)</label>
             <select class="inp-profile">${profileOpts}</select>
-            <input class="inp-hz" type="number" min="0.2" max="5" step="0.2" value="${esc(d.sim?.hz || 1)}" title="Hz" style="width:72px">
+            <input class="inp-hz" type="number" min="0.2" max="5" step="0.2" value="${esc(f.hz)}" title="Hz" style="width:72px">
             <button class="${d.simulating ? "on" : ""}" data-act="sim-toggle">
               ${d.simulating ? "Stop sim" : "Start sim"}
             </button>
             <button data-act="clear">Clear ring</button>
+            <button class="danger" data-act="sim-reset">Reset sim</button>
             <button class="danger" data-act="sos-off" ${d.sos ? "" : "disabled"}>Clear SOS</button>
           </div>
 
-          <p class="hint">${esc(d.alert || "")}</p>
+          <p class="hint js-alert">${esc(d.alert || "")}</p>
         </article>`;
     }
 
-    async function load() {
+    /** Оновлення метрик/статусу без перезапису полів, які зараз редагують */
+    function patchCard(cardEl, d) {
+      const f = fieldValues(d);
+      const title = cardEl.querySelector(".js-title");
+      const idline = cardEl.querySelector(".js-idline");
+      const pills = cardEl.querySelector(".js-pills");
+      if (title && !cardEl.querySelector(".inp-label:focus")) {
+        title.textContent = d.label || d.device_no;
+      }
+      if (idline) idline.textContent = `${d.id} · ${d.device_no} · ${d.role}`;
+      if (pills) {
+        pills.innerHTML = `${statusPill(d)}<span class="pill ${d.connected ? "online" : "offline"}">${d.connected ? "Link" : "No link"}</span>`;
+      }
+      const hr = cardEl.querySelector(".js-hr");
+      const spo2 = cardEl.querySelector(".js-spo2");
+      const temp = cardEl.querySelector(".js-temp");
+      const bat = cardEl.querySelector(".js-bat");
+      if (hr) hr.textContent = d.hr == null ? "—" : d.hr;
+      if (spo2) spo2.textContent = d.spo2 == null ? "—" : d.spo2;
+      if (temp) temp.textContent = d.temp == null ? "—" : d.temp;
+      if (bat) bat.textContent = d.battery == null ? "—" : `${d.battery}%`;
+      const alert = cardEl.querySelector(".js-alert");
+      if (alert) alert.textContent = d.alert || "";
+
+      const simBtn = cardEl.querySelector('[data-act="sim-toggle"]');
+      if (simBtn) {
+        simBtn.classList.toggle("on", !!d.simulating);
+        simBtn.textContent = d.simulating ? "Stop sim" : "Start sim";
+        simBtn.disabled = false;
+      }
+      const sosBtn = cardEl.querySelector('[data-act="sos-off"]');
+      if (sosBtn) sosBtn.disabled = !d.sos;
+
+      // Не чіпаємо інпути під час редагування; інакше підтягуємо збережений серверний профіль
+      const editing = cardEl.contains(document.activeElement) &&
+        document.activeElement.matches("input, select, textarea");
+      if (!editing) {
+        const profile = cardEl.querySelector(".inp-profile");
+        const hz = cardEl.querySelector(".inp-hz");
+        const label = cardEl.querySelector(".inp-label");
+        const role = cardEl.querySelector(".inp-role");
+        if (profile && profile.value !== String(f.profile)) profile.value = f.profile;
+        if (hz && hz.value !== String(f.hz)) hz.value = f.hz;
+        if (label && label.value !== String(f.label)) label.value = f.label;
+        if (role && role.value !== String(f.role)) role.value = f.role;
+      }
+    }
+
+    async function load({ full = false } = {}) {
       const data = await api("/api/admin/status");
       const dash = data.dashboard;
       document.getElementById("meta").innerHTML = `
@@ -303,9 +393,48 @@
       `;
       const root = document.getElementById("devices");
       const list = dash.devices || [];
-      root.innerHTML = list.length
-        ? list.map(card).join("")
-        : `<div class="empty">No devices seeded</div>`;
+      if (!list.length) {
+        root.innerHTML = `<div class="empty">No devices seeded</div>`;
+        return;
+      }
+
+      captureAllDrafts();
+      const byId = new Map(list.map((d) => [d.id, d]));
+      const existing = [...root.querySelectorAll(".card[data-id]")];
+
+      if (full || existing.length === 0 || existing.length !== list.length) {
+        root.innerHTML = list.map(card).join("");
+        return;
+      }
+
+      for (const cardEl of existing) {
+        const d = byId.get(cardEl.dataset.id);
+        if (!d) {
+          cardEl.remove();
+          continue;
+        }
+        patchCard(cardEl, d);
+      }
+    }
+
+    async function saveSimConfig(cardEl, { on, saveOnly } = {}) {
+      const id = cardEl.dataset.id;
+      const body = {
+        profile: cardEl.querySelector(".inp-profile").value,
+        hz: Number(cardEl.querySelector(".inp-hz").value) || 1,
+      };
+      if (saveOnly) body.saveOnly = true;
+      else body.on = on;
+      await api(`/api/admin/devices/${encodeURIComponent(id)}/sim`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+      drafts.set(id, {
+        ...drafts.get(id),
+        profile: body.profile,
+        hz: body.hz,
+        editing: false,
+      });
     }
 
     document.getElementById("devices").addEventListener("click", async (ev) => {
@@ -322,50 +451,75 @@
             method: "POST",
             body: JSON.stringify({ label }),
           });
+          drafts.set(id, { ...drafts.get(id), label, editing: false });
         } else if (act === "role") {
           const role = cardEl.querySelector(".inp-role").value.trim();
           await api(`/api/admin/devices/${encodeURIComponent(id)}/role`, {
             method: "POST",
             body: JSON.stringify({ role }),
           });
+          drafts.set(id, { ...drafts.get(id), role, editing: false });
         } else if (act === "sim-toggle") {
           const on = !btn.classList.contains("on");
-          await api(`/api/admin/devices/${encodeURIComponent(id)}/sim`, {
-            method: "POST",
-            body: JSON.stringify({
-              on,
-              profile: cardEl.querySelector(".inp-profile").value,
-              hz: Number(cardEl.querySelector(".inp-hz").value) || 1,
-            }),
-          });
+          await saveSimConfig(cardEl, { on });
         } else if (act === "clear") {
           await api(`/api/admin/devices/${encodeURIComponent(id)}/clear`, {
             method: "POST",
             body: "{}",
           });
+        } else if (act === "sim-reset") {
+          await api(`/api/admin/devices/${encodeURIComponent(id)}/sim-reset`, {
+            method: "POST",
+            body: "{}",
+          });
+          drafts.delete(id);
         } else if (act === "sos-off") {
           await api(`/api/admin/devices/${encodeURIComponent(id)}/sos`, {
             method: "POST",
             body: JSON.stringify({ active: false }),
           });
         }
-        await load();
+        await load({ full: act === "sim-reset" });
       } catch (e) {
         alert(e.message);
         btn.disabled = false;
       }
     });
 
-    document.getElementById("btn-refresh").onclick = () => load().catch((e) => alert(e.message));
+    // Зміна profile/Hz одразу зберігається на сервері (і застосовується, якщо sim увімкнено)
+    document.getElementById("devices").addEventListener("change", async (ev) => {
+      const el = ev.target;
+      if (!el.matches(".inp-profile, .inp-hz")) return;
+      const cardEl = el.closest(".card");
+      if (!cardEl) return;
+      try {
+        const running = cardEl.querySelector('[data-act="sim-toggle"]')?.classList.contains("on");
+        if (running) await saveSimConfig(cardEl, { on: true });
+        else await saveSimConfig(cardEl, { saveOnly: true });
+        await load();
+      } catch (e) {
+        alert(e.message);
+      }
+    });
+
+    document.getElementById("btn-refresh").onclick = () =>
+      load({ full: true }).catch((e) => alert(e.message));
     document.getElementById("btn-stop-all").onclick = async () => {
       await api("/api/admin/sim/stop-all", { method: "POST", body: "{}" });
       await load();
     };
+    document.getElementById("btn-reset-all").onclick = async () => {
+      if (!confirm("Stop all sims and clear saved profiles/Hz?")) return;
+      await api("/api/admin/sim/reset-all", { method: "POST", body: "{}" });
+      drafts.clear();
+      await load({ full: true });
+    };
 
-    load().catch((e) => {
+    load({ full: true }).catch((e) => {
       document.getElementById("devices").innerHTML =
         `<div class="empty">Cannot reach server: ${esc(e.message)}</div>`;
     });
+    // Автооновлення лише метрик — не перемальовує всю форму
     setInterval(() => load().catch(() => {}), 3000);
   </script>
 </body>
